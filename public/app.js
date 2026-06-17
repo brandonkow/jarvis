@@ -180,23 +180,34 @@ function setContextPanelState(toggle, expanded, persist = true) {
   const action = toggle.querySelector(".contextAction");
   if (!body) return;
 
+  if (expanded) {
+    for (const otherToggle of contextToggles) {
+      if (otherToggle === toggle) continue;
+      setContextPanelState(otherToggle, false, false);
+    }
+  }
+
   toggle.setAttribute("aria-expanded", String(expanded));
   body.hidden = !expanded;
   toggle.closest(".contextPanel")?.classList.toggle("expanded", expanded);
   if (action) action.textContent = expanded ? "CLOSE" : "OPEN";
 
   if (persist) {
-    const state = savedContextPanelState();
-    state[panelName] = expanded;
+    const state = contextToggles.reduce((nextState, item) => {
+      const name = item.getAttribute("data-context-toggle");
+      nextState[name] = item === toggle ? expanded : false;
+      return nextState;
+    }, {});
     window.localStorage.setItem(contextPanelKey, JSON.stringify(state));
   }
 }
 
 function bootContextPanels() {
   const state = savedContextPanelState();
+  const activePanel = Object.entries(state).find(([, expanded]) => expanded)?.[0];
   for (const toggle of contextToggles) {
     const panelName = toggle.getAttribute("data-context-toggle");
-    setContextPanelState(toggle, Boolean(state[panelName]), false);
+    setContextPanelState(toggle, panelName === activePanel, false);
     toggle.addEventListener("click", () => {
       const expanded = toggle.getAttribute("aria-expanded") === "true";
       setContextPanelState(toggle, !expanded);
