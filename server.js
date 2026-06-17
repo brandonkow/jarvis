@@ -473,6 +473,10 @@ function bulletSection(title, lines, limit = 4) {
   return `${title}\n${bullets.map((line) => `- ${line}`).join("\n")}`;
 }
 
+function shortSentence(text, maxLength = 150) {
+  return conciseText(text, maxLength).replace(/\.$/, "");
+}
+
 function uniqueSources(items, limit = 6) {
   const seen = new Set();
   return items
@@ -563,46 +567,46 @@ async function retrieveJarvisAnswer(query, brain, session) {
   const isPenangQuestion = hasAnyTerm(queryTerms, ["penang"]);
   const hasYieldMention = /\b\d+(\.\d+)?\s*%/.test(query);
 
-  let verdict = "Verdict: Investigate further before deciding.";
+  let verdict = "My take: I would investigate further before deciding.";
   if (isBuyQuestion && isRentalQuestion && isSupplyQuestion) {
-    verdict = "Verdict: Do not approve yet. Shortlist only if rental coverage, occupancy, and future-supply defense are proven.";
+    verdict = "My take: not a yes yet. I would only shortlist it if the rent is real and the future supply risk is defendable.";
   } else if (isBuyQuestion && isRentalQuestion) {
-    verdict = "Verdict: Possible shortlist, but only after rent can cover the installment and recurring charges under a conservative case.";
+    verdict = "My take: possible shortlist, but only if rent can cover the installment and recurring charges under a conservative case.";
   } else if (isBuyQuestion) {
-    verdict = "Verdict: Treat this as a selection problem first, not a cheap-price problem.";
+    verdict = "My take: judge the property quality first, not whether it looks cheap.";
   }
 
   const reasoning = [];
-  if (/\b6\s*%/.test(query)) reasoning.push("A 6% gross yield meets the founder's acceptable rental-yield baseline, but it is not approval by itself.");
-  else if (hasYieldMention || isRentalQuestion) reasoning.push("A stated yield is only a starting signal; EstateLab still needs actual rent evidence, vacancy assumption, installment coverage, maintenance charge, and sinking fund impact.");
-  if (isSupplyQuestion) reasoning.push("Future supply within the substitute radius is a direct risk when newer projects offer similar layout and similar or lower pricing.");
-  if (isPenangQuestion) reasoning.push("For Penang, freehold sensitivity can matter more than in Kuala Lumpur, so tenure should be checked against the target exit buyer pool.");
-  if (buyerPoolReference) reasoning.push("The property must remain attractive to both owner-occupiers and investors; relying only on yield-sensitive investors weakens your exit.");
-  if (topBelief) reasoning.push(`${conciseText(topBelief.claim, 230)}${topBelief.confidence ? ` Confidence: ${topBelief.confidence}%.` : ""}`);
+  if (/\b6\s*%/.test(query)) reasoning.push("6% yield passes your baseline, but it does not approve the deal by itself.");
+  else if (hasYieldMention || isRentalQuestion) reasoning.push("Yield is only a starting clue; actual signed rent and vacancy matter more.");
+  if (isSupplyQuestion) reasoning.push("Newer similar projects within 2.5km can steal both tenants and future buyers.");
+  if (isPenangQuestion) reasoning.push("In Penang, tenure can matter more, so freehold/leasehold must match the exit buyer pool.");
+  if (buyerPoolReference) reasoning.push("I still want both own-stay appeal and investor-grade rent, not just one buyer segment.");
+  if (!reasoning.length && topBelief) reasoning.push(shortSentence(topBelief.claim, 150));
 
   const risks = [];
-  if (isSupplyQuestion && supplyReference) risks.push(conciseText(supplyReference.body, 240));
-  if (isRentalQuestion && rentalReference) risks.push(conciseText(rentalReference.body, 240));
-  if (topBelief?.evidenceAgainst) risks.push(conciseText(topBelief.evidenceAgainst, 220));
-  if (topDecision?.counterThesis) risks.push(conciseText(topDecision.counterThesis, 220));
+  if (isSupplyQuestion) risks.push("If the new supply has similar layout and pricing, your unit may lose pricing power.");
+  if (isRentalQuestion) risks.push("If rent cannot cover installment plus recurring charges, I would not treat it as a safe high-rise rental play.");
+  if (topBelief?.evidenceAgainst) risks.push(shortSentence(topBelief.evidenceAgainst, 150));
+  if (topDecision?.counterThesis) risks.push(shortSentence(topDecision.counterThesis, 150));
 
   const evidenceChecks = [];
-  if (isRentalQuestion) evidenceChecks.push("Ask active rental agents for urgent tenant demand, recent signed rents, typical vacancy period, and furnishing expectations.");
-  if (isSupplyQuestion) evidenceChecks.push("Map newer and upcoming substitute projects within about 2.5km, then compare layout, pricing, facilities, access, and developer reputation.");
-  evidenceChecks.push("Check subsale transacted prices, successful auction bids, and whether rent has stayed strong against newer supply.");
-  if (evidenceReference) evidenceChecks.push(conciseText(evidenceReference.body, 210));
+  if (isRentalQuestion) evidenceChecks.push("Ask agents for actual signed rent, vacancy speed, and tenant urgency.");
+  if (isSupplyQuestion) evidenceChecks.push("List every newer substitute within 2.5km and compare layout, price, facilities, and access.");
+  evidenceChecks.push("Check subsale transactions and successful auction bids, not listing prices.");
+  if (!isRentalQuestion && !isSupplyQuestion && evidenceReference) evidenceChecks.push(shortSentence(evidenceReference.body, 150));
 
   const challenge = [];
-  if (isSupplyQuestion) challenge.push("If the newer competing projects launch at comparable pricing, why would the next tenant or buyer still choose this older/project unit?");
-  if (topBelief?.falsifier) challenge.push(conciseText(topBelief.falsifier, 230));
+  if (isSupplyQuestion) challenge.push("If a newer project nearby is priced similarly, why would the next tenant or buyer still choose this unit?");
+  else if (topBelief?.falsifier) challenge.push(shortSentence(topBelief.falsifier, 150));
   else challenge.push(nextThinkingQuestion(brain).question);
 
   const sections = [
     verdict,
-    bulletSection("Key reasoning", reasoning),
-    bulletSection("Main risks", risks),
-    bulletSection("Evidence to verify", evidenceChecks),
-    bulletSection("EstateLab challenge", challenge, 2)
+    bulletSection("Why", reasoning, 3),
+    bulletSection("Watch-outs", risks, 2),
+    bulletSection("Check next", evidenceChecks, 3),
+    bulletSection("My challenge back", challenge, 1)
   ].filter(Boolean);
 
   return {
