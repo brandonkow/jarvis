@@ -9,6 +9,7 @@ const sessionStatus = document.querySelector("#sessionStatus");
 const soundToggle = document.querySelector("#soundToggle");
 const stopVoiceBtn = document.querySelector("#stopVoiceBtn");
 const newSessionBtn = document.querySelector("#newSessionBtn");
+const resetChatBtn = document.querySelector("#resetChatBtn");
 const voiceSupport = document.querySelector("#voiceSupport");
 const localTime = document.querySelector("#localTime");
 
@@ -150,6 +151,27 @@ async function createSession() {
   return result.session;
 }
 
+async function resetChat() {
+  stopSpeaking("Chat reset.");
+  setSystemState("Resetting", "Clearing the current conversation.");
+  const currentSessionId = sessionId;
+  transcript.innerHTML = "";
+  document.body.classList.remove("conversationActive");
+  window.localStorage.removeItem(sessionKey);
+  sessionId = null;
+
+  try {
+    if (currentSessionId) {
+      await requestJson(`/api/jarvis/sessions/${currentSessionId}`, { method: "DELETE" });
+    }
+    await createSession();
+    setSystemState("System ready", "Clean chat ready.");
+  } catch {
+    setSystemState("Connection issue", "Jarvis backend is unavailable.");
+    setSessionState("SESSION OFFLINE");
+  }
+}
+
 async function loadSession(id) {
   const result = await requestJson(`/api/jarvis/sessions/${id}`);
   sessionId = result.session.id;
@@ -264,6 +286,7 @@ chatForm.addEventListener("submit", (event) => {
 jarvisOrb.addEventListener("click", startListening);
 micBtn.addEventListener("click", startListening);
 stopVoiceBtn.addEventListener("click", () => stopSpeaking("Voice stopped."));
+resetChatBtn.addEventListener("click", resetChat);
 
 newSessionBtn.addEventListener("click", async () => {
   stopSpeaking("Starting a clean conversation.");
