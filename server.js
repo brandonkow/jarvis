@@ -498,35 +498,77 @@ function compactQuery(text) {
     .trim();
 }
 
-function detectSmallTalk(query) {
+function hasRealEstateIntent(clean, words) {
+  const estateTerms = new Set([
+    "property", "estate", "condo", "condominium", "apartment", "serviced", "flat",
+    "high", "rise", "landed", "terrace", "semi", "bungalow", "shop", "commercial",
+    "industrial", "land", "rent", "rental", "yield", "tenant", "vacancy", "cashflow",
+    "cash", "flow", "installment", "instalment", "maintenance", "sinking", "buy",
+    "purchase", "sell", "resale", "subsale", "auction", "valuation", "market", "price",
+    "loan", "financing", "bank", "dsr", "ccris", "ctos", "freehold", "leasehold",
+    "title", "developer", "project", "management", "resident", "density", "supply",
+    "demand", "occupancy", "furnishing", "renovation", "layout", "view", "penang",
+    "kl", "kuala", "lumpur", "selangor", "malaysia", "brickz"
+  ]);
+  return words.some((word) => estateTerms.has(word))
+    || /\b(rm\s*)?\d+(\.\d+)?\s*(k|m|%)\b/.test(clean)
+    || clean.includes("2 5km")
+    || clean.includes("2 5 km");
+}
+
+function detectCompanionIntent(query) {
   const clean = compactQuery(query);
   if (!clean) return "empty";
   const words = clean.split(" ");
-  const greetingTerms = new Set(["hi", "hello", "hey", "yo", "morning", "afternoon", "evening"]);
-  const thanksTerms = new Set(["thanks", "thank", "thx"]);
-  const byeTerms = new Set(["bye", "goodbye", "later"]);
 
-  if (words.length <= 4 && words.some((word) => greetingTerms.has(word))) return "greeting";
-  if (words.length <= 5 && (words.some((word) => thanksTerms.has(word)) || clean.includes("thank you"))) return "thanks";
-  if (words.length <= 5 && words.some((word) => byeTerms.has(word))) return "bye";
-  if (words.length <= 4 && ["ok", "okay", "noted", "done"].includes(clean)) return "ack";
+  if (hasRealEstateIntent(clean, words)) return null;
+
+  const greetingTerms = new Set([
+    "hi", "hai", "hello", "helo", "hey", "yo", "sup", "wassup", "morning",
+    "afternoon", "evening", "gm", "hiya"
+  ]);
+  const thanksTerms = new Set(["thanks", "thank", "thx", "tq", "appreciate"]);
+  const byeTerms = new Set(["bye", "goodbye", "later", "cya", "night"]);
+  const ackTerms = new Set(["ok", "okay", "k", "noted", "done", "alright", "sure", "fine", "nice"]);
+
+  if (words.length <= 8 && words.some((word) => greetingTerms.has(word))) return "greeting";
+  if (words.length <= 8 && (clean.includes("what s up") || clean.includes("whats up") || clean.includes("howdy"))) return "greeting";
+  if (words.length <= 10 && (clean.includes("how are you") || clean.includes("how r u") || clean.includes("how are u"))) return "how_are_you";
+  if (words.length <= 10 && (clean.includes("are you there") || clean.includes("you there") || clean.includes("can you hear me"))) return "presence";
+  if (words.length <= 8 && (words[0] === "test" || clean.includes("testing") || clean.includes("mic test"))) return "test";
+  if (words.length <= 12 && (clean.includes("what can you do") || clean.includes("who are you") || clean.includes("help me") || clean === "help")) return "capability";
+  if (words.length <= 8 && (words.some((word) => thanksTerms.has(word)) || clean.includes("thank you"))) return "thanks";
+  if (words.length <= 8 && words.some((word) => byeTerms.has(word))) return "bye";
+  if (words.length <= 5 && (ackTerms.has(clean) || words.every((word) => ackTerms.has(word)))) return "ack";
   return null;
 }
 
-function smallTalkAnswer(kind) {
+function companionAnswer(kind) {
   if (kind === "greeting") {
-    return "Hey, I’m here. Send me a property, area, rental figure, or concern, and I’ll help you test the deal properly.";
+    return "Hey, I am here. Give me a property, area, price, rent, or concern, and we will pressure-test it together.";
+  }
+  if (kind === "how_are_you") {
+    return "I am good. More importantly, I am switched on. Bring me the next deal, area, or doubt you want to examine.";
+  }
+  if (kind === "presence") {
+    return "Yes, I am here. Send me the property or market question and I will help you think it through.";
+  }
+  if (kind === "test") {
+    return "Signal is good. Jarvis is awake.";
+  }
+  if (kind === "capability") {
+    return "I can help you screen properties, challenge your assumptions, test rental and resale risk, and turn EstateLab's framework into a clearer decision. Start with any area, project, price, rent, or concern.";
   }
   if (kind === "thanks") {
-    return "Anytime. Bring me the next property or market question when you’re ready.";
+    return "Anytime. Bring me the next property or market question when you are ready.";
   }
   if (kind === "bye") {
-    return "Alright, talk soon. I’ll keep the framework ready for the next deal.";
+    return "Alright, talk soon. I will keep the framework ready for the next deal.";
   }
   if (kind === "ack") {
     return "Noted. What do you want to examine next?";
   }
-  return "I’m here. What property or market question should we look at?";
+  return "I am here. What property or market question should we look at?";
 }
 
 async function retrieveGuidance(query, property, brain) {
@@ -572,10 +614,10 @@ async function retrieveGuidance(query, property, brain) {
 }
 
 async function retrieveJarvisAnswer(query, brain, session) {
-  const smallTalk = detectSmallTalk(query);
-  if (smallTalk) {
+  const companionIntent = detectCompanionIntent(query);
+  if (companionIntent) {
     return {
-      answer: smallTalkAnswer(smallTalk),
+      answer: companionAnswer(companionIntent),
       sources: []
     };
   }
