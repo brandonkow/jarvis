@@ -438,6 +438,54 @@ function conciseText(text, maxLength = 220) {
   return sentenceEnd || `${clean.slice(0, maxLength - 3).trim()}...`;
 }
 
+function hasAnyTerm(queryTerms, terms) {
+  return terms.some((term) => queryTerms.some((queryTerm) => queryTerm.includes(term) || term.includes(queryTerm)));
+}
+
+function findBestByTerms(items, terms, fields) {
+  return items
+    .map((item) => ({
+      item,
+      score: termScore(terms, fields.map((field) => item[field]).join(" "))
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .at(0)?.item;
+}
+
+function uniqueLines(lines, limit = 4) {
+  const seen = new Set();
+  return lines
+    .map((line) => String(line || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .filter((line) => {
+      const key = line.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, limit);
+}
+
+function bulletSection(title, lines, limit = 4) {
+  const bullets = uniqueLines(lines, limit);
+  if (!bullets.length) return "";
+  return `${title}\n${bullets.map((line) => `- ${line}`).join("\n")}`;
+}
+
+function uniqueSources(items, limit = 6) {
+  const seen = new Set();
+  return items
+    .filter(Boolean)
+    .filter((item) => {
+      const key = String(item.id || item.title || JSON.stringify(item));
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, limit);
+}
+
 async function retrieveGuidance(query, property, brain) {
   const corpus = await readJson(RAG_PATH, []);
   const queryTerms = tokenize(`${query} ${property ? JSON.stringify(property) : ""}`);
@@ -502,25 +550,65 @@ async function retrieveJarvisAnswer(query, brain, session) {
     .filter((decision) => decision.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 1);
-  const topReference = topReferences[0];
   const topBelief = topBeliefs[0];
   const topDecision = topDecisions[0];
+  const rentalReference = findBestByTerms(corpus, ["rental", "yield", "installment", "cash", "vacancy"], ["title", "body"]);
+  const supplyReference = findBestByTerms(corpus, ["future", "supply", "competition", "2.5km", "newer", "layout"], ["title", "body"]);
+  const buyerPoolReference = findBestByTerms(corpus, ["buyer", "pool", "own", "stay", "exit"], ["title", "body"]);
+  const evidenceReference = findBestByTerms(corpus, ["evidence", "agent", "occupancy", "transaction", "brickz", "auction"], ["title", "body"]);
 
-  const response = [];
-  if (topBelief) response.push(`My current view: ${conciseText(topBelief.claim, 260)} Confidence is ${topBelief.confidence} percent.`);
-  else if (topReference) response.push(`My current view: ${conciseText(topReference.body, 280)}`);
-  if (topDecision) response.push(`A relevant prior decision is ${conciseText(topDecision.subject, 120)}. ${topDecision.counterThesis ? `Counter-thesis: ${conciseText(topDecision.counterThesis, 180)}` : ""}`);
-  if (topBelief?.evidenceAgainst) response.push(`Key challenge: ${conciseText(topBelief.evidenceAgainst, 220)}`);
-  if (!response.length) {
-    response.push("I do not yet have enough relevant evidence in the local knowledge system to give a useful view.");
+  const isRentalQuestion = hasAnyTerm(queryTerms, ["rental", "rent", "yield", "tenant", "vacancy", "cash", "installment"]);
+  const isSupplyQuestion = hasAnyTerm(queryTerms, ["supply", "competition", "competitor", "newer", "2.5km", "density"]);
+  const isBuyQuestion = hasAnyTerm(queryTerms, ["buy", "purchase", "deal", "invest", "proceed"]);
+  const isPenangQuestion = hasAnyTerm(queryTerms, ["penang"]);
+  const hasYieldMention = /\b\d+(\.\d+)?\s*%/.test(query);
+
+  let verdict = "Verdict: Investigate further before deciding.";
+  if (isBuyQuestion && isRentalQuestion && isSupplyQuestion) {
+    verdict = "Verdict: Do not approve yet. Shortlist only if rental coverage, occupancy, and future-supply defense are proven.";
+  } else if (isBuyQuestion && isRentalQuestion) {
+    verdict = "Verdict: Possible shortlist, but only after rent can cover the installment and recurring charges under a conservative case.";
+  } else if (isBuyQuestion) {
+    verdict = "Verdict: Treat this as a selection problem first, not a cheap-price problem.";
   }
-  if (topBelief?.falsifier) response.push(`Useful test: ${conciseText(topBelief.falsifier, 220)}`);
-  else response.push(`The next useful question is: ${nextThinkingQuestion(brain).question}`);
+
+  const reasoning = [];
+  if (/\b6\s*%/.test(query)) reasoning.push("A 6% gross yield meets the founder's acceptable rental-yield baseline, but it is not approval by itself.");
+  else if (hasYieldMention || isRentalQuestion) reasoning.push("A stated yield is only a starting signal; EstateLab still needs actual rent evidence, vacancy assumption, installment coverage, maintenance charge, and sinking fund impact.");
+  if (isSupplyQuestion) reasoning.push("Future supply within the substitute radius is a direct risk when newer projects offer similar layout and similar or lower pricing.");
+  if (isPenangQuestion) reasoning.push("For Penang, freehold sensitivity can matter more than in Kuala Lumpur, so tenure should be checked against the target exit buyer pool.");
+  if (buyerPoolReference) reasoning.push("The property must remain attractive to both owner-occupiers and investors; relying only on yield-sensitive investors weakens your exit.");
+  if (topBelief) reasoning.push(`${conciseText(topBelief.claim, 230)}${topBelief.confidence ? ` Confidence: ${topBelief.confidence}%.` : ""}`);
+
+  const risks = [];
+  if (isSupplyQuestion && supplyReference) risks.push(conciseText(supplyReference.body, 240));
+  if (isRentalQuestion && rentalReference) risks.push(conciseText(rentalReference.body, 240));
+  if (topBelief?.evidenceAgainst) risks.push(conciseText(topBelief.evidenceAgainst, 220));
+  if (topDecision?.counterThesis) risks.push(conciseText(topDecision.counterThesis, 220));
+
+  const evidenceChecks = [];
+  if (isRentalQuestion) evidenceChecks.push("Ask active rental agents for urgent tenant demand, recent signed rents, typical vacancy period, and furnishing expectations.");
+  if (isSupplyQuestion) evidenceChecks.push("Map newer and upcoming substitute projects within about 2.5km, then compare layout, pricing, facilities, access, and developer reputation.");
+  evidenceChecks.push("Check subsale transacted prices, successful auction bids, and whether rent has stayed strong against newer supply.");
+  if (evidenceReference) evidenceChecks.push(conciseText(evidenceReference.body, 210));
+
+  const challenge = [];
+  if (isSupplyQuestion) challenge.push("If the newer competing projects launch at comparable pricing, why would the next tenant or buyer still choose this older/project unit?");
+  if (topBelief?.falsifier) challenge.push(conciseText(topBelief.falsifier, 230));
+  else challenge.push(nextThinkingQuestion(brain).question);
+
+  const sections = [
+    verdict,
+    bulletSection("Key reasoning", reasoning),
+    bulletSection("Main risks", risks),
+    bulletSection("Evidence to verify", evidenceChecks),
+    bulletSection("EstateLab challenge", challenge, 2)
+  ].filter(Boolean);
 
   return {
-    answer: response.join(" "),
+    answer: sections.join("\n\n"),
     sources: [
-      ...topReferences.map((reference) => ({
+      ...uniqueSources([...topReferences, rentalReference, supplyReference, buyerPoolReference, evidenceReference], 6).map((reference) => ({
         id: reference.id,
         title: reference.title,
         type: "reference",
