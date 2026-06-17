@@ -7,6 +7,7 @@ const assistantPrompt = document.querySelector("#assistantPrompt");
 const systemStatus = document.querySelector("#systemStatus");
 const sessionStatus = document.querySelector("#sessionStatus");
 const soundToggle = document.querySelector("#soundToggle");
+const stopVoiceBtn = document.querySelector("#stopVoiceBtn");
 const newSessionBtn = document.querySelector("#newSessionBtn");
 const voiceSupport = document.querySelector("#voiceSupport");
 const localTime = document.querySelector("#localTime");
@@ -17,6 +18,8 @@ const sessionKey = "estatelab.jarvis.sessionId";
 const clientKey = "estatelab.jarvis.clientId";
 let voiceResponsesEnabled = true;
 let listening = false;
+let speaking = false;
+let voiceStopRequested = false;
 let sessionId = window.localStorage.getItem(sessionKey);
 
 function clientId() {
@@ -81,19 +84,39 @@ function renderSession(session) {
   }
 }
 
+function setSpeakingState(active) {
+  speaking = active;
+  jarvisOrb.classList.toggle("speaking", active);
+  jarvisOrb.setAttribute("aria-label", active ? "Stop Jarvis voice" : "Talk to Jarvis");
+  stopVoiceBtn.hidden = !active;
+}
+
+function stopSpeaking(prompt = "Voice stopped.") {
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  voiceStopRequested = true;
+  setSpeakingState(false);
+  if (!listening) setSystemState("System ready", prompt);
+}
+
 function speak(text) {
   if (!voiceResponsesEnabled || !("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
+  stopSpeaking("Ready when you are.");
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.rate = 0.96;
   utterance.pitch = 0.9;
   utterance.onstart = () => {
-    jarvisOrb.classList.add("speaking");
+    voiceStopRequested = false;
+    setSpeakingState(true);
     setSystemState("Speaking", "Delivering analysis.");
   };
   utterance.onend = () => {
-    jarvisOrb.classList.remove("speaking");
-    setSystemState("System ready", "Ready when you are.");
+    setSpeakingState(false);
+    setSystemState("System ready", voiceStopRequested ? "Voice stopped." : "Ready when you are.");
+    voiceStopRequested = false;
+  };
+  utterance.onerror = () => {
+    setSpeakingState(false);
+    voiceStopRequested = false;
   };
   window.speechSynthesis.speak(utterance);
 }
@@ -185,6 +208,10 @@ async function submitQuestion(question) {
 }
 
 function startListening() {
+  if (speaking || window.speechSynthesis?.speaking) {
+    stopSpeaking("Voice stopped.");
+    return;
+  }
   if (!recognition) {
     setSystemState("Voice unavailable", "Use the command bar on this browser.");
     chatInput.focus();
@@ -236,9 +263,10 @@ chatForm.addEventListener("submit", (event) => {
 
 jarvisOrb.addEventListener("click", startListening);
 micBtn.addEventListener("click", startListening);
+stopVoiceBtn.addEventListener("click", () => stopSpeaking("Voice stopped."));
 
 newSessionBtn.addEventListener("click", async () => {
-  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  stopSpeaking("Starting a clean conversation.");
   setSystemState("Creating session", "Starting a clean conversation.");
   try {
     await createSession();
@@ -253,7 +281,7 @@ soundToggle.addEventListener("click", () => {
   voiceResponsesEnabled = !voiceResponsesEnabled;
   soundToggle.textContent = voiceResponsesEnabled ? "VOICE RESPONSE ON" : "VOICE RESPONSE OFF";
   soundToggle.setAttribute("aria-pressed", String(voiceResponsesEnabled));
-  if (!voiceResponsesEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
+  if (!voiceResponsesEnabled) stopSpeaking("Voice response off.");
 });
 
 function updateClock() {

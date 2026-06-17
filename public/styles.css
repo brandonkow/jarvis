@@ -709,6 +709,15 @@ button {
   color: var(--cyan);
 }
 
+.stopVoiceBtn {
+  color: #ffd4d4 !important;
+  text-shadow: 0 0 10px rgba(255, 121, 121, 0.2);
+}
+
+.stopVoiceBtn[hidden] {
+  display: none;
+}
+
 @keyframes rotate {
   to { transform: rotate(360deg); }
 }
