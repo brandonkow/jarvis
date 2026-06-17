@@ -565,12 +565,13 @@ button {
 
 .contextDeck {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
+  justify-content: flex-end;
   gap: 8px;
 }
 
 .contextPanel {
-  flex: 1 1 0;
+  flex: 0 1 270px;
   min-width: 0;
   overflow: hidden;
   border: 1px solid rgba(103, 229, 255, 0.16);
@@ -580,6 +581,15 @@ button {
     rgba(2, 13, 21, 0.54);
   box-shadow: inset 0 0 24px rgba(28, 190, 221, 0.035);
   backdrop-filter: blur(14px);
+  transition: flex-basis 220ms ease, border-color 220ms ease, background 220ms ease;
+}
+
+.contextPanel.expanded {
+  flex: 1 1 620px;
+  border-color: rgba(103, 229, 255, 0.24);
+  background:
+    linear-gradient(135deg, rgba(90, 231, 255, 0.09), transparent 28%),
+    rgba(2, 13, 21, 0.7);
 }
 
 .contextHeader {
