@@ -358,5 +358,41 @@
     "title": "Financing-led deal acceptability",
     "tags": ["financing-led", "cash out", "capital allocation", "lender", "risk"],
     "body": "A financing-led property deal is acceptable only when the structure is transparent and lender-aware, the property and debt can survive independently, the investor keeps sufficient reserve, and the alternative use of funds produces a risk-adjusted return above the full financing cost. It is unacceptable when it depends on artificial pricing, misleading documents, weak property survival, borrower distress, or speculative use of funds."
+  },
+  {
+    "id": "holding-shortfall-vacancy-rule",
+    "title": "Holding shortfall and vacancy rule",
+    "tags": ["holding power", "cash flow", "vacancy", "installment", "malaysia"],
+    "body": "After purchase, Malaysian retail investors often struggle when rent cannot cover the loan installment. Founder defaults: RM300 loan-only monthly shortfall can be tolerable for normal retail investors, while more than RM500 is too stressful. EstateLab should also calculate true holding shortfall including maintenance fee, sinking fund, and ordinary recurring costs. One month vacancy is the base case, but two to three months should be stress tested when competition, seasonality, repairs, or weak demand are present."
+  },
+  {
+    "id": "holding-rental-drop-review",
+    "title": "Rental drop and weak rent review",
+    "tags": ["rent", "gross yield", "weak rental", "review", "tenant"],
+    "body": "If rent drops, the property can still be worth holding when gross yield remains above 6 percent, net cash flow is survivable, the weakness is temporary, the owner has enough reserve, and resale competitiveness remains intact. Reassess weak rental after about three months. First check proposed rent against market rate, furnishing, competing units, newer supply, and tenant urgency."
+  },
+  {
+    "id": "holding-structural-underperformance",
+    "title": "Temporary versus structural holding problem",
+    "tags": ["JMB", "management", "social complaints", "structural risk", "oversupply"],
+    "body": "A temporary rental problem can come from a sudden event that does not occur often. A structural holding problem appears when the building is not properly maintained, JMB or management response is weak, social media complaints repeat, resident or tenant behavior deteriorates, direct supply increases, or rent cuts become common across the project or substitute set."
+  },
+  {
+    "id": "holding-renovation-tenant-fit",
+    "title": "Post-purchase renovation and tenant fit",
+    "tags": ["renovation", "furnishing", "tenant fit", "utilities", "operating cost"],
+    "body": "Post-purchase investors should prepare for renovation, cleaning, minor repair, appliance replacement, air-conditioning, plumbing, electrical checks, furnishing top-up, and utility deposits such as TNB and IWK. Renovation is worthwhile when it matches target tenant needs, area segmentation, comparable rental expectations, durability, rentability, or resale appeal. It becomes emotional spending when the owner chooses premium fittings based mainly on personal preference while disregarding cost and market need."
+  },
+  {
+    "id": "holding-sell-refinance-discipline",
+    "title": "Hold, sell, and refinance discipline",
+    "tags": ["sell", "hold", "refinance", "saturation", "catalyst", "equity"],
+    "body": "EstateLab should consider selling even if the property is not losing money when the area reaches saturation and new projects struggle to sell at market rate or below median price. Holding temporary underperformance can be justified only by a credible catalyst with evidence, timeline, and demand logic. Refinancing is acceptable when equity margin has built up, valuation is evidence-backed, rent still covers the higher installment, reserve remains intact, and the project remains competitive. Warn against refinancing when demand is weak, the building is poorly maintained, or the project underperforms nearby comparables."
+  },
+  {
+    "id": "holding-period-before-buying",
+    "title": "Holding period before buying",
+    "tags": ["holding period", "exit", "disposal year", "retail investor", "mistake"],
+    "body": "A common holding-period mistake is buying without accepting the time needed for the thesis to work, then complaining that the property cannot be sold quickly or must be sold at a loss. Before purchase, EstateLab should require an assumed holding period, target disposal year, review triggers, minimum acceptable rent, refinance condition, and sell condition."
   }
 ]

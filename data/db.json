@@ -696,6 +696,54 @@
         "evidenceAgainst": "Some legitimate refinancing or equity-release cases may be conservative when based on defensible value and full disclosure.",
         "falsifier": "Revise only if undisclosed or artificial-price financing structures can be shown to be legally, bankably, and financially resilient under full downside analysis.",
         "nextReview": ""
+      },
+      {
+        "id": "stage-4-holding-shortfall-vacancy",
+        "createdAt": "2026-06-19T00:00:00.000Z",
+        "status": "active",
+        "claim": "For normal Malaysian retail investors, rental unable to cover installment is the main holding stress; RM300 loan-only monthly shortfall may be tolerable, while more than RM500 is a danger zone.",
+        "scope": "Stage 4 holding power; Malaysian retail residential investors",
+        "confidence": 84,
+        "evidenceFor": "Founder input identifies rent versus installment as the main holding failure point and provides practical shortfall thresholds for normal retail investors.",
+        "evidenceAgainst": "True stress depends on income, cash reserve, maintenance fee, debt level, tenant quality, and whether the property is rental-led or appreciation-led.",
+        "falsifier": "Revise if actual ownership cases show normal retail investors comfortably surviving larger shortfalls without distress, or if smaller shortfalls commonly force bad decisions.",
+        "nextReview": ""
+      },
+      {
+        "id": "stage-4-rental-drop-structural-risk",
+        "createdAt": "2026-06-19T00:00:00.000Z",
+        "status": "active",
+        "claim": "Weak rental should be reassessed after about three months by separating temporary events from structural decline such as poor maintenance, weak JMB, repeated complaints, oversupply, and rent cuts across substitutes.",
+        "scope": "Stage 4 rental operations and post-purchase review",
+        "confidence": 82,
+        "evidenceFor": "Founder input points to sudden unusual events as temporary, and building maintenance, JMB quality, social media complaints, and incoming supply as structural warnings.",
+        "evidenceAgainst": "Three months may be too short or too long depending on tenant seasonality, unit readiness, agency execution, and area-specific rental cycles.",
+        "falsifier": "Revise if repeated cases show three-month reviews misclassify temporary rental weakness or miss structural decline.",
+        "nextReview": ""
+      },
+      {
+        "id": "stage-4-refinance-exit-discipline",
+        "createdAt": "2026-06-19T00:00:00.000Z",
+        "status": "active",
+        "claim": "Refinancing is acceptable only when equity has built up and rent still covers the higher installment; selling should be considered when an area reaches saturation and new projects struggle to sell at market or below-median prices.",
+        "scope": "Stage 4 refinance, hold, and sell decision",
+        "confidence": 84,
+        "evidenceFor": "Founder input ties refinancing to equity margin and rental coverage, and ties exit review to area saturation, weak new-project sales, poor maintenance, and underperformance against nearest comparables.",
+        "evidenceAgainst": "A strategic refinance or hold decision may still be valid with temporary weak rent if the owner has high reserve and a credible catalyst is evidence-backed.",
+        "falsifier": "Revise if refinances without rent coverage consistently improve risk-adjusted outcomes, or if saturation signals do not predict weaker exit conditions.",
+        "nextReview": ""
+      },
+      {
+        "id": "stage-4-holding-period-discipline",
+        "createdAt": "2026-06-19T00:00:00.000Z",
+        "status": "active",
+        "claim": "Before buying, EstateLab should require an assumed holding period and target disposal year so investors do not panic-sell or complain about short-term illiquidity after purchase.",
+        "scope": "Stage 4 holding period discipline and pre-purchase planning",
+        "confidence": 86,
+        "evidenceFor": "Founder input identifies insufficient holding period discipline as a common Malaysian retail investor mistake.",
+        "evidenceAgainst": "Some exits should happen earlier when hard evidence invalidates the thesis, even if the planned holding period has not ended.",
+        "falsifier": "Revise if investors without pre-set holding assumptions make equally disciplined hold or sell decisions under stress.",
+        "nextReview": ""
       }
     ],
     "decisions": []
