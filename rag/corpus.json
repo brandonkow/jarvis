@@ -436,5 +436,59 @@
     "title": "Next-property permission gate",
     "tags": ["next property", "second property", "portfolio scaling", "tenancy cycle", "emergency fund", "stress test"],
     "body": "Before encouraging another property, EstateLab must re-test the next asset, user profile, combined financing, existing operating performance, and post-purchase reserve. Existing investment property should have verified achieved rent and preferably one full tenancy cycle. Keep at least the founder default six months of salary while also calculating essential-living and portfolio-obligation reserves. The portfolio must survive lower rent, vacancy, repairs, and a 2 percent rate increase, and the new deal must not depend on future appreciation, refinancing, or cash-out."
+  },
+  {
+    "id": "market-macro-research-open-items",
+    "title": "Open research: Malaysian macro and employment demand",
+    "tags": ["market intelligence", "DOSM", "BNM", "NAPIC", "employment", "Penang", "Kuala Lumpur", "Selangor"],
+    "body": "Two Stage 6 questions remain open until current authoritative sources can be verified: which economic changes most noticeably affect Malaysian property demand, and which employment sectors create the most dependable housing demand in Penang, Kuala Lumpur, and Selangor. Use dated evidence from DOSM, BNM, NAPIC or JPPH, MIDA, state agencies, and official planning or investment bodies rather than filling these claims from memory."
+  },
+  {
+    "id": "market-rates-inflation-affordability",
+    "title": "Interest rates, inflation, and housing affordability",
+    "tags": ["interest rate", "inflation", "fixed deposit", "bond", "rent", "affordability", "DSR"],
+    "body": "Higher interest rates can redirect investor capital toward fixed deposits or bonds, but they also raise installments, weaken DSR and loan eligibility, reduce acceptable rental spreads, and increase required property returns. Inflation does not leave housing demand unchanged: people still need shelter, but may downtrade, share units, delay household formation, negotiate rent, or lose purchasing power. Necessary housing demand must be translated into an affordable product and rent level."
+  },
+  {
+    "id": "market-area-cycle-sales-context",
+    "title": "Area cycle requires more than new-project sales rate",
+    "tags": ["area cycle", "sales rate", "absorption", "market peak", "early growth", "catalyst"],
+    "body": "New-project sales rate is useful but cannot identify both early growth and market peak without context. Early growth combines improving absorption, defensible prices, real infrastructure or employment delivery, rental evidence, and limited incentive reliance. A possible peak combines aggressive price growth, incentive dependence, weaker resale or yield, large incoming supply, and catalysts already priced in. Verify bookings, signed agreements, cancellations, loan approvals, unsold units, and net effective price."
+  },
+  {
+    "id": "market-growth-corridor-entry",
+    "title": "Early growth-corridor entry and developer execution",
+    "tags": ["growth corridor", "master developer", "masterplan", "infrastructure", "execution risk", "timing"],
+    "body": "Entering a growth corridor before the area is built may capture a large discount but carries high execution risk. Require a proven master developer, committed infrastructure, phasing and approvals, visible progress, a credible first demand engine, price compensation for delay, and enough holding power if delivery takes longer. Developer confidence must be supported by execution history and current evidence."
+  },
+  {
+    "id": "market-supply-pipeline-timing",
+    "title": "Future supply must be priced before vacant possession",
+    "tags": ["supply pipeline", "vacant possession", "VP", "launch", "construction", "bulk purchase", "unsold"],
+    "body": "Vacant possession is when units directly compete for tenants, but underwriting must begin earlier. Announcement is a watch item, meaningful launch sales create probable supply, active construction makes the pipeline high confidence, and staggered VP creates repeated listing waves. Genuine absorption requires signed sales, cancellations, loan approvals, units released, net effective price, and buyer concentration. Bulk-purchase groups can inflate headline absorption and create concentrated future rental or auction risk."
+  },
+  {
+    "id": "market-rental-direction-signals",
+    "title": "Rental direction and competing-project stabilization",
+    "tags": ["rental enquiry", "agent", "viewing", "achieved rent", "seasonality", "vacant possession", "competition"],
+    "body": "Agent enquiries are useful but noisy. Track several agents, enquiries per listing, viewings, offers, days to tenant, achieved discount, tenant urgency, and renewals. Stable rent requires achieved evidence across seasons and normal incentives. The first VP batch may enjoy temporary scarcity; later handover batches can reveal stabilized rent within the first six months or longer depending on release pace."
+  },
+  {
+    "id": "market-buyer-liquidity-discounts",
+    "title": "Buyer liquidity, sales-gallery traffic, and discounts",
+    "tags": ["buyer sentiment", "sales gallery", "loan approval", "developer discount", "owner occupier", "investor"],
+    "body": "Crowded sales galleries and enquiries show interest, not completed liquidity. Confirm paid bookings, signed agreements, loan approvals, cancellation rates, incentive dependence, and resale transactions. Layout gives an early clue to investor versus owner-occupier targeting but actual ownership and occupancy must confirm it. Developer discounts often signal unsold inventory, but may also reflect launch pricing, campaign timing, financing support, or unit-specific clearance; compare net effective price and inventory trend."
+  },
+  {
+    "id": "market-auction-concentration-warning",
+    "title": "Project versus area auction warning",
+    "tags": ["auction", "distress", "Airbnb", "project warning", "area warning", "bulk purchase"],
+    "body": "Repeated auctions concentrated in an investment-oriented or short-stay building are a project warning. Auctions spreading across different property types, layouts, and buyer segments may indicate an area-level problem. Normalize auction cases by project size, purchase cohort, bulk-purchase history, and time period before drawing conclusions."
+  },
+  {
+    "id": "market-crisis-buying-rule",
+    "title": "Crisis buying requires durable value",
+    "tags": ["economic crisis", "fear", "market timing", "discount", "downturn", "intrinsic value"],
+    "body": "Reject the rule to buy anything during a crisis. A downturn makes both durable and structurally weak assets cheaper. Buy into weak sentiment only when the property independently passes selection, completed evidence supports the discount, core demand remains intact, rent and debt survive stress, reserve is strong, and no quick recovery is required. Refine 'enter when others are afraid' to: enter when fear creates a genuine discount in a durable asset and the investor can hold long enough."
   }
 ]

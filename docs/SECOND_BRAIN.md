@@ -19,6 +19,7 @@ EstateLab should avoid duplicating the same insight across files. New input shou
 - Put loan-margin discipline, valuation mismatch rules, financing stress tests, and debt-structure judgments in `docs/DEAL_STRUCTURING_FINANCING.md`.
 - Put post-purchase rental operations, holding reviews, and hold-refinance-sell rules in `docs/HOLDING_POWER_ASSET_MANAGEMENT.md`.
 - Put acquisition sequence, concentration, capital recycling, and next-property gates in `docs/PORTFOLIO_STRATEGY_SCALING.md`.
+- Put macro interpretation, area-cycle signals, supply timing, rental direction, buyer liquidity, and credit-cycle rules in `docs/MARKET_INTELLIGENCE_TIMING.md`.
 - Put operating philosophy, memory rules, conversation behavior, owner/public boundaries, evidence standards, review cadence, and learning loops in this file.
 - Put raw source material, examples, case observations, and retrieval snippets in the knowledge base or RAG corpus when they support future answers.
 
@@ -174,6 +175,18 @@ Use `docs/PORTFOLIO_STRATEGY_SCALING.md` before encouraging any next property. A
 EstateLab should require the existing portfolio, next property, user profile, combined debt, and post-purchase reserve to pass together. Capital released through refinancing remains debt. It must not be treated as income, profit, or proof that the investor can afford another property.
 
 Local market expertise can justify geographic focus, but it does not eliminate concentration risk. EstateLab should test whether multiple properties rely on the same tenant pool, supply cycle, price segment, project quality, employer, university, or refinancing window.
+
+## Market Intelligence Discipline
+
+Use `docs/MARKET_INTELLIGENCE_TIMING.md` to interpret cycles and timing. Market sentiment should change the required discount, confidence, and stress assumptions; it should not override property quality or investor suitability.
+
+EstateLab should separate leading indicators from confirmation:
+
+- Announcements and enquiry counts are early but noisy.
+- Launch absorption, financing approval, and construction progress increase confidence.
+- Completed transactions, achieved rent, vacant possession, and stabilized occupancy confirm what the market actually absorbed.
+
+During a crisis, EstateLab should search for durable assets with temporary discounts rather than assume every cheap property will recover. During hype, it should raise the evidence requirement and avoid paying today for all future catalysts.
 
 ## Capital-Purpose Lens
 

@@ -804,6 +804,78 @@
         "evidenceAgainst": "A rare time-sensitive opportunity may arise before one full tenancy cycle, but proceeding earlier requires unusually strong verified evidence and greater reserve.",
         "falsifier": "Revise if investors who scale before operating proof and combined stress testing repeatedly achieve equal or better outcomes without greater liquidity or debt problems.",
         "nextReview": ""
+      },
+      {
+        "id": "stage-6-rates-inflation-demand",
+        "createdAt": "2026-06-19T00:00:00.000Z",
+        "status": "active",
+        "claim": "Higher interest rates weaken property demand through more expensive debt and stronger fixed-income alternatives, while inflation preserves housing need but can shift tenants and buyers toward cheaper products.",
+        "scope": "Stage 6 Malaysian macro demand and affordability",
+        "confidence": 86,
+        "evidenceFor": "Founder experience observes capital moving toward fixed deposits or bonds and landlords reducing rent for competitiveness when living costs rise.",
+        "evidenceAgainst": "Local employment growth, supply scarcity, wage growth, cash buyers, and product fit can offset broader rate or inflation pressure in specific submarkets.",
+        "falsifier": "Revise if rising financing costs and living costs repeatedly have no observable effect on approval, transaction, rent negotiation, tenant downtrading, or required investor return.",
+        "nextReview": ""
+      },
+      {
+        "id": "stage-6-sales-rate-cycle-context",
+        "createdAt": "2026-06-19T00:00:00.000Z",
+        "status": "active",
+        "claim": "New-project sales rate is a useful area-cycle signal only when interpreted with price, incentives, cancellations, financing, rent, resale liquidity, catalyst delivery, and future supply.",
+        "scope": "Stage 6 early growth and market peak detection",
+        "confidence": 91,
+        "evidenceFor": "The same headline sales rate can represent healthy early absorption or late-cycle speculative demand depending on pricing and buyer quality.",
+        "evidenceAgainst": "In transparent projects with verified signed sales and low incentives, sales rate may provide a strong standalone near-term demand signal.",
+        "falsifier": "Revise if headline developer sales rate alone consistently distinguishes early growth from market peak across observed Malaysian projects.",
+        "nextReview": ""
+      },
+      {
+        "id": "stage-6-supply-before-vp",
+        "createdAt": "2026-06-19T00:00:00.000Z",
+        "status": "active",
+        "claim": "Vacant possession creates the immediate rental shock, but EstateLab must price credible future supply from launch and construction rather than wait until completion.",
+        "scope": "Stage 6 supply pipeline and vacant possession",
+        "confidence": 92,
+        "evidenceFor": "Founder experience identifies the first six months and staggered VP batches as the period when competing listings affect rent, while earlier launch and construction evidence makes that future competition foreseeable.",
+        "evidenceAgainst": "Announced or launched supply can be delayed, cancelled, rephased, or differentiated enough not to compete directly.",
+        "falsifier": "Revise if credible launched and actively constructed substitute supply repeatedly has no effect on buyer decisions, rent, vacancy, or resale before and after VP.",
+        "nextReview": ""
+      },
+      {
+        "id": "stage-6-rental-signal-triangulation",
+        "createdAt": "2026-06-19T00:00:00.000Z",
+        "status": "active",
+        "claim": "Rental direction should be inferred from several agents and conversion evidence, not enquiry count alone; first-batch VP rent may be a temporary scarcity premium rather than stabilized rent.",
+        "scope": "Stage 6 rental market direction",
+        "confidence": 88,
+        "evidenceFor": "Founder experience uses agent enquiries and observes stronger first-batch rental demand followed by supply waves as more VP units are released.",
+        "evidenceAgainst": "A highly active specialist agent with full local coverage may provide a reliable early signal even before broad achieved-rent data exists.",
+        "falsifier": "Revise if raw enquiry count from one agent consistently predicts stabilized achieved rent and vacancy better than multi-agent conversion and listing evidence.",
+        "nextReview": ""
+      },
+      {
+        "id": "stage-6-liquidity-not-crowds",
+        "createdAt": "2026-06-19T00:00:00.000Z",
+        "status": "active",
+        "claim": "Sales-gallery crowds, developer layouts, and discounts are sentiment clues, but genuine liquidity requires signed transactions, financing approval, low cancellations, and limited incentive dependence.",
+        "scope": "Stage 6 buyer sentiment and market liquidity",
+        "confidence": 90,
+        "evidenceFor": "Founder experience links gallery traffic, financing concern, layout, unsold inventory, and discounts to buyer behavior, while each signal can be influenced by marketing or product strategy.",
+        "evidenceAgainst": "In some launches, gallery traffic and rapid unit selection may provide a reliable immediate lead indicator before transaction records become available.",
+        "falsifier": "Revise if crowd size, layout, or headline discount alone repeatedly predicts completed demand without transaction and financing confirmation.",
+        "nextReview": ""
+      },
+      {
+        "id": "stage-6-crisis-entry-discipline",
+        "createdAt": "2026-06-19T00:00:00.000Z",
+        "status": "active",
+        "claim": "EstateLab should encourage crisis buying only when fear creates an evidence-backed discount in a durable asset and the investor has enough holding power; it must reject the idea that every cheap crisis property will recover.",
+        "scope": "Stage 6 downturn timing and permanent impairment",
+        "confidence": 95,
+        "evidenceFor": "The founder wants to enter when others are afraid, but earlier framework logic distinguishes temporarily cheap quality from properties that become structurally cheaper during a downturn.",
+        "evidenceAgainst": "Broad market crises can create unusually wide discounts where a diversified basket performs well even with imperfect asset selection, though this is not the normal retail property case.",
+        "falsifier": "Revise if indiscriminate crisis purchases consistently recover as well as quality-screened purchases without greater vacancy, management, financing, or exit problems.",
+        "nextReview": ""
       }
     ],
     "decisions": []
