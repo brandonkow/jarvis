@@ -490,5 +490,77 @@
     "title": "Crisis buying requires durable value",
     "tags": ["economic crisis", "fear", "market timing", "discount", "downturn", "intrinsic value"],
     "body": "Reject the rule to buy anything during a crisis. A downturn makes both durable and structurally weak assets cheaper. Buy into weak sentiment only when the property independently passes selection, completed evidence supports the discount, core demand remains intact, rent and debt survive stress, reserve is strong, and no quick recovery is required. Refine 'enter when others are afraid' to: enter when fear creates a genuine discount in a durable asset and the investor can hold long enough."
+  },
+  {
+    "id": "journal-founder-return-targets",
+    "title": "Founder return and exit targets",
+    "tags": ["decision journal", "net ROI", "capital appreciation", "holding period", "exit buyer", "founder target"],
+    "body": "Current founder targets are at least 6 percent net ROI, 10 percent capital appreciation within one year, entry preferably at least 20 percent below defensible median or market value, a seven-to-eight-year holding period, and exit to both owner-occupiers and investors. These are founder targets, not universal rules. Separate entry discount, later market appreciation, value added, and realized gain."
+  },
+  {
+    "id": "journal-roi-definition-discipline",
+    "title": "Define ROI before judging the deal",
+    "tags": ["ROI", "net yield", "gross yield", "cash on cash", "return on equity", "formula"],
+    "body": "Six percent net ROI is not interchangeable with the earlier 6 percent gross rental-yield threshold. Before using a return target, record the numerator, denominator, included costs, vacancy, measurement period, and whether the metric is net rental yield on purchase price, yield on all-in cost, cash-on-cash return, return on current equity, or total return."
+  },
+  {
+    "id": "journal-saleability-premortem",
+    "title": "Mandatory saleability pre-mortem",
+    "tags": ["saleability", "exit", "buyer pool", "time to sell", "liquidity discount", "premortem"],
+    "body": "Saleability is the founder's main uncertainty and underestimated risk. Before purchase, identify natural owner-occupier and investor buyers, financeable income, closest substitutes, likely objections, expected time to sell in normal and weak markets, and the discount needed to create liquidity. Saleability is not binary; judge whether the property can sell within the intended time, price reduction, and buyer pool."
+  },
+  {
+    "id": "journal-unit-placement-lesson",
+    "title": "Unit placement can outweigh a cheap entry",
+    "tags": ["unit placement", "refuse room", "lift", "floor plan", "resale", "first purchase"],
+    "body": "The founder's first-purchase lesson was accepting an inferior unit position because of a cheaper price. EstateLab must check refuse rooms and routes, passenger and service lifts, mechanical rooms, corridor traffic, noise, privacy, parking access, loading areas, and facility exposure. Compare the discount with the permanent rental and resale penalty and with better-positioned units in the same project."
+  },
+  {
+    "id": "journal-data-and-site-visit",
+    "title": "Data-first and site-visit challenge",
+    "tags": ["data", "site visit", "vibe", "intuition", "evidence", "bias"],
+    "body": "Use data to establish the market case and site visits to test lived quality. Data may be accurate but lagging, incomplete, selectively reported, or based on the wrong comparable. Site visits can reveal noise, smell, privacy, resident behavior, maintenance, and access, but can also reflect mood and confirmation bias. When they conflict, investigate rather than automatically choosing either. Claims that intuition has never failed remain untested unless predictions were recorded before outcomes."
+  },
+  {
+    "id": "journal-solvable-versus-walk-away",
+    "title": "Solvable problem versus walk-away condition",
+    "tags": ["kill criteria", "walk away", "title", "transaction", "structural defect", "price"],
+    "body": "A problem is solvable only when it is controllable, legally and technically clear, reliably costed, fixable in time, unlikely to recur, compensated by price, and unlikely to damage bankability or saleability. Walk away from suspicious transaction structures, unresolved title changes, structural defects, poor unit placement, weak management, broken demand, or other permanent external weaknesses. Price can compensate for measurable cost, but cannot turn a structurally weak asset into a quality property."
+  },
+  {
+    "id": "journal-process-outcome-luck",
+    "title": "Separate process, execution, outcome, and luck",
+    "tags": ["decision quality", "outcome", "profit", "luck", "skill", "postmortem"],
+    "body": "A profitable property can result from a poor decision when known risks were ignored and an unexpected boom rescued the outcome. A disciplined decision can suffer from a genuinely unforeseeable event. Review process quality, execution quality, financial outcome, and luck separately. Skill requires a thesis recorded before purchase, an outcome following the predicted causal chain, repeatability, controllable value creation, and performance against realistic alternatives."
+  },
+  {
+    "id": "journal-framework-fallibility",
+    "title": "A framework reduces mistakes but cannot eliminate them",
+    "tags": ["framework", "mistake", "uncertainty", "post purchase", "review", "risk"],
+    "body": "Following the framework improves process discipline but does not eliminate incomplete information, concealed defects, policy changes, shocks, tenant behavior, management deterioration, bad assumptions, execution failures, or rare events. Review both successful and unsuccessful outcomes. The permanent warning is not to bypass the framework because confidence, FOMO, cheap price, authority, or previous success makes the answer feel obvious."
+  },
+  {
+    "id": "journal-poor-quality-rental-hypothesis",
+    "title": "Poor-quality property in a good location rental hypothesis",
+    "tags": ["poor quality", "good location", "rental demand", "price concession", "tenant", "saleability"],
+    "body": "Treat the belief that a poor-quality property in a good location can generate healthy rent as a segment-specific hypothesis. Test achieved rent, net return after concessions and repairs, vacancy, turnover, tenant quality, renewal, better-managed substitutes, and resale. A lower rent may keep a weak property occupied while it still underperforms on net return, tenant quality, and exit liquidity."
+  },
+  {
+    "id": "journal-belief-update-standard",
+    "title": "Evidence-weighted belief update standard",
+    "tags": ["belief update", "counterexample", "confidence", "falsifier", "learning", "evidence"],
+    "body": "Weight contrary evidence by quality, relevance, and independence rather than raw count. One severe credible counterexample reopens a belief immediately; three independent in-scope cases trigger formal confidence review; five consistent cases normally require narrowing, revising, or retiring the belief unless stronger evidence explains the difference. First check whether the conflict comes from definitions, date, geography, product, or buyer segment."
+  },
+  {
+    "id": "journal-independent-judgment",
+    "title": "Independent judgment is not automatic self-trust",
+    "tags": ["independent decision", "external advice", "self trust", "responsibility", "evidence", "FOMO"],
+    "body": "The investor should make the final decision because only they fully know their circumstances, but personal judgment and external advice must face the same evidence tests. Blindly following others is dangerous, and automatically trusting oneself is also dangerous. Independence means owning a decision that has survived comparison, challenge, kill criteria, and downside analysis."
+  },
+  {
+    "id": "framework-seven-stage-canonical-map",
+    "title": "Canonical EstateLab seven-stage framework",
+    "tags": ["framework", "seven stages", "property selection", "investor suitability", "financing", "holding", "portfolio", "market timing", "decision journal"],
+    "body": "EstateLab has seven canonical stages: property selection; investor suitability; financing and deal structure; holding power and asset management; portfolio strategy and scaling; market intelligence and timing; and decision journal and second-brain learning. Future insights should refine an existing stage unless a genuine structural gap leads to an explicit redesign. Later-stage advantages do not normally rescue earlier-stage hard stops."
   }
 ]

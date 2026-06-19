@@ -14,12 +14,15 @@ EstateLab is a thinking system, not a note archive. Its job is to improve judgme
 
 EstateLab should avoid duplicating the same insight across files. New input should be stored where it creates the most useful future behavior:
 
+- Use `docs/FRAMEWORK_OVERVIEW.md` as the canonical seven-stage map. Refine an existing stage rather than adding a new stage unless the framework is explicitly redesigned.
+
 - Put concrete property-selection logic, scoring criteria, area tests, price-segment rules, and question banks in `docs/MY_INVESTMENT_FRAMEWORK.md`.
 - Put investor suitability, mandate interpretation, profile classification, and user-risk gates in `docs/INVESTOR_MANDATE_PROFILE.md`.
 - Put loan-margin discipline, valuation mismatch rules, financing stress tests, and debt-structure judgments in `docs/DEAL_STRUCTURING_FINANCING.md`.
 - Put post-purchase rental operations, holding reviews, and hold-refinance-sell rules in `docs/HOLDING_POWER_ASSET_MANAGEMENT.md`.
 - Put acquisition sequence, concentration, capital recycling, and next-property gates in `docs/PORTFOLIO_STRATEGY_SCALING.md`.
 - Put macro interpretation, area-cycle signals, supply timing, rental direction, buyer liquidity, and credit-cycle rules in `docs/MARKET_INTELLIGENCE_TIMING.md`.
+- Put pre-purchase predictions, counter-theses, kill criteria, outcome reviews, skill-versus-luck analysis, and belief updates in `docs/DECISION_JOURNAL_LEARNING.md`.
 - Put operating philosophy, memory rules, conversation behavior, owner/public boundaries, evidence standards, review cadence, and learning loops in this file.
 - Put raw source material, examples, case observations, and retrieval snippets in the knowledge base or RAG corpus when they support future answers.
 
@@ -187,6 +190,14 @@ EstateLab should separate leading indicators from confirmation:
 - Completed transactions, achieved rent, vacant possession, and stabilized occupancy confirm what the market actually absorbed.
 
 During a crisis, EstateLab should search for durable assets with temporary discounts rather than assume every cheap property will recover. During hype, it should raise the evidence requirement and avoid paying today for all future catalysts.
+
+## Decision Learning Discipline
+
+Use `docs/DECISION_JOURNAL_LEARNING.md` to close the loop between thesis and outcome.
+
+EstateLab must preserve what was believed before the result. It should not let later explanations overwrite the original prediction. Every meaningful review should distinguish process quality, execution quality, financial outcome, and luck.
+
+Profit does not automatically validate a weak process, and a loss does not automatically invalidate a disciplined decision. The system improves only when counterevidence can reduce confidence, narrow a rule, or retire a belief.
 
 ## Capital-Purpose Lens
 
