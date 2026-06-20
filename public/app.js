@@ -13,6 +13,7 @@ const resetChatBtn = document.querySelector("#resetChatBtn");
 const analyzeDealBtn = document.querySelector("#analyzeDealBtn");
 const voiceSupport = document.querySelector("#voiceSupport");
 const localTime = document.querySelector("#localTime");
+const aiDisclosure = document.querySelector("#aiDisclosure");
 const dealFields = Array.from(document.querySelectorAll("[data-deal-field]"));
 const profileFields = Array.from(document.querySelectorAll("[data-profile-field]"));
 const contextToggles = Array.from(document.querySelectorAll("[data-context-toggle]"));
@@ -154,6 +155,12 @@ function addDealAnalysis(analysis, sources = []) {
       <i class="analysisVerdict ${escapeHtml(verdictClass)}">${escapeHtml(analysis.confidence)}% CONFIDENCE</i>
     </div>
     <p class="analysisSummary">${escapeHtml(analysis.summary)}</p>
+    ${analysis.aiCommentary ? `
+      <section class="analysisJarvisTake">
+        <h3>JARVIS TAKE</h3>
+        <p>${escapeHtml(analysis.aiCommentary)}</p>
+      </section>
+    ` : ""}
     <div class="analysisMeta">
       <span>FRAMEWORK SCORE <b>${escapeHtml(analysis.averageScore)}/100</b></span>
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
@@ -398,7 +405,8 @@ async function askJarvis(question) {
   });
   sessionId = result.session.id;
   window.localStorage.setItem(sessionKey, sessionId);
-  setSessionState(`SESSION ${result.session.messages.length} MSG`);
+  const responseMode = result.mode === "llm" ? "AI" : "FRAMEWORK";
+  setSessionState(`SESSION ${result.session.messages.length} MSG / ${responseMode}`);
   return result;
 }
 
@@ -461,7 +469,8 @@ async function runDealAnalysis() {
     });
     sessionId = result.session.id;
     window.localStorage.setItem(sessionKey, sessionId);
-    setSessionState(`SESSION ${result.session.messages.length} MSG`);
+    const responseMode = result.mode === "llm" ? "AI" : "FRAMEWORK";
+    setSessionState(`SESSION ${result.session.messages.length} MSG / ${responseMode}`);
     addDealAnalysis(result.analysis, result.sources);
     speak(result.analysis.voiceSummary);
     if (!voiceResponsesEnabled) setSystemState("System ready", "Analysis complete.");
@@ -580,7 +589,9 @@ async function bootJarvis() {
   bootContextPanels();
   try {
     const status = await requestJson("/api/jarvis/status");
-    setSessionState(`ONLINE / ${status.knowledge.references} REF / ${status.knowledge.activeBeliefs} BELIEFS`);
+    const intelligenceMode = status.llm?.enabled ? "AI" : "FRAMEWORK";
+    aiDisclosure.hidden = !status.llm?.enabled;
+    setSessionState(`ONLINE / ${status.knowledge.references} REF / ${status.knowledge.activeBeliefs} BELIEFS / ${intelligenceMode}`);
     await ensureSession();
     setSystemState("System ready", "Ready when you are.");
   } catch {

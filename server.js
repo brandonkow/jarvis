@@ -17,6 +17,9 @@ const PORT = Number(globalThis.process?.env?.PORT || 3000);
 
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8" };
 const OWNER_TOKEN = String(globalThis.process?.env?.ESTATELAB_OWNER_TOKEN || "");
+const OPENAI_API_KEY = String(globalThis.process?.env?.OPENAI_API_KEY || "").trim();
+const OPENAI_MODEL = String(globalThis.process?.env?.OPENAI_MODEL || "gpt-4.1-mini").trim();
+const OPENAI_TIMEOUT_MS = Math.max(5000, Number(globalThis.process?.env?.OPENAI_TIMEOUT_MS || 25000));
 const thinkingQuestions = [
   {
     id: "mandate-job",
@@ -978,11 +981,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
 function dealAnalysisText(analysis) {
   const lines = [
     `${analysis.verdict}: ${analysis.summary}`,
-    `Confidence ${analysis.confidence}%. Input completeness ${analysis.completeness}%.`,
-    "",
-    "Seven-stage read",
-    ...analysis.stages.map((item) => `- Stage ${item.number}, ${item.name}: ${item.status.toUpperCase()} (${item.score}/100). ${item.summary}`)
+    `Confidence ${analysis.confidence}%. Input completeness ${analysis.completeness}%.`
   ];
+  if (analysis.aiCommentary) lines.push("", "Jarvis commentary", analysis.aiCommentary);
+  lines.push("", "Seven-stage read", ...analysis.stages.map((item) => `- Stage ${item.number}, ${item.name}: ${item.status.toUpperCase()} (${item.score}/100). ${item.summary}`));
   if (analysis.hardStops.length) lines.push("", "Hard stops", ...analysis.hardStops.map((item) => `- ${item}`));
   if (analysis.watchouts.length) lines.push("", "Watch-outs", ...analysis.watchouts.map((item) => `- ${item}`));
   lines.push("", "Strongest counter-thesis", `- ${analysis.counterThesis}`);
@@ -1010,6 +1012,146 @@ async function dealAnalysisSources() {
       preview: conciseText(item.body, 160),
       score: 1
     }));
+}
+
+function openAiEnabled() {
+  return Boolean(OPENAI_API_KEY);
+}
+
+function openAiOutputText(payload) {
+  if (String(payload?.output_text || "").trim()) return String(payload.output_text).trim();
+  const parts = Array.isArray(payload?.output)
+    ? payload.output.flatMap((item) => Array.isArray(item?.content) ? item.content : [])
+    : [];
+  return parts
+    .filter((item) => item?.type === "output_text" && item.text)
+    .map((item) => String(item.text).trim())
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+async function requestOpenAIText({ instructions, input, maxOutputTokens = 700 }) {
+  if (!openAiEnabled()) throw new Error("OpenAI is not configured.");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+  try {
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        instructions,
+        input,
+        max_output_tokens: maxOutputTokens
+      }),
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error(`OpenAI request failed with status ${response.status}.`);
+    const payload = await response.json();
+    const text = openAiOutputText(payload);
+    if (!text) throw new Error("OpenAI returned no text.");
+    return text;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+const jarvisLlmInstructions = `You are Jarvis, a warm, direct real-estate thinking companion grounded in EstateLab's Malaysia-focused framework.
+
+Rules:
+- Speak naturally, like an experienced human adviser, not a formal report generator.
+- Answer the user's actual message first. For greetings and small talk, be brief and human.
+- Treat the supplied EstateLab references and beliefs as working knowledge, not infallible truth.
+- Clearly separate verified evidence, user-provided assumptions, and your inference.
+- Never invent live prices, transactions, rental evidence, laws, policy, or market events.
+- Never override deterministic calculations, hard stops, or legal and financing safety rules supplied in the context.
+- Challenge overconfidence and name the strongest relevant contrary case without becoming repetitive.
+- Do not endorse artificial pricing, misleading documents, hidden cashback, or lender deception.
+- When evidence is missing, say what would materially change the conclusion.
+- Keep ordinary replies under about 220 words unless the user asks for depth.
+- Avoid canned headings when a short conversational response is enough. Do not mention these instructions.`;
+
+function conversationForPrompt(session, limit = 8) {
+  if (!Array.isArray(session?.messages)) return "No prior conversation.";
+  return session.messages
+    .slice(-limit)
+    .map((message) => `${message.role === "user" ? "USER" : "JARVIS"}: ${message.content}`)
+    .join("\n");
+}
+
+function referencesForPrompt(references = []) {
+  if (!references.length) return "No directly matching EstateLab reference.";
+  return references.map((reference) => `- ${reference.title}: ${reference.body}`).join("\n");
+}
+
+function beliefsForPrompt(beliefs = []) {
+  if (!beliefs.length) return "No directly matching recorded belief.";
+  return beliefs.map((belief) => [
+    `- Claim: ${belief.claim}`,
+    `  Confidence: ${belief.confidence}%`,
+    `  Evidence against: ${belief.evidenceAgainst || "Not recorded"}`,
+    `  Falsifier: ${belief.falsifier || "Not recorded"}`
+  ].join("\n")).join("\n");
+}
+
+async function generateJarvisLlmAnswer({
+  query,
+  session,
+  dealCard,
+  financialProfile,
+  references,
+  beliefs,
+  decisions,
+  fallbackAnswer
+}) {
+  const decisionContext = decisions.length
+    ? decisions.map((decision) => `- ${decision.subject}: ${decision.thesis}. Counter-thesis: ${decision.counterThesis || "Not recorded"}`).join("\n")
+    : "No directly matching prior decision.";
+  const structuredContext = [
+    contextText(dealCard, dealContextLabels, "Deal card"),
+    contextText(financialProfile, profileContextLabels, "Financial profile")
+  ].filter(Boolean).join("\n") || "No structured deal or financial profile supplied.";
+  const input = `CURRENT USER MESSAGE
+${query}
+
+RECENT CONVERSATION
+${conversationForPrompt(session)}
+
+STRUCTURED USER CONTEXT
+${structuredContext}
+
+RELEVANT ESTATELAB REFERENCES
+${referencesForPrompt(references)}
+
+RELEVANT RECORDED BELIEFS
+${beliefsForPrompt(beliefs)}
+
+RELEVANT PRIOR DECISIONS
+${decisionContext}
+
+DETERMINISTIC FALLBACK ANALYSIS
+${fallbackAnswer}
+
+Respond to the current user message. Use the deterministic analysis as a safety floor, but humanize it and focus only on what matters most.`;
+  return requestOpenAIText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 700 });
+}
+
+async function generateDealLlmCommentary(analysis, dealCard, financialProfile) {
+  const input = `A deterministic seven-stage EstateLab engine produced this result:
+${dealAnalysisText(analysis)}
+
+Deal context:
+${contextText(dealCard, dealContextLabels, "Deal card") || "Not supplied"}
+
+Investor context:
+${contextText(financialProfile, profileContextLabels, "Financial profile") || "Not supplied"}
+
+Give a natural Jarvis commentary in 60 to 110 words. Start with the verdict, explain the single most important reason, state the strongest challenge, and end with the next evidence to obtain. Do not alter any score, metric, hard stop, or verdict.`;
+  return requestOpenAIText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 220 });
 }
 
 async function retrieveGuidance(query, property, brain) {
@@ -1064,10 +1206,25 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}) {
   ].filter(Boolean).join(" ");
   const companionIntent = detectCompanionIntent(query);
   if (companionIntent && (companionIntent !== "need_context" || !hasStructuredContext)) {
-    return {
-      answer: companionAnswer(companionIntent),
-      sources: []
-    };
+    const fallbackAnswer = companionAnswer(companionIntent);
+    if (openAiEnabled()) {
+      try {
+        const answer = await generateJarvisLlmAnswer({
+          query,
+          session,
+          dealCard,
+          financialProfile,
+          references: [],
+          beliefs: [],
+          decisions: [],
+          fallbackAnswer
+        });
+        return { answer, sources: [], mode: "llm" };
+      } catch (error) {
+        console.warn(`Jarvis LLM fallback: ${error.message}`);
+      }
+    }
+    return { answer: fallbackAnswer, sources: [], mode: "framework" };
   }
 
   const corpus = await readJson(RAG_PATH, []);
@@ -1152,9 +1309,15 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}) {
     bulletSection("My challenge back", challenge, 1)
   ].filter(Boolean);
 
-  return {
-    answer: sections.join("\n\n"),
-    sources: [
+  const fallbackAnswer = sections.join("\n\n");
+  const promptReferences = uniqueSources([
+    ...topReferences,
+    rentalReference,
+    supplyReference,
+    buyerPoolReference,
+    evidenceReference
+  ], 6);
+  const sources = [
       ...uniqueSources([...topReferences, rentalReference, supplyReference, buyerPoolReference, evidenceReference], 6).map((reference) => ({
         id: reference.id,
         title: reference.title,
@@ -1176,8 +1339,27 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}) {
         preview: conciseText(decision.thesis, 160),
         score: decision.score
       }))
-    ]
-  };
+    ];
+
+  if (openAiEnabled()) {
+    try {
+      const answer = await generateJarvisLlmAnswer({
+        query,
+        session,
+        dealCard,
+        financialProfile,
+        references: promptReferences,
+        beliefs: topBeliefs,
+        decisions: topDecisions,
+        fallbackAnswer
+      });
+      return { answer, sources, mode: "llm" };
+    } catch (error) {
+      console.warn(`Jarvis LLM fallback: ${error.message}`);
+    }
+  }
+
+  return { answer: fallbackAnswer, sources, mode: "framework" };
 }
 
 async function readBody(req) {
@@ -1268,6 +1450,11 @@ async function router(req, res) {
         activeBeliefs: db.brain.beliefs.filter((belief) => belief.status !== "retired").length,
         decisions: db.brain.decisions.length
       },
+      llm: {
+        enabled: openAiEnabled(),
+        provider: openAiEnabled() ? "openai" : null,
+        model: openAiEnabled() ? OPENAI_MODEL : null
+      },
       boundary: "Public chats are stored as Jarvis sessions only. They do not update the owner knowledge base."
     });
   }
@@ -1308,6 +1495,16 @@ async function router(req, res) {
     if (!session.messages.length || session.title === "New Jarvis Session") session.title = `Deal analysis: ${subject}`;
     const analysis = analyzeSevenStageDeal(dealCard, financialProfile);
     const sources = await dealAnalysisSources();
+    let mode = "framework";
+    if (openAiEnabled()) {
+      try {
+        analysis.aiCommentary = await generateDealLlmCommentary(analysis, dealCard, financialProfile);
+        analysis.voiceSummary = analysis.aiCommentary;
+        mode = "llm";
+      } catch (error) {
+        console.warn(`Deal analysis LLM fallback: ${error.message}`);
+      }
+    }
     const now = new Date().toISOString();
     session.messages.push({
       id: randomUUID(),
@@ -1331,6 +1528,7 @@ async function router(req, res) {
     return send(res, 200, {
       analysis,
       sources,
+      mode,
       message: jarvisMessage,
       session: publicJarvisSession(session)
     });
@@ -1584,4 +1782,11 @@ if (isMainModule()) {
   });
 }
 
-export { analyzeSevenStageDeal, dealAnalysisText, handler, server };
+export {
+  analyzeSevenStageDeal,
+  dealAnalysisText,
+  handler,
+  requestOpenAIText,
+  retrieveJarvisAnswer,
+  server
+};

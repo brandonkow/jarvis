@@ -34,11 +34,18 @@ PORT=3000
 ESTATELAB_OWNER_TOKEN=change-this-before-using-owner-apis
 ESTATELAB_DATA_DIR=./data
 ESTATELAB_RAG_PATH=./rag/corpus.json
+OPENAI_API_KEY=your-server-side-api-key
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_TIMEOUT_MS=25000
 ```
 
 `ESTATELAB_OWNER_TOKEN` protects the owner-only APIs. Public Jarvis chat endpoints remain accessible without this token.
 
 `ESTATELAB_DATA_DIR` is useful in production. If the folder is empty on first start, the app seeds the runtime database from the bundled `data/db.json`.
+
+`OPENAI_API_KEY` enables conversational AI through the server-side OpenAI Responses API. The key is never sent to the browser. `OPENAI_MODEL` is configurable, and Jarvis automatically falls back to its deterministic EstateLab response engine if the API is unavailable.
+
+When AI mode is enabled, chat messages and any Deal Card or Financial Profile context submitted with the message are sent to OpenAI for response generation. Public input remains conversation data and is not promoted into EstateLab's owner-controlled knowledge base.
 
 ## Deploy On Render
 
@@ -48,7 +55,8 @@ Render is the recommended first deployment target for this app because it can ru
 2. Use `npm install` as the build command.
 3. Use `npm start` as the start command.
 4. Set `ESTATELAB_OWNER_TOKEN` as a secret environment variable.
-5. Add a persistent disk and set `ESTATELAB_DATA_DIR` to the disk mount path, for example `/var/data`.
+5. Set `OPENAI_API_KEY` as a secret environment variable to enable conversational AI.
+6. Add a persistent disk and set `ESTATELAB_DATA_DIR` to the disk mount path, for example `/var/data`.
 
 A starter `render.yaml` blueprint is included. It defines a Node web service in Singapore, `/api/health` health check, and a 1 GB persistent disk mounted at `/var/data`.
 

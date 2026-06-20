@@ -16,6 +16,10 @@ services:
         value: ./rag/corpus.json
       - key: ESTATELAB_OWNER_TOKEN
         sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
     disk:
       name: estatelab-data
       mountPath: /var/data

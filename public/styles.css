@@ -592,6 +592,18 @@ button {
     rgba(2, 13, 21, 0.7);
 }
 
+.aiDisclosure {
+  margin: -3px 12px 0 auto;
+  color: #527b85;
+  font-size: 0.46rem;
+  letter-spacing: 0.07em;
+  text-align: right;
+}
+
+.aiDisclosure[hidden] {
+  display: none;
+}
+
 .contextHeader {
   display: flex;
   align-items: center;
@@ -826,6 +838,27 @@ button {
   margin: 10px 0 0;
   color: #c0dce2;
   font-size: 0.84rem;
+}
+
+.analysisJarvisTake {
+  margin-top: 9px;
+  border-left: 2px solid rgba(103, 229, 255, 0.34);
+  padding: 6px 9px;
+  background: linear-gradient(90deg, rgba(69, 199, 225, 0.06), transparent);
+}
+
+.analysisJarvisTake h3 {
+  margin: 0 0 4px;
+  color: var(--cyan);
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+}
+
+.analysisJarvisTake p {
+  margin: 0;
+  color: #a9d0d8;
+  font-size: 0.65rem;
 }
 
 .analysisMeta {
