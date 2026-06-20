@@ -48,7 +48,7 @@ EstateLab has two different surfaces:
 1. **Public frontend**: normal users interact only with Jarvis. Their chat prompts are used to query the curated backend knowledge, but they are not written into the knowledge base.
 2. **Owner backend**: the knowledge base, belief ledger, decision records, property data, comparable data, and source documents are curated by the owner only.
 
-Public users may create Jarvis chat sessions so the frontend can preserve conversation continuity. These sessions are conversation memory only; they must not be promoted into beliefs, framework rules, RAG references, or owner decisions unless the owner deliberately reviews and curates them.
+Public users may create Jarvis chat sessions so the frontend can preserve conversation continuity. Guest sessions are restricted to their originating browser client, while optional member accounts provide authenticated private history and cross-device resume. These sessions are conversation memory only; they must not be promoted into beliefs, framework rules, RAG references, or owner decisions unless the owner deliberately reviews and curates them.
 
 Public users must not be able to add, edit, or delete backend knowledge. Backend write APIs require the `x-estatelab-owner-token` header to match the server's `ESTATELAB_OWNER_TOKEN` environment variable. If no owner token is configured, owner APIs are disabled and public Jarvis session routes remain the only unauthenticated write surface.
 

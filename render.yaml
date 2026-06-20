@@ -20,6 +20,8 @@ services:
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4.1-mini
+      - key: ESTATELAB_AUTH_SESSION_DAYS
+        value: 30
     disk:
       name: estatelab-data
       mountPath: /var/data

@@ -2,7 +2,8 @@ import http from "node:http";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -20,6 +21,13 @@ const OWNER_TOKEN = String(globalThis.process?.env?.ESTATELAB_OWNER_TOKEN || "")
 const OPENAI_API_KEY = String(globalThis.process?.env?.OPENAI_API_KEY || "").trim();
 const OPENAI_MODEL = String(globalThis.process?.env?.OPENAI_MODEL || "gpt-4.1-mini").trim();
 const OPENAI_TIMEOUT_MS = Math.max(5000, Number(globalThis.process?.env?.OPENAI_TIMEOUT_MS || 25000));
+const AUTH_COOKIE = "estatelab_session";
+const AUTH_SESSION_DAYS = Math.max(1, Number(globalThis.process?.env?.ESTATELAB_AUTH_SESSION_DAYS || 30));
+const AUTH_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_ATTEMPT_LIMIT = 10;
+const MAX_JSON_BODY_BYTES = 1024 * 1024;
+const scrypt = promisify(scryptCallback);
+const authAttempts = new Map();
 const thinkingQuestions = [
   {
     id: "mandate-job",
@@ -82,13 +90,14 @@ async function ensureDb() {
   await mkdir(DATA_DIR, { recursive: true });
   if (!existsSync(DB_PATH)) {
     const seed = DB_PATH !== BUNDLED_DB_PATH && existsSync(BUNDLED_DB_PATH)
-      ? await readJson(BUNDLED_DB_PATH, { properties: [], comps: [], brain: emptyBrain(), jarvis: emptyJarvis() })
-      : { properties: [], comps: [], brain: emptyBrain(), jarvis: emptyJarvis() };
+      ? await readJson(BUNDLED_DB_PATH, { properties: [], comps: [], brain: emptyBrain(), jarvis: emptyJarvis(), auth: emptyAuth() })
+      : { properties: [], comps: [], brain: emptyBrain(), jarvis: emptyJarvis(), auth: emptyAuth() };
     await writeFile(DB_PATH, JSON.stringify({
       properties: seed.properties || [],
       comps: seed.comps || [],
       brain: normalizeBrain(seed.brain),
-      jarvis: emptyJarvis()
+      jarvis: emptyJarvis(),
+      auth: emptyAuth()
     }, null, 2));
   }
 }
@@ -106,7 +115,8 @@ async function writeDb(db) {
     properties: db.properties || [],
     comps: db.comps || [],
     brain: normalizeBrain(db.brain),
-    jarvis: normalizeJarvis(db.jarvis)
+    jarvis: normalizeJarvis(db.jarvis),
+    auth: normalizeAuth(db.auth)
   }, null, 2));
 }
 
@@ -116,6 +126,34 @@ function emptyBrain() {
 
 function emptyJarvis() {
   return { sessions: [] };
+}
+
+function emptyAuth() {
+  return { version: 1, users: [], sessions: [] };
+}
+
+function normalizeAuth(auth) {
+  const now = Date.now();
+  return {
+    version: 1,
+    users: Array.isArray(auth?.users)
+      ? auth.users.map((user) => ({
+        id: String(user.id || ""),
+        email: String(user.email || "").trim().toLowerCase(),
+        displayName: String(user.displayName || "").trim(),
+        passwordHash: String(user.passwordHash || ""),
+        createdAt: String(user.createdAt || new Date().toISOString())
+      })).filter((user) => user.id && user.email && user.passwordHash).slice(0, 10000)
+      : [],
+    sessions: Array.isArray(auth?.sessions)
+      ? auth.sessions.map((session) => ({
+        tokenHash: String(session.tokenHash || ""),
+        userId: String(session.userId || ""),
+        createdAt: String(session.createdAt || new Date().toISOString()),
+        expiresAt: String(session.expiresAt || "")
+      })).filter((session) => session.tokenHash && session.userId && Date.parse(session.expiresAt) > now).slice(0, 20000)
+      : []
+  };
 }
 
 function normalizeBrain(brain) {
@@ -145,6 +183,7 @@ function normalizeJarvisSession(session) {
     updatedAt: String(session.updatedAt || session.createdAt || new Date().toISOString()),
     title: String(session.title || "New Jarvis Session").trim(),
     clientId: String(session.clientId || "browser").trim(),
+    userId: String(session.userId || "").trim(),
     messages
   };
 }
@@ -160,7 +199,7 @@ function normalizeJarvisMessage(message) {
   };
 }
 
-function createJarvisSession(body = {}) {
+function createJarvisSession(body = {}, user = null) {
   const now = new Date().toISOString();
   return {
     id: randomUUID(),
@@ -168,6 +207,7 @@ function createJarvisSession(body = {}) {
     updatedAt: now,
     title: String(body.title || "New Jarvis Session").trim(),
     clientId: String(body.clientId || "browser").trim(),
+    userId: String(user?.id || "").trim(),
     messages: []
   };
 }
@@ -180,6 +220,157 @@ function publicJarvisSession(session) {
     title: session.title,
     messages: session.messages
   };
+}
+
+function publicJarvisSessionSummary(session) {
+  return {
+    id: session.id,
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
+    title: session.title,
+    messageCount: session.messages.length
+  };
+}
+
+function publicUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    createdAt: user.createdAt
+  };
+}
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function validEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
+}
+
+async function hashPassword(password) {
+  const salt = randomBytes(16).toString("hex");
+  const derived = await scrypt(String(password), salt, 64);
+  return `scrypt$${salt}$${Buffer.from(derived).toString("hex")}`;
+}
+
+async function verifyPassword(password, encoded) {
+  const [algorithm, salt, expectedHex] = String(encoded || "").split("$");
+  if (algorithm !== "scrypt" || !salt || !expectedHex) return false;
+  const expected = Buffer.from(expectedHex, "hex");
+  const actual = Buffer.from(await scrypt(String(password), salt, expected.length));
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+function hashAuthToken(token) {
+  return createHash("sha256").update(String(token || "")).digest("hex");
+}
+
+function parseCookies(req) {
+  return String(req.headers.cookie || "").split(";").reduce((cookies, entry) => {
+    const separator = entry.indexOf("=");
+    if (separator < 0) return cookies;
+    const key = entry.slice(0, separator).trim();
+    const value = entry.slice(separator + 1).trim();
+    if (key) cookies[key] = decodeURIComponent(value);
+    return cookies;
+  }, {});
+}
+
+function secureRequest(req) {
+  const forwarded = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+  return forwarded === "https" || Boolean(req.socket?.encrypted);
+}
+
+function authCookie(req, token, maxAgeSeconds) {
+  const parts = [
+    `${AUTH_COOKIE}=${encodeURIComponent(token)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Strict",
+    `Max-Age=${Math.max(0, Math.floor(maxAgeSeconds))}`
+  ];
+  if (secureRequest(req)) parts.push("Secure");
+  return parts.join("; ");
+}
+
+function createAuthSession(userId) {
+  const token = randomBytes(32).toString("base64url");
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + AUTH_SESSION_DAYS * 24 * 60 * 60 * 1000);
+  return {
+    token,
+    record: {
+      tokenHash: hashAuthToken(token),
+      userId,
+      createdAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString()
+    },
+    maxAgeSeconds: AUTH_SESSION_DAYS * 24 * 60 * 60
+  };
+}
+
+function currentAuth(req, db) {
+  const token = parseCookies(req)[AUTH_COOKIE];
+  if (!token) return { user: null, session: null };
+  const tokenHash = hashAuthToken(token);
+  const session = db.auth.sessions.find((item) => item.tokenHash === tokenHash);
+  if (!session) return { user: null, session: null };
+  const user = db.auth.users.find((item) => item.id === session.userId);
+  return user ? { user, session } : { user: null, session: null };
+}
+
+function requestClientId(req, body = {}) {
+  const header = req.headers["x-estatelab-client-id"];
+  const value = Array.isArray(header) ? header[0] : header;
+  return String(value || body.clientId || "").trim();
+}
+
+function canAccessJarvisSession(session, actor, clientId) {
+  if (!session) return false;
+  if (session.userId) return Boolean(actor.user && session.userId === actor.user.id);
+  return Boolean(clientId && session.clientId === clientId);
+}
+
+function accessibleJarvisSession(db, id, actor, clientId) {
+  const session = db.jarvis.sessions.find((item) => item.id === String(id || ""));
+  return canAccessJarvisSession(session, actor, clientId) ? session : null;
+}
+
+function claimJarvisSession(session, actor, clientId) {
+  if (session && actor.user && !session.userId && session.clientId === clientId) {
+    session.userId = actor.user.id;
+  }
+  return session;
+}
+
+function authRateKey(req) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return forwarded || String(req.socket?.remoteAddress || "unknown");
+}
+
+function allowAuthAttempt(req) {
+  const key = authRateKey(req);
+  const now = Date.now();
+  if (authAttempts.size > 5000) {
+    for (const [attemptKey, timestamps] of authAttempts) {
+      if (!timestamps.some((timestamp) => now - timestamp < AUTH_ATTEMPT_WINDOW_MS)) authAttempts.delete(attemptKey);
+    }
+    if (authAttempts.size > 5000) authAttempts.delete(authAttempts.keys().next().value);
+  }
+  const recent = (authAttempts.get(key) || []).filter((timestamp) => now - timestamp < AUTH_ATTEMPT_WINDOW_MS);
+  if (recent.length >= AUTH_ATTEMPT_LIMIT) {
+    authAttempts.set(key, recent);
+    return false;
+  }
+  recent.push(now);
+  authAttempts.set(key, recent);
+  return true;
+}
+
+function clearAuthAttempts(req) {
+  authAttempts.delete(authRateKey(req));
 }
 
 function titleFromQuery(query) {
@@ -1364,7 +1555,16 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}) {
 
 async function readBody(req) {
   const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
+  let totalBytes = 0;
+  for await (const chunk of req) {
+    totalBytes += chunk.length;
+    if (totalBytes > MAX_JSON_BODY_BYTES) {
+      const error = new Error("Request body is too large.");
+      error.statusCode = 413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
   if (!chunks.length) return {};
   const raw = Buffer.concat(chunks).toString("utf8");
   if (!raw.trim()) return {};
@@ -1386,7 +1586,12 @@ function send(res, status, payload, headers = jsonHeaders) {
 function isPublicApiRoute(method, pathname) {
   return (
     (method === "GET" && pathname === "/api/health")
+    || (method === "GET" && pathname === "/api/auth/me")
+    || (method === "POST" && pathname === "/api/auth/register")
+    || (method === "POST" && pathname === "/api/auth/login")
+    || (method === "POST" && pathname === "/api/auth/logout")
     || (method === "GET" && pathname === "/api/jarvis/status")
+    || (method === "GET" && pathname === "/api/jarvis/sessions")
     || (method === "POST" && pathname === "/api/jarvis/sessions")
     || (method === "GET" && pathname.startsWith("/api/jarvis/sessions/"))
     || (method === "DELETE" && pathname.startsWith("/api/jarvis/sessions/"))
@@ -1435,10 +1640,100 @@ async function router(req, res) {
   }
 
   const db = await readJson(DB_PATH, { properties: [] });
+  const requiresAuthMigration = Number(db.auth?.version || 0) < 1;
   db.properties ||= [];
   db.comps ||= [];
   db.brain = normalizeBrain(db.brain);
   db.jarvis = normalizeJarvis(db.jarvis);
+  db.auth = normalizeAuth(db.auth);
+  if (requiresAuthMigration) {
+    db.jarvis = emptyJarvis();
+    await writeDb(db);
+  }
+  const actor = currentAuth(req, db);
+
+  if (req.method === "GET" && url.pathname === "/api/auth/me") {
+    return send(res, 200, {
+      authenticated: Boolean(actor.user),
+      user: actor.user ? publicUser(actor.user) : null
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/auth/register") {
+    if (!allowAuthAttempt(req)) return send(res, 429, { error: "Too many account attempts. Try again later." });
+    const body = await readBody(req);
+    const email = normalizeEmail(body.email);
+    const displayName = String(body.displayName || "").trim();
+    const password = String(body.password || "");
+    if (!validEmail(email)) return send(res, 400, { error: "Enter a valid email address." });
+    if (displayName.length < 2 || displayName.length > 60) {
+      return send(res, 400, { error: "Name must be between 2 and 60 characters." });
+    }
+    if (password.length < 10 || password.length > 128) {
+      return send(res, 400, { error: "Password must be between 10 and 128 characters." });
+    }
+    if (db.auth.users.some((user) => user.email === email)) {
+      return send(res, 409, { error: "An account already exists for this email." });
+    }
+
+    const user = {
+      id: randomUUID(),
+      email,
+      displayName,
+      passwordHash: await hashPassword(password),
+      createdAt: new Date().toISOString()
+    };
+    const authSession = createAuthSession(user.id);
+    db.auth.users.push(user);
+    db.auth.sessions.unshift(authSession.record);
+    await writeDb(db);
+    clearAuthAttempts(req);
+    return send(res, 201, {
+      authenticated: true,
+      user: publicUser(user)
+    }, {
+      ...jsonHeaders,
+      "Set-Cookie": authCookie(req, authSession.token, authSession.maxAgeSeconds)
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/auth/login") {
+    if (!allowAuthAttempt(req)) return send(res, 429, { error: "Too many account attempts. Try again later." });
+    const body = await readBody(req);
+    const email = normalizeEmail(body.email);
+    const password = String(body.password || "");
+    const user = db.auth.users.find((item) => item.email === email);
+    let passwordMatches = false;
+    if (user) {
+      passwordMatches = await verifyPassword(password, user.passwordHash);
+    } else {
+      await scrypt(password || "invalid", "estatelab-login-check", 64);
+    }
+    if (!user || !passwordMatches) return send(res, 401, { error: "Email or password is incorrect." });
+
+    const authSession = createAuthSession(user.id);
+    db.auth.sessions.unshift(authSession.record);
+    await writeDb(db);
+    clearAuthAttempts(req);
+    return send(res, 200, {
+      authenticated: true,
+      user: publicUser(user)
+    }, {
+      ...jsonHeaders,
+      "Set-Cookie": authCookie(req, authSession.token, authSession.maxAgeSeconds)
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/auth/logout") {
+    if (actor.session) {
+      db.auth.sessions = db.auth.sessions.filter((session) => session.tokenHash !== actor.session.tokenHash);
+      await writeDb(db);
+    }
+    return send(res, 200, { authenticated: false, user: null }, {
+      ...jsonHeaders,
+      "Set-Cookie": authCookie(req, "", 0)
+    });
+  }
 
   if (req.method === "GET" && url.pathname === "/api/jarvis/status") {
     const corpus = await readJson(RAG_PATH, []);
@@ -1461,21 +1756,40 @@ async function router(req, res) {
 
   if (req.method === "POST" && url.pathname === "/api/jarvis/sessions") {
     const body = await readBody(req);
-    const session = createJarvisSession(body);
+    const session = createJarvisSession({ ...body, clientId: requestClientId(req, body) || body.clientId }, actor.user);
     db.jarvis = upsertJarvisSession(db.jarvis, session);
     await writeDb(db);
     return send(res, 201, { session: publicJarvisSession(session) });
   }
 
+  if (req.method === "GET" && url.pathname === "/api/jarvis/sessions") {
+    const clientId = requestClientId(req);
+    const sessions = db.jarvis.sessions
+      .filter((session) => canAccessJarvisSession(session, actor, clientId))
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+      .slice(0, 20)
+      .map(publicJarvisSessionSummary);
+    return send(res, 200, { sessions });
+  }
+
   if (req.method === "GET" && url.pathname.startsWith("/api/jarvis/sessions/")) {
     const id = url.pathname.split("/").pop();
-    const session = db.jarvis.sessions.find((item) => item.id === id);
+    const clientId = requestClientId(req);
+    const session = accessibleJarvisSession(db, id, actor, clientId);
     if (!session) return send(res, 404, { error: "Jarvis session not found." });
+    const shouldClaim = Boolean(actor.user && !session.userId && session.clientId === clientId);
+    claimJarvisSession(session, actor, clientId);
+    if (shouldClaim) {
+      db.jarvis = upsertJarvisSession(db.jarvis, session);
+      await writeDb(db);
+    }
     return send(res, 200, { session: publicJarvisSession(session) });
   }
 
   if (req.method === "DELETE" && url.pathname.startsWith("/api/jarvis/sessions/")) {
     const id = url.pathname.split("/").pop();
+    const session = accessibleJarvisSession(db, id, actor, requestClientId(req));
+    if (!session) return send(res, 404, { error: "Jarvis session not found." });
     db.jarvis.sessions = db.jarvis.sessions.filter((item) => item.id !== id);
     await writeDb(db);
     return send(res, 204, "");
@@ -1489,8 +1803,10 @@ async function router(req, res) {
       return send(res, 400, { error: "Add an asking price and an area or project before running the deal analysis." });
     }
 
-    let session = db.jarvis.sessions.find((item) => item.id === String(body.sessionId || ""));
-    if (!session) session = createJarvisSession({ clientId: body.clientId });
+    const clientId = requestClientId(req, body);
+    let session = accessibleJarvisSession(db, body.sessionId, actor, clientId);
+    if (!session) session = createJarvisSession({ clientId }, actor.user);
+    claimJarvisSession(session, actor, clientId);
     const subject = dealCard.projectName || dealCard.area || "property deal";
     if (!session.messages.length || session.title === "New Jarvis Session") session.title = `Deal analysis: ${subject}`;
     const analysis = analyzeSevenStageDeal(dealCard, financialProfile);
@@ -1707,8 +2023,10 @@ async function router(req, res) {
     const body = await readBody(req);
     const query = String(body.query || "").trim();
     if (!query) return send(res, 400, { error: "A Jarvis query is required." });
-    let session = db.jarvis.sessions.find((item) => item.id === String(body.sessionId || ""));
-    if (!session) session = createJarvisSession({ clientId: body.clientId });
+    const clientId = requestClientId(req, body);
+    let session = accessibleJarvisSession(db, body.sessionId, actor, clientId);
+    if (!session) session = createJarvisSession({ clientId }, actor.user);
+    claimJarvisSession(session, actor, clientId);
     if (!session.messages.length || session.title === "New Jarvis Session") session.title = titleFromQuery(query);
 
     const userMessage = {

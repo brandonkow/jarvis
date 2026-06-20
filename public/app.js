@@ -10,6 +10,23 @@ const stopVoiceBtn = document.querySelector("#stopVoiceBtn");
 const resetChatBtn = document.querySelector("#resetChatBtn");
 const analyzeDealBtn = document.querySelector("#analyzeDealBtn");
 const aiDisclosure = document.querySelector("#aiDisclosure");
+const accountToggle = document.querySelector("#accountToggle");
+const accountLabel = document.querySelector("#accountLabel");
+const authPanel = document.querySelector("#authPanel");
+const authClose = document.querySelector("#authClose");
+const authTitle = document.querySelector("#authTitle");
+const authForm = document.querySelector("#authForm");
+const authNameField = document.querySelector("#authNameField");
+const authName = document.querySelector("#authName");
+const authEmail = document.querySelector("#authEmail");
+const authPassword = document.querySelector("#authPassword");
+const authSubmit = document.querySelector("#authSubmit");
+const authModeToggle = document.querySelector("#authModeToggle");
+const authMessage = document.querySelector("#authMessage");
+const authUserPanel = document.querySelector("#authUser");
+const authUserName = document.querySelector("#authUserName");
+const authUserEmail = document.querySelector("#authUserEmail");
+const logoutButton = document.querySelector("#logoutButton");
 const dealFields = Array.from(document.querySelectorAll("[data-deal-field]"));
 const profileFields = Array.from(document.querySelectorAll("[data-profile-field]"));
 const contextToggles = Array.from(document.querySelectorAll("[data-context-toggle]"));
@@ -26,6 +43,8 @@ let listening = false;
 let speaking = false;
 let voiceStopRequested = false;
 let sessionId = window.localStorage.getItem(sessionKey);
+let authMode = "login";
+let authenticatedUser = null;
 
 function clientId() {
   const existing = window.localStorage.getItem(clientKey);
@@ -58,6 +77,48 @@ function setSystemState(state, prompt) {
 
 function setSessionState(text) {
   sessionStatus.textContent = text;
+}
+
+function setAuthMode(mode) {
+  authMode = mode === "register" ? "register" : "login";
+  const registering = authMode === "register";
+  authTitle.textContent = registering ? "CREATE ACCOUNT" : "SIGN IN";
+  authNameField.hidden = !registering;
+  authName.required = registering;
+  authPassword.autocomplete = registering ? "new-password" : "current-password";
+  authSubmit.textContent = registering ? "CREATE ACCOUNT" : "SIGN IN";
+  authModeToggle.textContent = registering ? "SIGN IN" : "CREATE ACCOUNT";
+  authMessage.textContent = "";
+}
+
+function renderAuthState(user) {
+  authenticatedUser = user || null;
+  const signedIn = Boolean(authenticatedUser);
+  const firstName = String(authenticatedUser?.displayName || "GUEST").trim().split(/\s+/)[0];
+  accountLabel.textContent = firstName.slice(0, 16).toUpperCase();
+  authForm.hidden = signedIn;
+  authUserPanel.hidden = !signedIn;
+  authTitle.textContent = signedIn ? "ACCOUNT" : authMode === "register" ? "CREATE ACCOUNT" : "SIGN IN";
+  if (signedIn) {
+    authUserName.textContent = authenticatedUser.displayName;
+    authUserEmail.textContent = authenticatedUser.email;
+  }
+}
+
+function openAuthPanel() {
+  collapseContextPanels();
+  authPanel.hidden = false;
+  accountToggle.setAttribute("aria-expanded", "true");
+  document.body.classList.add("accountOpen");
+  renderAuthState(authenticatedUser);
+  if (!authenticatedUser) authEmail.focus();
+}
+
+function closeAuthPanel() {
+  authPanel.hidden = true;
+  accountToggle.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("accountOpen");
+  authMessage.textContent = "";
 }
 
 function sourceLabel(type) {
@@ -328,8 +389,10 @@ function speak(text) {
 async function requestJson(url, options = {}) {
   const response = await fetch(url, {
     ...options,
+    credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
+      "x-estatelab-client-id": clientId(),
       ...(options.headers || {})
     }
   });
@@ -339,6 +402,55 @@ async function requestJson(url, options = {}) {
   }
   if (response.status === 204) return null;
   return response.json();
+}
+
+async function loadAuthState() {
+  const result = await requestJson("/api/auth/me");
+  renderAuthState(result.authenticated ? result.user : null);
+  return result;
+}
+
+async function submitAuth() {
+  const endpoint = authMode === "register" ? "/api/auth/register" : "/api/auth/login";
+  const payload = {
+    email: authEmail.value.trim(),
+    password: authPassword.value
+  };
+  if (authMode === "register") payload.displayName = authName.value.trim();
+
+  authSubmit.disabled = true;
+  authMessage.textContent = authMode === "register" ? "Creating your private account..." : "Signing in...";
+  try {
+    const result = await requestJson(endpoint, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    renderAuthState(result.user);
+    authPassword.value = "";
+    await ensureSession();
+    setSystemState("System ready", `Welcome back, ${result.user.displayName}.`);
+  } catch (error) {
+    authMessage.textContent = error.message || "Account access is unavailable.";
+  } finally {
+    authSubmit.disabled = false;
+  }
+}
+
+async function logout() {
+  logoutButton.disabled = true;
+  try {
+    await requestJson("/api/auth/logout", { method: "POST", body: "{}" });
+    renderAuthState(null);
+    setAuthMode("login");
+    window.localStorage.removeItem(sessionKey);
+    sessionId = null;
+    await createSession();
+    setSystemState("System ready", "Signed out. Guest session ready.");
+  } catch (error) {
+    authMessage.textContent = error.message || "Sign out is unavailable.";
+  } finally {
+    logoutButton.disabled = false;
+  }
 }
 
 async function createSession() {
@@ -385,6 +497,14 @@ async function loadSession(id) {
 }
 
 async function ensureSession() {
+  if (!sessionId && authenticatedUser) {
+    try {
+      const history = await requestJson("/api/jarvis/sessions");
+      if (history.sessions?.length) return loadSession(history.sessions[0].id);
+    } catch {
+      // A new private session is safer than blocking Jarvis startup.
+    }
+  }
   if (!sessionId) return createSession();
   try {
     return await loadSession(sessionId);
@@ -408,7 +528,7 @@ async function askJarvis(question) {
   sessionId = result.session.id;
   window.localStorage.setItem(sessionKey, sessionId);
   const responseMode = result.mode === "llm" ? "AI" : "FRAMEWORK";
-  setSessionState(`${responseMode} · ${result.session.messages.length}`);
+  setSessionState(`${responseMode} / ${result.session.messages.length}`);
   return result;
 }
 
@@ -472,7 +592,7 @@ async function runDealAnalysis() {
     sessionId = result.session.id;
     window.localStorage.setItem(sessionKey, sessionId);
     const responseMode = result.mode === "llm" ? "AI" : "FRAMEWORK";
-    setSessionState(`${responseMode} · ${result.session.messages.length}`);
+    setSessionState(`${responseMode} / ${result.session.messages.length}`);
     addDealAnalysis(result.analysis, result.sources);
     speak(result.analysis.voiceSummary);
     if (!voiceResponsesEnabled) setSystemState("System ready", "Analysis complete.");
@@ -542,6 +662,20 @@ jarvisOrb.addEventListener("click", startListening);
 stopVoiceBtn.addEventListener("click", () => stopSpeaking("Voice stopped."));
 resetChatBtn.addEventListener("click", resetChat);
 analyzeDealBtn.addEventListener("click", runDealAnalysis);
+accountToggle.addEventListener("click", () => {
+  if (authPanel.hidden) openAuthPanel();
+  else closeAuthPanel();
+});
+authClose.addEventListener("click", closeAuthPanel);
+authModeToggle.addEventListener("click", () => setAuthMode(authMode === "login" ? "register" : "login"));
+authForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitAuth();
+});
+logoutButton.addEventListener("click", logout);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !authPanel.hidden) closeAuthPanel();
+});
 
 soundToggle.addEventListener("click", () => {
   voiceResponsesEnabled = !voiceResponsesEnabled;
@@ -562,10 +696,12 @@ async function bootJarvis() {
   restoreContext(dealFields, "data-deal-field", dealContextKey);
   restoreContext(profileFields, "data-profile-field", profileContextKey);
   bootContextPanels();
+  setAuthMode("login");
   try {
     const status = await requestJson("/api/jarvis/status");
     const intelligenceMode = status.llm?.enabled ? "AI" : "FRAMEWORK";
     aiDisclosure.hidden = !status.llm?.enabled;
+    await loadAuthState();
     await ensureSession();
     setSessionState(`${intelligenceMode} READY`);
     setSystemState("System ready", "Ready when you are.");

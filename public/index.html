@@ -33,7 +33,10 @@
     <header class="systemBar">
       <span class="systemBrand">ESTATELAB / JARVIS</span>
       <span id="systemStatus" class="systemStatus"><i></i> READY</span>
-      <span id="sessionStatus" class="sessionStatus">CONNECTING</span>
+      <button id="accountToggle" class="accountStatus" type="button" aria-expanded="false" aria-controls="authPanel">
+        <span id="accountLabel">GUEST</span>
+        <span id="sessionStatus" class="sessionStatus">CONNECTING</span>
+      </button>
     </header>
 
     <main class="interface">
@@ -61,6 +64,29 @@
 
       <section id="conversation" class="conversation" aria-live="polite">
         <div id="transcript" class="transcript"></div>
+
+        <section id="authPanel" class="authPanel" aria-label="EstateLab account" hidden>
+          <header class="authHeader">
+            <span><small>PRIVATE SESSION</small><b id="authTitle">SIGN IN</b></span>
+            <button id="authClose" type="button" aria-label="Close account panel">CLOSE</button>
+          </header>
+
+          <form id="authForm" class="authForm" autocomplete="on">
+            <label id="authNameField" hidden>Name<input id="authName" name="name" autocomplete="name" maxlength="60" /></label>
+            <label>Email<input id="authEmail" name="email" type="email" autocomplete="email" maxlength="254" required /></label>
+            <label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required /></label>
+            <div class="authActions">
+              <button id="authSubmit" class="authPrimary" type="submit">SIGN IN</button>
+              <button id="authModeToggle" type="button">CREATE ACCOUNT</button>
+            </div>
+            <p id="authMessage" class="authMessage" role="status"></p>
+          </form>
+
+          <div id="authUser" class="authUser" hidden>
+            <span><small>SIGNED IN AS</small><b id="authUserName"></b><em id="authUserEmail"></em></span>
+            <button id="logoutButton" type="button">SIGN OUT</button>
+          </div>
+        </section>
 
         <section class="contextDeck" aria-label="Deal and investor context">
           <section class="contextPanel">

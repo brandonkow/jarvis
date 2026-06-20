@@ -989,66 +989,11 @@
     "decisions": []
   },
   "jarvis": {
-    "sessions": [
-      {
-        "id": "5abf3da6-f6f5-462d-843e-aa065b7dcd72",
-        "createdAt": "2026-06-17T04:12:04.171Z",
-        "updatedAt": "2026-06-17T04:12:04.217Z",
-        "title": "What should I watch before buying a high-de...",
-        "clientId": "vercel-smoke",
-        "messages": [
-          {
-            "id": "e91d649c-f749-4800-8823-32506f417671",
-            "role": "user",
-            "content": "What should I watch before buying a high-density high-rise?",
-            "createdAt": "2026-06-17T04:12:04.187Z",
-            "sources": []
-          },
-          {
-            "id": "c6af0658-6850-4458-8c9f-8a0f99a2b2cb",
-            "role": "jarvis",
-            "content": "My current view: High-rise projects around 1,500 units and above are a founder-default density warning, and lift capacity or waiting time can become an immediate rejection trigger. Confidence is 82 percent. Key challenge: High density can be acceptable in prime locations when pricing is attractive and the developer, facilities, lifts, and management quality support the resident load. Useful test: Revise if high-density projects above the threshold repeatedly show strong rental, resale, lift performance, resident satisfaction, and maintenance outcomes comparable to lower-density substitutes.",
-            "createdAt": "2026-06-17T04:12:04.217Z",
-            "sources": [
-              {
-                "id": "high-density-lift-test",
-                "title": "High density and lift test",
-                "type": "reference",
-                "preview": "Around 1,500 units and above is a founder-default high-rise density warning.",
-                "score": 22
-              },
-              {
-                "id": "danger-high-income-low-knowledge",
-                "title": "Danger profile: high income, low understanding",
-                "type": "reference",
-                "preview": "A dangerous investor profile is high income but poor understanding of what they are buying. Borrowing capacity can hide weak judgment.",
-                "score": 18
-              },
-              {
-                "id": "title-preference-by-property-type",
-                "title": "Title preference by property type",
-                "type": "reference",
-                "preview": "For high-rise property, freehold versus leasehold is not the founder's main deciding factor if product quality, location, bankability, price segment, and exi...",
-                "score": 16
-              },
-              {
-                "id": "stage-1j-density-lift-threshold",
-                "title": "High-rise projects around 1,500 units and above are a founder-default density warning, and lift capacity or waiting time can become an immediate rejection trigger.",
-                "type": "belief",
-                "preview": "High unit count and high plot ratio can create facility crowding, lift queues, security friction, parking issues, and weaker liveability unless the project i...",
-                "score": 24
-              },
-              {
-                "id": "mandate-cash-reserve-strategy-fit",
-                "title": "Investor strategy fit depends heavily on cash reserve: lower-reserve retail investors should prefer rental holding power, while landed appreciation and negative cash flow require high reserve.",
-                "type": "belief",
-                "preview": "High-rise rental strategies can be safer for retail investors when rent covers installment, while landed appreciation often requires stronger cash reserve to...",
-                "score": 14
-              }
-            ]
-          }
-        ]
-      }
-    ]
+    "sessions": []
+  },
+  "auth": {
+    "version": 1,
+    "users": [],
+    "sessions": []
   }
 }

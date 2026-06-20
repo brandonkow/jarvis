@@ -7,6 +7,7 @@ The public user experience is intentionally simple: users interact with one Jarv
 ## What Is Included
 
 - Jarvis-style browser UI with voice input and voice response support.
+- Optional member accounts with private, resumable chat sessions; guests remain device-scoped.
 - Seven-stage Deal Analysis using the Deal Card and Financial Profile, with structured verdicts, hard stops, stress metrics, counter-thesis, and missing evidence.
 - Node.js backend with no external npm dependencies.
 - Public Jarvis endpoints for chat, session creation, and knowledge status.
@@ -37,6 +38,7 @@ ESTATELAB_RAG_PATH=./rag/corpus.json
 OPENAI_API_KEY=your-server-side-api-key
 OPENAI_MODEL=gpt-4.1-mini
 OPENAI_TIMEOUT_MS=25000
+ESTATELAB_AUTH_SESSION_DAYS=30
 ```
 
 `ESTATELAB_OWNER_TOKEN` protects the owner-only APIs. Public Jarvis chat endpoints remain accessible without this token.
@@ -46,6 +48,8 @@ OPENAI_TIMEOUT_MS=25000
 `OPENAI_API_KEY` enables conversational AI through the server-side OpenAI Responses API. The key is never sent to the browser. `OPENAI_MODEL` is configurable, and Jarvis automatically falls back to its deterministic EstateLab response engine if the API is unavailable.
 
 When AI mode is enabled, chat messages and any Deal Card or Financial Profile context submitted with the message are sent to OpenAI for response generation. Public input remains conversation data and is not promoted into EstateLab's owner-controlled knowledge base.
+
+Member passwords are scrypt-hashed. Login cookies are opaque, `HttpOnly`, `SameSite=Strict`, and automatically marked `Secure` behind Render HTTPS. Only a hash of each login token is stored. Guest chat access is bound to the originating browser client ID.
 
 ## Deploy On Render
 
@@ -70,6 +74,11 @@ Public:
 
 - `GET /api/health`
 - `GET /api/jarvis/status`
+- `GET /api/auth/me`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/jarvis/sessions`
 - `POST /api/jarvis/sessions`
 - `GET /api/jarvis/sessions/:id`
 - `DELETE /api/jarvis/sessions/:id`
@@ -91,4 +100,4 @@ x-estatelab-owner-token: your-token
 
 ## Product Direction
 
-This is the first deployable app layer. The next serious upgrade should be authentication and a real database before opening it to normal users at scale.
+This version includes the first production-readiness layer: authentication and user-scoped sessions. The next infrastructure upgrade should move users, auth sessions, and Jarvis sessions from JSON storage to PostgreSQL before opening the service at scale.

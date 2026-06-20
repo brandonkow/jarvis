@@ -304,6 +304,29 @@ button {
   font-size: 0.55rem;
 }
 
+.accountStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  padding: 4px 0;
+  cursor: pointer;
+  color: #8db7c2;
+  background: transparent;
+  font-size: 0.55rem;
+  letter-spacing: 0.16em;
+}
+
+.accountStatus:hover,
+.accountStatus[aria-expanded="true"] {
+  color: var(--cyan);
+}
+
+.accountStatus:focus-visible {
+  outline: 1px solid rgba(103, 229, 255, 0.55);
+  outline-offset: 5px;
+}
+
 .systemStatus i {
   width: 5px;
   height: 5px;
@@ -564,6 +587,160 @@ button {
   width: min(560px, 100%);
   margin: 0 auto;
   gap: 8px;
+}
+
+.authPanel {
+  width: min(620px, 100%);
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(103, 229, 255, 0.24);
+  border-radius: 12px;
+  padding: 13px;
+  background:
+    linear-gradient(135deg, rgba(90, 231, 255, 0.09), transparent 28%),
+    rgba(2, 13, 21, 0.88);
+  box-shadow: 0 0 38px rgba(28, 190, 221, 0.09), inset 0 0 28px rgba(28, 190, 221, 0.04);
+  backdrop-filter: blur(18px);
+}
+
+.authPanel[hidden] {
+  display: none;
+}
+
+.authForm[hidden],
+.authUser[hidden] {
+  display: none;
+}
+
+.accountOpen .transcript,
+.accountOpen .contextDeck,
+.accountOpen .aiDisclosure,
+.accountOpen .commandBar,
+.accountOpen .utilityBar {
+  display: none;
+}
+
+.authHeader,
+.authUser {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.authHeader > span,
+.authUser > span {
+  display: grid;
+  gap: 3px;
+}
+
+.authHeader small,
+.authUser small {
+  color: #5d8c97;
+  font-size: 0.46rem;
+  font-weight: 400;
+  letter-spacing: 0.17em;
+}
+
+.authHeader b,
+.authUser b {
+  color: var(--cyan-bright);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+}
+
+.authHeader button,
+.authUser button,
+.authActions button {
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 999px;
+  padding: 7px 10px;
+  cursor: pointer;
+  color: #739da7;
+  background: rgba(0, 10, 17, 0.44);
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+}
+
+.authHeader button:hover,
+.authUser button:hover,
+.authActions button:hover {
+  border-color: rgba(103, 229, 255, 0.4);
+  color: var(--cyan);
+}
+
+.authForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.authForm label {
+  display: grid;
+  gap: 4px;
+  color: #6e9fab;
+  font-size: 0.54rem;
+  letter-spacing: 0.09em;
+}
+
+.authForm label[hidden] {
+  display: none;
+}
+
+.authForm #authNameField {
+  grid-column: 1 / -1;
+}
+
+.authForm input {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgba(103, 229, 255, 0.15);
+  border-radius: 9px;
+  outline: 0;
+  padding: 8px 10px;
+  color: var(--text);
+  background: rgba(0, 10, 17, 0.58);
+  font-size: 0.76rem;
+}
+
+.authForm input:focus {
+  border-color: rgba(103, 229, 255, 0.48);
+  box-shadow: 0 0 18px rgba(28, 190, 221, 0.08);
+}
+
+.authActions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  grid-column: 1 / -1;
+}
+
+.authActions .authPrimary {
+  border-color: rgba(103, 229, 255, 0.34);
+  color: var(--cyan);
+  background: rgba(41, 158, 181, 0.11);
+}
+
+.authMessage {
+  min-height: 16px;
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #d99a9a;
+  font-size: 0.62rem;
+}
+
+.authUser {
+  margin-top: 13px;
+  border-top: 1px solid rgba(103, 229, 255, 0.12);
+  padding-top: 12px;
+}
+
+.authUser em {
+  color: #6e99a3;
+  font-size: 0.62rem;
+  font-style: normal;
 }
 
 .contextPanel {
@@ -1254,6 +1431,17 @@ button {
     justify-content: space-between;
   }
 
+  .accountStatus {
+    min-height: 40px;
+    gap: 7px;
+    font-size: 0.52rem;
+    letter-spacing: 0.11em;
+  }
+
+  .accountStatus .sessionStatus {
+    display: none;
+  }
+
   .assistantStage {
     transform: translateY(-26px);
   }
@@ -1270,7 +1458,12 @@ button {
     transform: translateY(-32dvh) scale(0.42);
   }
 
-  body:has(.contextPanel.expanded) .identity {
+  .accountOpen .assistantStage {
+    transform: translateY(-28dvh) scale(0.5);
+  }
+
+  body:has(.contextPanel.expanded) .identity,
+  .accountOpen .identity {
     opacity: 0;
   }
 
@@ -1291,6 +1484,38 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
     gap: 6px;
+  }
+
+  .authPanel {
+    padding: 12px;
+  }
+
+  .authHeader button,
+  .authUser button,
+  .authActions button {
+    min-height: 40px;
+    padding: 8px 11px;
+    font-size: 0.57rem;
+  }
+
+  .authForm {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .authForm #authNameField,
+  .authActions,
+  .authMessage {
+    grid-column: auto;
+  }
+
+  .authForm label {
+    font-size: 0.62rem;
+  }
+
+  .authForm input {
+    min-height: 44px;
+    font-size: 1rem;
   }
 
   .contextHeader {
