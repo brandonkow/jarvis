@@ -22,8 +22,15 @@ const OBJECT_DIR = path.resolve(globalThis.process?.env?.ESTATELAB_OBJECT_DIR ||
 
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8" };
 const OWNER_TOKEN = String(globalThis.process?.env?.ESTATELAB_OWNER_TOKEN || "");
-const OPENAI_API_KEY = String(globalThis.process?.env?.OPENAI_API_KEY || "").trim();
-const OPENAI_MODEL = String(globalThis.process?.env?.OPENAI_MODEL || "gpt-4.1-mini").trim();
+const RAW_OPENAI_API_KEY = String(globalThis.process?.env?.OPENAI_API_KEY || "").trim();
+const OPENROUTER_API_KEY = String(globalThis.process?.env?.OPENROUTER_API_KEY || "").trim();
+const OPENAI_KEY_IS_OPENROUTER = /^sk-or-/i.test(RAW_OPENAI_API_KEY);
+const LLM_PROVIDER = String(globalThis.process?.env?.LLM_PROVIDER || (OPENROUTER_API_KEY || OPENAI_KEY_IS_OPENROUTER ? "openrouter" : "openai")).trim().toLowerCase();
+const LLM_API_KEY = String(globalThis.process?.env?.LLM_API_KEY || (LLM_PROVIDER === "openrouter" ? OPENROUTER_API_KEY || (OPENAI_KEY_IS_OPENROUTER ? RAW_OPENAI_API_KEY : "") : RAW_OPENAI_API_KEY)).trim();
+const LLM_MODEL = String(globalThis.process?.env?.LLM_MODEL || (LLM_PROVIDER === "openrouter" ? "openrouter/auto" : globalThis.process?.env?.OPENAI_MODEL || "gpt-4.1-mini")).trim();
+const LLM_BASE_URL = String(globalThis.process?.env?.LLM_BASE_URL || (LLM_PROVIDER === "openrouter" ? "https://openrouter.ai/api/v1" : "https://api.openai.com/v1")).replace(/\/$/, "");
+const OPENROUTER_SITE_URL = String(globalThis.process?.env?.OPENROUTER_SITE_URL || "").trim();
+const OPENAI_SERVICES_API_KEY = String(globalThis.process?.env?.OPENAI_SERVICES_API_KEY || (OPENAI_KEY_IS_OPENROUTER ? "" : RAW_OPENAI_API_KEY)).trim();
 const OPENAI_EMBEDDING_MODEL = String(globalThis.process?.env?.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small").trim();
 const OPENAI_TRANSCRIPTION_MODEL = String(globalThis.process?.env?.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-mini-transcribe").trim();
 const OPENAI_SPEECH_MODEL = String(globalThis.process?.env?.OPENAI_SPEECH_MODEL || "gpt-4o-mini-tts").trim();
@@ -42,9 +49,14 @@ const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
 const scrypt = promisify(scryptCallback);
 const authAttempts = new Map();
 const requestWindows = new Map();
+const llmRuntime = {
+  configuredModel: LLM_MODEL,
+  resolvedModel: "",
+  lastUsedAt: ""
+};
 const knowledgeService = new KnowledgeService({
   objectDir: OBJECT_DIR,
-  apiKey: OPENAI_API_KEY,
+  apiKey: OPENAI_SERVICES_API_KEY,
   embeddingModel: OPENAI_EMBEDDING_MODEL,
   transcriptionModel: OPENAI_TRANSCRIPTION_MODEL,
   speechModel: OPENAI_SPEECH_MODEL,
@@ -1379,8 +1391,8 @@ async function dealAnalysisSources() {
     }));
 }
 
-function openAiEnabled() {
-  return Boolean(OPENAI_API_KEY);
+function llmEnabled() {
+  return Boolean(LLM_API_KEY && ["openai", "openrouter"].includes(LLM_PROVIDER));
 }
 
 function openAiOutputText(payload) {
@@ -1396,33 +1408,61 @@ function openAiOutputText(payload) {
     .trim();
 }
 
-async function requestOpenAIText({ instructions, input, maxOutputTokens = 700 }) {
-  if (!openAiEnabled()) throw new Error("OpenAI is not configured.");
+function chatCompletionText(payload) {
+  const content = payload?.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content.trim();
+  if (Array.isArray(content)) {
+    return content.map((part) => typeof part === "string" ? part : part?.text || "").join("\n").trim();
+  }
+  return "";
+}
+
+async function requestLlmText({ instructions, input, maxOutputTokens = 700 }) {
+  if (!llmEnabled()) throw new Error("The LLM provider is not configured.");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const openRouter = LLM_PROVIDER === "openrouter";
+    const response = await fetch(`${LLM_BASE_URL}/${openRouter ? "chat/completions" : "responses"}`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
+        "Authorization": `Bearer ${LLM_API_KEY}`,
+        "Content-Type": "application/json",
+        ...(openRouter && OPENROUTER_SITE_URL ? { "HTTP-Referer": OPENROUTER_SITE_URL } : {}),
+        ...(openRouter ? { "X-Title": "EstateLab Jarvis" } : {})
       },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        instructions,
-        input,
-        max_output_tokens: maxOutputTokens
-      }),
+      body: JSON.stringify(openRouter
+        ? {
+          model: LLM_MODEL,
+          messages: [
+            { role: "system", content: instructions },
+            { role: "user", content: input }
+          ],
+          max_tokens: maxOutputTokens
+        }
+        : {
+          model: LLM_MODEL,
+          instructions,
+          input,
+          max_output_tokens: maxOutputTokens
+        }),
       signal: controller.signal
     });
-    if (!response.ok) throw new Error(`OpenAI request failed with status ${response.status}.`);
+    if (!response.ok) throw new Error(`${openRouter ? "OpenRouter" : "OpenAI"} request failed with status ${response.status}.`);
     const payload = await response.json();
-    const text = openAiOutputText(payload);
-    if (!text) throw new Error("OpenAI returned no text.");
-    return text;
+    const text = openRouter ? chatCompletionText(payload) : openAiOutputText(payload);
+    if (!text) throw new Error(`${openRouter ? "OpenRouter" : "OpenAI"} returned no text.`);
+    const resolvedModel = String(payload.model || LLM_MODEL);
+    llmRuntime.resolvedModel = resolvedModel;
+    llmRuntime.lastUsedAt = new Date().toISOString();
+    return { text, provider: LLM_PROVIDER, model: resolvedModel };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function requestOpenAIText(options) {
+  return (await requestLlmText(options)).text;
 }
 
 const jarvisLlmInstructions = `You are Jarvis, a warm, direct real-estate thinking companion grounded in EstateLab's Malaysia-focused framework.
@@ -1502,7 +1542,7 @@ DETERMINISTIC FALLBACK ANALYSIS
 ${fallbackAnswer}
 
 Respond to the current user message. Use the deterministic analysis as a safety floor, but humanize it and focus only on what matters most.`;
-  return requestOpenAIText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 700 });
+  return requestLlmText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 700 });
 }
 
 async function generateDealLlmCommentary(analysis, dealCard, financialProfile) {
@@ -1516,7 +1556,7 @@ Investor context:
 ${contextText(financialProfile, profileContextLabels, "Financial profile") || "Not supplied"}
 
 Give a natural Jarvis commentary in 60 to 110 words. Start with the verdict, explain the single most important reason, state the strongest challenge, and end with the next evidence to obtain. Do not alter any score, metric, hard stop, or verdict.`;
-  return requestOpenAIText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 220 });
+  return requestLlmText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 220 });
 }
 
 async function retrieveGuidance(query, property, brain, knowledge = emptyKnowledge()) {
@@ -1579,9 +1619,9 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
   const companionIntent = detectCompanionIntent(query);
   if (companionIntent && (companionIntent !== "need_context" || !hasStructuredContext)) {
     const fallbackAnswer = companionAnswer(companionIntent);
-    if (openAiEnabled()) {
+    if (llmEnabled()) {
       try {
-        const answer = await generateJarvisLlmAnswer({
+        const completion = await generateJarvisLlmAnswer({
           query,
           session,
           dealCard,
@@ -1591,7 +1631,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
           decisions: [],
           fallbackAnswer
         });
-        return { answer, sources: [], mode: "llm", retrievalMode: "none" };
+        return { answer: completion.text, sources: [], mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: "none" };
       } catch (error) {
         console.warn(`Jarvis LLM fallback: ${error.message}`);
       }
@@ -1733,9 +1773,9 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
       }))
     ];
 
-  if (openAiEnabled()) {
+  if (llmEnabled()) {
     try {
-      const answer = await generateJarvisLlmAnswer({
+      const completion = await generateJarvisLlmAnswer({
         query,
         session,
         dealCard,
@@ -1745,7 +1785,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         decisions: topDecisions,
         fallbackAnswer
       });
-      return { answer, sources, mode: "llm", retrievalMode: evidenceResult.mode };
+      return { answer: completion.text, sources, mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: evidenceResult.mode };
     } catch (error) {
       console.warn(`Jarvis LLM fallback: ${error.message}`);
     }
@@ -2052,9 +2092,11 @@ async function router(req, res) {
         decisions: db.brain.decisions.length
       },
       llm: {
-        enabled: openAiEnabled(),
-        provider: openAiEnabled() ? "openai" : null,
-        model: openAiEnabled() ? OPENAI_MODEL : null
+        enabled: llmEnabled(),
+        provider: llmEnabled() ? LLM_PROVIDER : null,
+        configuredModel: llmEnabled() ? LLM_MODEL : null,
+        resolvedModel: llmEnabled() ? llmRuntime.resolvedModel || null : null,
+        lastUsedAt: llmEnabled() ? llmRuntime.lastUsedAt || null : null
       },
       audio: {
         serverStt: knowledgeService.audioEnabled(),
@@ -2145,9 +2187,11 @@ async function router(req, res) {
     const analysis = analyzeSevenStageDeal(dealCard, financialProfile);
     const sources = await dealAnalysisSources();
     let mode = "framework";
-    if (openAiEnabled()) {
+    let completion = null;
+    if (llmEnabled()) {
       try {
-        analysis.aiCommentary = await generateDealLlmCommentary(analysis, dealCard, financialProfile);
+        completion = await generateDealLlmCommentary(analysis, dealCard, financialProfile);
+        analysis.aiCommentary = completion.text;
         analysis.voiceSummary = analysis.aiCommentary;
         mode = "llm";
       } catch (error) {
@@ -2178,6 +2222,8 @@ async function router(req, res) {
       analysis,
       sources,
       mode,
+      provider: mode === "llm" ? completion.provider : null,
+      model: mode === "llm" ? completion.model : null,
       message: jarvisMessage,
       session: publicJarvisSession(session)
     });
@@ -2553,6 +2599,7 @@ export {
   analyzeSevenStageDeal,
   dealAnalysisText,
   handler,
+  requestLlmText,
   requestOpenAIText,
   retrieveJarvisAnswer,
   server

@@ -42,6 +42,9 @@ ESTATELAB_RAG_PATH=./rag/corpus.json
 ESTATELAB_OBJECT_DIR=./data/objects
 OPENAI_API_KEY=your-server-side-api-key
 OPENAI_MODEL=gpt-4.1-mini
+OPENROUTER_API_KEY=your-openrouter-key
+LLM_MODEL=openrouter/auto
+OPENAI_SERVICES_API_KEY=optional-separate-openai-key
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_TRANSCRIPTION_MODEL=gpt-4o-mini-transcribe
 OPENAI_SPEECH_MODEL=gpt-4o-mini-tts
@@ -60,9 +63,11 @@ ESTATELAB_PG_POOL_MAX=5
 
 `ESTATELAB_DATA_DIR` controls the JSON fallback and PostgreSQL migration source. If the folder is empty on first start, EstateLab seeds it from the bundled `data/db.json`.
 
-`OPENAI_API_KEY` enables conversational AI through the server-side OpenAI Responses API. The key is never sent to the browser. `OPENAI_MODEL` is configurable, and Jarvis automatically falls back to its deterministic EstateLab response engine if the API is unavailable.
+Jarvis supports OpenAI and OpenRouter for conversational reasoning. Set `OPENROUTER_API_KEY` to select OpenRouter automatically; set `LLM_MODEL` to an exact OpenRouter model slug for consistent behavior, or use `openrouter/auto` and inspect the resolved model reported by `/api/jarvis/status` and the frontend session indicator. `OPENAI_API_KEY` remains compatible with direct OpenAI reasoning. The keys are never sent to the browser.
 
-The same server key optionally enables evidence embeddings and server voice. Each model is independently configurable. Evidence retrieval falls back to lexical matching, browser speech remains the first voice path where available, and written chat continues if audio generation fails.
+Advanced provider overrides are `LLM_PROVIDER`, `LLM_API_KEY`, and `LLM_BASE_URL`. An OpenRouter key accidentally stored in `OPENAI_API_KEY` is detected by its `sk-or-` prefix and routed correctly.
+
+Embeddings and server voice use OpenAI-specific endpoints. When OpenRouter handles reasoning, set a separate `OPENAI_SERVICES_API_KEY` only if those services are needed. Evidence retrieval otherwise falls back to lexical matching, browser speech remains the first voice path where available, and written chat continues if audio generation fails.
 
 `ESTATELAB_OBJECT_DIR` stores private originals uploaded through the owner evidence API. Text, Markdown, CSV, JSON, and HTML are indexed immediately. Other formats are retained but reported as stored rather than indexed. On Render, keep this directory on the persistent disk.
 
@@ -82,7 +87,7 @@ Render is the recommended first deployment target because it can run the Node se
 2. Use `npm install` as the build command.
 3. Use `npm start` as the start command.
 4. Set `ESTATELAB_OWNER_TOKEN` as a secret environment variable.
-5. Set `OPENAI_API_KEY` as a secret environment variable to enable conversational AI.
+5. Set either `OPENROUTER_API_KEY` or `OPENAI_API_KEY` as a secret environment variable to enable conversational AI.
 6. Create or attach a PostgreSQL database and set `DATABASE_URL` to its internal connection URL.
 7. Keep the persistent disk and `ESTATELAB_DATA_DIR=/var/data` during the first migration so PostgreSQL can import the existing JSON state.
 8. Keep `ESTATELAB_OBJECT_DIR=/var/data/objects` on the disk for uploaded source originals.

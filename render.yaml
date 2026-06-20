@@ -22,6 +22,12 @@ services:
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4.1-mini
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: OPENAI_SERVICES_API_KEY
+        sync: false
       - key: OPENAI_EMBEDDING_MODEL
         value: text-embedding-3-small
       - key: OPENAI_TRANSCRIPTION_MODEL

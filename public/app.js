@@ -102,6 +102,13 @@ function setSessionState(text) {
   sessionStatus.textContent = text;
 }
 
+function modelLabel(model, fallback = "AI") {
+  const value = String(model || "").trim();
+  if (!value) return fallback;
+  const slug = value.split("/").pop().replace(/[^a-zA-Z0-9.-]+/g, "-");
+  return slug.slice(0, 24).toUpperCase() || fallback;
+}
+
 function setAuthMode(mode) {
   authMode = mode === "register" ? "register" : "login";
   const registering = authMode === "register";
@@ -752,7 +759,7 @@ async function askJarvis(question) {
   });
   sessionId = result.session.id;
   window.localStorage.setItem(sessionKey, sessionId);
-  const responseMode = result.mode === "llm" ? "AI" : "FRAMEWORK";
+  const responseMode = result.mode === "llm" ? modelLabel(result.model) : "FRAMEWORK";
   setSessionState(`${responseMode} / ${result.session.messages.length}`);
   return result;
 }
@@ -816,7 +823,7 @@ async function runDealAnalysis() {
     });
     sessionId = result.session.id;
     window.localStorage.setItem(sessionKey, sessionId);
-    const responseMode = result.mode === "llm" ? "AI" : "FRAMEWORK";
+    const responseMode = result.mode === "llm" ? modelLabel(result.model) : "FRAMEWORK";
     setSessionState(`${responseMode} / ${result.session.messages.length}`);
     addDealAnalysis(result.analysis, result.sources);
     speak(result.analysis.voiceSummary);
@@ -932,7 +939,9 @@ async function bootJarvis() {
   setAuthMode("login");
   try {
     const status = await requestJson("/api/jarvis/status");
-    const intelligenceMode = status.llm?.enabled ? "AI" : "FRAMEWORK";
+    const intelligenceMode = status.llm?.enabled
+      ? modelLabel(status.llm.resolvedModel || status.llm.configuredModel)
+      : "FRAMEWORK";
     serverSttEnabled = Boolean(status.audio?.serverStt);
     serverTtsEnabled = Boolean(status.audio?.serverTts);
     emailDeliveryEnabled = Boolean(status.accounts?.emailDelivery);

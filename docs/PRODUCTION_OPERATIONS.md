@@ -62,7 +62,18 @@ Server routes:
 - `POST /api/jarvis/transcribe`
 - `POST /api/jarvis/speech`
 
-Both require `OPENAI_API_KEY`; model and voice names are environment-configurable.
+Both require an OpenAI service key through `OPENAI_SERVICES_API_KEY` or a direct `OPENAI_API_KEY`; model and voice names are environment-configurable. An OpenRouter key powers reasoning only.
+
+## Reasoning Provider
+
+For OpenRouter:
+
+```text
+OPENROUTER_API_KEY=sk-or-...
+LLM_MODEL=openrouter/auto
+```
+
+For repeatable investment analysis, replace `openrouter/auto` with the exact model slug chosen in OpenRouter. Every successful LLM reply returns `provider` and `model`. `GET /api/jarvis/status` reports both `configuredModel` and `resolvedModel`; the frontend displays the resolved model after a reply. With auto-routing, these values can differ by request.
 
 ## Deployment Checks
 
