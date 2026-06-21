@@ -8,6 +8,7 @@ The public user experience is intentionally simple: users interact with one Apex
 
 - Apex Analytic browser UI with browser voice plus server speech fallback.
 - Optional member accounts with private, resumable chat sessions; guests remain device-scoped.
+- Reviewed long-term memory for signed-in users, with pending suggestions, explicit approval, and cross-session recall.
 - Email verification, password recovery, and owner-only account administration.
 - PostgreSQL production storage with automatic JSON fallback for local development.
 - Owner-controlled evidence uploads, private original-file storage, chunking, optional embeddings, hybrid retrieval, and retrieval monitoring.
@@ -73,7 +74,7 @@ Embeddings and server voice use OpenAI-specific endpoints. When OpenRouter handl
 
 `ESTATELAB_EMAIL_WEBHOOK_URL` is an optional server-to-server delivery hook for verification and reset codes. The hook receives `type`, `to`, `displayName`, `token`, and `expiresAt`; set `ESTATELAB_EMAIL_WEBHOOK_SECRET` to add a bearer credential. Keep `ESTATELAB_AUTH_DEBUG_TOKENS=false` in production. Enable mandatory verification only after delivery is working.
 
-When AI mode is enabled, chat messages and any Deal Card or Financial Profile context submitted with the message are sent to the configured provider for response generation. Public input remains conversation data and is not promoted into Apex Analytic's owner-controlled knowledge base.
+When AI mode is enabled, chat messages, approved private memories, and any Deal Card or Financial Profile context submitted with the message are sent to the configured provider for response generation. Public input is never promoted into Apex Analytic's owner-controlled knowledge base. Long-term memories remain private to the signed-in account, and pending suggestions do not influence responses until the user approves them.
 
 Member passwords are scrypt-hashed. Login cookies are opaque, `HttpOnly`, `SameSite=Strict`, and automatically marked `Secure` behind Render HTTPS. Only a hash of each login token is stored. Guest chat access is bound to the originating browser client ID.
 
@@ -113,6 +114,10 @@ Public:
 - `POST /api/auth/verify-email`
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password`
+- `GET /api/memory` (signed-in account)
+- `POST /api/memory` (signed-in account)
+- `PATCH /api/memory/:id` (signed-in account)
+- `DELETE /api/memory/:id` (signed-in account)
 - `GET /api/jarvis/sessions`
 - `POST /api/jarvis/sessions`
 - `GET /api/jarvis/sessions/:id`

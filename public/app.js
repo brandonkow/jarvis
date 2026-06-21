@@ -40,6 +40,14 @@ const verificationToken = document.querySelector("#verificationToken");
 const verificationRequest = document.querySelector("#verificationRequest");
 const verificationSubmit = document.querySelector("#verificationSubmit");
 const logoutButton = document.querySelector("#logoutButton");
+const memoryToggle = document.querySelector("#memoryToggle");
+const memoryPanel = document.querySelector("#memoryPanel");
+const memoryClose = document.querySelector("#memoryClose");
+const memoryForm = document.querySelector("#memoryForm");
+const memoryInput = document.querySelector("#memoryInput");
+const memoryList = document.querySelector("#memoryList");
+const memoryApprovedCount = document.querySelector("#memoryApprovedCount");
+const memoryPendingCount = document.querySelector("#memoryPendingCount");
 const dealFields = Array.from(document.querySelectorAll("[data-deal-field]"));
 const profileFields = Array.from(document.querySelectorAll("[data-profile-field]"));
 const contextToggles = Array.from(document.querySelectorAll("[data-context-toggle]"));
@@ -134,7 +142,9 @@ function renderAuthState(user) {
   authForm.hidden = signedIn;
   authRecovery.hidden = true;
   authUserPanel.hidden = !signedIn;
+  memoryToggle.hidden = !signedIn;
   authTitle.textContent = signedIn ? "ACCOUNT" : authMode === "register" ? "CREATE ACCOUNT" : "SIGN IN";
+  if (!signedIn) closeMemoryPanel();
   if (signedIn) {
     authUserName.textContent = authenticatedUser.displayName;
     authUserEmail.textContent = authenticatedUser.email;
@@ -148,6 +158,7 @@ function renderAuthState(user) {
 }
 
 function openAuthPanel() {
+  closeMemoryPanel();
   collapseContextPanels();
   authPanel.hidden = false;
   accountToggle.setAttribute("aria-expanded", "true");
@@ -164,6 +175,7 @@ function closeAuthPanel() {
 }
 
 function sourceLabel(type) {
+  if (type === "memory") return "MEMORY";
   if (type === "belief") return "BELIEF";
   if (type === "decision") return "DECISION";
   if (type === "evidence") return "EVIDENCE";
@@ -171,6 +183,7 @@ function sourceLabel(type) {
 }
 
 function sourceName(source) {
+  if (source?.type === "memory") return "your approved memory";
   if (source?.type === "evidence") return "owner evidence";
   const title = String(source?.title || "").toLowerCase();
   if (title.includes("rental") || title.includes("installment") || title.includes("tenant")) return "rental rule";
@@ -230,6 +243,106 @@ function addMessage(role, text, sources = [], intelligence = {}) {
     ${role === "jarvis" ? sourcesMarkup(sources) : ""}
   `;
   transcript.append(message);
+  transcript.scrollTop = transcript.scrollHeight;
+}
+
+function memoryItemMarkup(item) {
+  const pending = item.status === "pending";
+  return `
+    <article class="memoryItem ${pending ? "pending" : "approved"}" data-memory-item="${escapeHtml(item.id)}">
+      <span><small>${escapeHtml(item.category)}</small><i>${pending ? "REVIEW" : "APPROVED"}</i></span>
+      <p>${escapeHtml(item.content)}</p>
+      <div class="memoryActions">
+        ${pending ? `
+          <button type="button" data-memory-action="approve" data-memory-id="${escapeHtml(item.id)}">KEEP</button>
+          <button type="button" data-memory-action="dismiss" data-memory-id="${escapeHtml(item.id)}">SKIP</button>
+        ` : `<button type="button" data-memory-action="delete" data-memory-id="${escapeHtml(item.id)}">FORGET</button>`}
+      </div>
+    </article>
+  `;
+}
+
+function renderMemory(payload = {}) {
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  memoryApprovedCount.textContent = String(payload.summary?.approved || 0);
+  memoryPendingCount.textContent = String(payload.summary?.pending || 0);
+  memoryList.innerHTML = items.length
+    ? items.slice().sort((a, b) => {
+      const statusOrder = { pending: 0, approved: 1 };
+      return statusOrder[a.status] - statusOrder[b.status]
+        || String(b.updatedAt).localeCompare(String(a.updatedAt));
+    }).map(memoryItemMarkup).join("")
+    : '<p class="memoryEmpty">No long-term memories yet. Tell Apex “Remember that...” or add one above.</p>';
+}
+
+async function loadMemory() {
+  const payload = await requestJson("/api/memory");
+  renderMemory(payload);
+  return payload;
+}
+
+function closeMemoryPanel() {
+  memoryPanel.hidden = true;
+  memoryToggle.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("memoryOpen");
+}
+
+async function openMemoryPanel() {
+  if (!authenticatedUser) return openAuthPanel();
+  closeAuthPanel();
+  collapseContextPanels();
+  memoryPanel.hidden = false;
+  memoryToggle.setAttribute("aria-expanded", "true");
+  document.body.classList.add("memoryOpen");
+  memoryList.innerHTML = '<p class="memoryEmpty">Loading private memory...</p>';
+  try {
+    await loadMemory();
+  } catch (error) {
+    memoryList.innerHTML = `<p class="memoryEmpty">${escapeHtml(error.message)}</p>`;
+  }
+}
+
+async function reviewMemory(id, action) {
+  if (action === "delete") {
+    await requestJson(`/api/memory/${encodeURIComponent(id)}`, { method: "DELETE" });
+    return null;
+  }
+  return requestJson(`/api/memory/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ action })
+  });
+}
+
+async function handleMemoryAction(button) {
+  const id = button.getAttribute("data-memory-id");
+  const action = button.getAttribute("data-memory-action");
+  if (!id || !action) return;
+  button.disabled = true;
+  try {
+    await reviewMemory(id, action);
+    document.querySelectorAll(`[data-memory-item="${CSS.escape(id)}"]`).forEach((item) => item.remove());
+    if (!memoryPanel.hidden) await loadMemory();
+    setSystemState("System ready", action === "approve" ? "Memory approved." : action === "delete" ? "Memory forgotten." : "Memory skipped.");
+  } catch (error) {
+    setSystemState("Connection issue", error.message || "Memory could not be updated.");
+    button.disabled = false;
+  }
+}
+
+function addMemorySuggestion(item) {
+  if (!item?.id) return;
+  const suggestion = document.createElement("article");
+  suggestion.className = "memorySuggestion";
+  suggestion.setAttribute("data-memory-item", item.id);
+  suggestion.innerHTML = `
+    <span><small>LONG-TERM MEMORY</small><b>Remember this?</b></span>
+    <p>${escapeHtml(item.content)}</p>
+    <div class="memoryActions">
+      <button type="button" data-memory-action="approve" data-memory-id="${escapeHtml(item.id)}">KEEP</button>
+      <button type="button" data-memory-action="dismiss" data-memory-id="${escapeHtml(item.id)}">SKIP</button>
+    </div>
+  `;
+  transcript.append(suggestion);
   transcript.scrollTop = transcript.scrollHeight;
 }
 
@@ -674,6 +787,7 @@ async function verifyEmail() {
 async function logout() {
   logoutButton.disabled = true;
   try {
+    closeMemoryPanel();
     await requestJson("/api/auth/logout", { method: "POST", body: "{}" });
     renderAuthState(null);
     setAuthMode("login");
@@ -777,6 +891,7 @@ async function submitQuestion(question) {
   try {
     const result = await askJarvis(cleanQuestion);
     addMessage("jarvis", result.answer, result.sources, result);
+    addMemorySuggestion(result.memoryCandidate);
     speak(result.answer);
     if (!voiceResponsesEnabled) setSystemState("System ready", "Ready when you are.");
   } catch (error) {
@@ -900,6 +1015,37 @@ accountToggle.addEventListener("click", () => {
   if (authPanel.hidden) openAuthPanel();
   else closeAuthPanel();
 });
+memoryToggle.addEventListener("click", () => {
+  if (memoryPanel.hidden) void openMemoryPanel();
+  else closeMemoryPanel();
+});
+memoryClose.addEventListener("click", closeMemoryPanel);
+memoryForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const content = memoryInput.value.trim();
+  if (!content) return memoryInput.focus();
+  const submitButton = memoryForm.querySelector("button");
+  submitButton.disabled = true;
+  try {
+    await requestJson("/api/memory", {
+      method: "POST",
+      body: JSON.stringify({ content })
+    });
+    memoryInput.value = "";
+    await loadMemory();
+    setSystemState("System ready", "Memory added for review.");
+  } catch (error) {
+    setSystemState("Connection issue", error.message || "Memory could not be added.");
+  } finally {
+    submitButton.disabled = false;
+  }
+});
+for (const container of [transcript, memoryList]) {
+  container.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-memory-action]");
+    if (button) void handleMemoryAction(button);
+  });
+}
 authClose.addEventListener("click", closeAuthPanel);
 authModeToggle.addEventListener("click", () => setAuthMode(authMode === "login" ? "register" : "login"));
 authRecoveryToggle.addEventListener("click", () => showAuthRecovery(true));
@@ -918,6 +1064,7 @@ verificationSubmit.addEventListener("click", verifyEmail);
 logoutButton.addEventListener("click", logout);
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !authPanel.hidden) closeAuthPanel();
+  if (event.key === "Escape" && !memoryPanel.hidden) closeMemoryPanel();
 });
 
 soundToggle.addEventListener("click", () => {

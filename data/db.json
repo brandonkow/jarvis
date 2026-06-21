@@ -992,7 +992,7 @@
     "sessions": []
   },
   "auth": {
-    "version": 1,
+    "version": 3,
     "users": [],
     "sessions": []
   }

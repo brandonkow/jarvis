@@ -186,14 +186,32 @@ function emptyJarvis() {
 }
 
 function emptyAuth() {
-  return { version: 2, users: [], sessions: [], tokens: [] };
+  return { version: 3, users: [], sessions: [], tokens: [] };
+}
+
+function normalizeUserMemory(memory) {
+  const validCategories = new Set(["preference", "goal", "constraint", "experience", "decision", "general"]);
+  const validStatuses = new Set(["pending", "approved", "dismissed"]);
+  const items = Array.isArray(memory?.items)
+    ? memory.items.map((item) => ({
+      id: String(item.id || randomUUID()),
+      category: validCategories.has(item.category) ? item.category : "general",
+      content: String(item.content || "").replace(/\s+/g, " ").trim().slice(0, 500),
+      status: validStatuses.has(item.status) ? item.status : "pending",
+      sourceMessageId: String(item.sourceMessageId || "").slice(0, 80),
+      createdAt: String(item.createdAt || new Date().toISOString()),
+      updatedAt: String(item.updatedAt || item.createdAt || new Date().toISOString()),
+      reviewedAt: String(item.reviewedAt || "")
+    })).filter((item) => item.content).slice(0, 200)
+    : [];
+  return { version: 1, items };
 }
 
 function normalizeAuth(auth) {
   const now = Date.now();
   const legacyUsersAreVerified = Number(auth?.version || 1) < 2;
   return {
-    version: 2,
+    version: 3,
     users: Array.isArray(auth?.users)
       ? auth.users.map((user) => ({
         id: String(user.id || ""),
@@ -201,6 +219,7 @@ function normalizeAuth(auth) {
         displayName: String(user.displayName || "").trim(),
         passwordHash: String(user.passwordHash || ""),
         role: user.role === "admin" ? "admin" : "member",
+        memory: normalizeUserMemory(user.memory),
         emailVerifiedAt: String(user.emailVerifiedAt || (legacyUsersAreVerified ? user.createdAt || new Date().toISOString() : "")),
         disabledAt: String(user.disabledAt || ""),
         createdAt: String(user.createdAt || new Date().toISOString())
@@ -362,6 +381,65 @@ function publicUser(user) {
     disabled: Boolean(user.disabledAt),
     createdAt: user.createdAt
   };
+}
+
+function publicMemoryItem(item) {
+  return {
+    id: item.id,
+    category: item.category,
+    content: item.content,
+    status: item.status,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    reviewedAt: item.reviewedAt
+  };
+}
+
+function memorySummary(memory) {
+  const items = normalizeUserMemory(memory).items;
+  return {
+    pending: items.filter((item) => item.status === "pending").length,
+    approved: items.filter((item) => item.status === "approved").length
+  };
+}
+
+function memoryCategory(content) {
+  const text = String(content || "").toLowerCase();
+  if (/\b(?:prefer|avoid|refuse|favourite|favorite)\b/.test(text)) return "preference";
+  if (/\b(?:goal|target|aim|plan|priority)\b/.test(text)) return "goal";
+  if (/\b(?:budget|cannot|can't|must|need|limit|constraint|reserve)\b/.test(text)) return "constraint";
+  if (/\b(?:experience|learned|lesson|noticed|observed|found)\b/.test(text)) return "experience";
+  if (/\b(?:decided|decision|will buy|will not buy|won't buy)\b/.test(text)) return "decision";
+  return "general";
+}
+
+function proposeLongTermMemory(message, memory, sourceMessageId) {
+  const original = String(message || "").replace(/\s+/g, " ").trim();
+  if (original.length < 12 || original.length > 1200) return null;
+  const explicitRemember = /^\s*(?:please\s+)?remember\b/i.test(original);
+  if (original.endsWith("?") && !explicitRemember) return null;
+  const durableCue = /\b(?:remember(?: that)?|i (?:prefer|avoid|refuse|believe|always|never|usually)|my (?:goal|priority|budget|strategy|target|risk tolerance|holding period)|from my experience|i (?:learned|noticed|observed|found)|i have decided)\b/i;
+  if (!durableCue.test(original)) return null;
+  const content = original.replace(/^\s*(?:please\s+)?remember(?:\s+that)?\s*/i, "").slice(0, 500).trim();
+  if (content.length < 8) return null;
+  const normalized = content.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const existing = normalizeUserMemory(memory).items.find((item) => item.content.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() === normalized);
+  if (existing) return null;
+  const now = new Date().toISOString();
+  return {
+    id: randomUUID(),
+    category: memoryCategory(content),
+    content,
+    status: "pending",
+    sourceMessageId: String(sourceMessageId || ""),
+    createdAt: now,
+    updatedAt: now,
+    reviewedAt: ""
+  };
+}
+
+function approvedUserMemories(user) {
+  return normalizeUserMemory(user?.memory).items.filter((item) => item.status === "approved");
 }
 
 function normalizeEmail(value) {
@@ -1537,6 +1615,27 @@ function beliefsForPrompt(beliefs = []) {
   ].join("\n")).join("\n");
 }
 
+function selectRelevantUserMemories(memories = [], query = "", limit = 6) {
+  const terms = tokenize(query);
+  const scored = memories.map((memory) => ({
+    ...memory,
+    score: termScore(terms, `${memory.category} ${memory.content}`)
+  }));
+  const relevant = scored
+    .filter((memory) => memory.score > 0)
+    .sort((a, b) => b.score - a.score || String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  const anchors = scored
+    .filter((memory) => ["preference", "goal", "constraint"].includes(memory.category) && !relevant.some((item) => item.id === memory.id))
+    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+    .slice(0, 2);
+  return [...relevant, ...anchors].slice(0, limit);
+}
+
+function memoriesForPrompt(memories = []) {
+  if (!memories.length) return "No approved long-term user memory is relevant.";
+  return memories.map((memory) => `- ${memory.category}: ${memory.content}`).join("\n");
+}
+
 async function generateJarvisLlmAnswer({
   query,
   session,
@@ -1545,6 +1644,7 @@ async function generateJarvisLlmAnswer({
   references,
   beliefs,
   decisions,
+  memories,
   fallbackAnswer
 }) {
   const decisionContext = decisions.length
@@ -1572,6 +1672,9 @@ ${beliefsForPrompt(beliefs)}
 RELEVANT PRIOR DECISIONS
 ${decisionContext}
 
+APPROVED PRIVATE USER MEMORY
+${memoriesForPrompt(memories)}
+
 DETERMINISTIC FALLBACK ANALYSIS
 ${fallbackAnswer}
 
@@ -1579,7 +1682,7 @@ Respond to the current user message. Use the deterministic analysis as a safety 
   return requestLlmText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 1200 });
 }
 
-async function generateDealLlmCommentary(analysis, dealCard, financialProfile) {
+async function generateDealLlmCommentary(analysis, dealCard, financialProfile, memories = []) {
   const input = `A deterministic seven-stage Apex Analytic engine produced this result:
 ${dealAnalysisText(analysis)}
 
@@ -1588,6 +1691,9 @@ ${contextText(dealCard, dealContextLabels, "Deal card") || "Not supplied"}
 
 Investor context:
 ${contextText(financialProfile, profileContextLabels, "Financial profile") || "Not supplied"}
+
+Approved private user memory:
+${memoriesForPrompt(memories)}
 
 Give a natural Apex Analytic commentary in 60 to 110 words. Start with the verdict, explain the single most important reason, state the strongest challenge, and end with the next evidence to obtain. Do not alter any score, metric, hard stop, or verdict.`;
   return requestLlmText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 220 });
@@ -1642,7 +1748,7 @@ async function retrieveGuidance(query, property, brain, knowledge = emptyKnowled
   };
 }
 
-async function retrieveJarvisAnswer(query, brain, session, context = {}, knowledge = emptyKnowledge()) {
+async function retrieveJarvisAnswer(query, brain, session, context = {}, knowledge = emptyKnowledge(), userMemories = []) {
   const dealCard = cleanContextRecord(context.dealCard, dealContextLabels);
   const financialProfile = cleanContextRecord(context.financialProfile, profileContextLabels);
   const hasStructuredContext = hasContextData({ dealCard, financialProfile });
@@ -1650,6 +1756,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     contextText(dealCard, dealContextLabels, "Deal card"),
     contextText(financialProfile, profileContextLabels, "Financial profile")
   ].filter(Boolean).join(" ");
+  const relevantMemories = selectRelevantUserMemories(userMemories, `${query} ${contextForSearch}`);
   const companionIntent = detectCompanionIntent(query);
   if (companionIntent && (companionIntent !== "need_context" || !hasStructuredContext)) {
     const fallbackAnswer = companionAnswer(companionIntent);
@@ -1663,6 +1770,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
           references: [],
           beliefs: [],
           decisions: [],
+          memories: relevantMemories,
           fallbackAnswer
         });
         return { answer: completion.text, sources: [], mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: "none" };
@@ -1760,6 +1868,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     verdict,
     bulletSection("Owner evidence", ownerEvidence.slice(0, 2).map((reference) => `${reference.title}: ${shortSentence(reference.content, 180)}`), 2),
     bulletSection("Deal read", dealRead, 3),
+    bulletSection("Your memory", relevantMemories.map((memory) => memory.content), 3),
     bulletSection("Why", reasoning, 3),
     bulletSection("Watch-outs", risks, 2),
     bulletSection("Profile fit", profileFit, 3),
@@ -1804,6 +1913,13 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         type: "decision",
         preview: conciseText(decision.thesis, 160),
         score: decision.score
+      })),
+      ...relevantMemories.map((memory) => ({
+        id: memory.id,
+        title: memory.content,
+        type: "memory",
+        preview: memory.category,
+        score: memory.score
       }))
     ];
 
@@ -1817,6 +1933,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         references: promptReferences,
         beliefs: topBeliefs,
         decisions: topDecisions,
+        memories: relevantMemories,
         fallbackAnswer
       });
       return { answer: completion.text, sources, mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: evidenceResult.mode };
@@ -1869,6 +1986,8 @@ function isPublicApiRoute(method, pathname) {
     || (method === "POST" && pathname === "/api/auth/verify-email")
     || (method === "POST" && pathname === "/api/auth/forgot-password")
     || (method === "POST" && pathname === "/api/auth/reset-password")
+    || (["GET", "POST"].includes(method) && pathname === "/api/memory")
+    || (["PATCH", "DELETE"].includes(method) && pathname.startsWith("/api/memory/"))
     || (method === "GET" && pathname === "/api/jarvis/status")
     || (method === "GET" && pathname === "/api/jarvis/sessions")
     || (method === "POST" && pathname === "/api/jarvis/sessions")
@@ -1974,6 +2093,7 @@ async function router(req, res) {
       displayName,
       passwordHash: await hashPassword(password),
       role: "member",
+      memory: normalizeUserMemory(),
       emailVerifiedAt: "",
       disabledAt: "",
       createdAt: new Date().toISOString()
@@ -2112,6 +2232,67 @@ async function router(req, res) {
     return send(res, 200, { reset: true });
   }
 
+  if (req.method === "GET" && url.pathname === "/api/memory") {
+    if (!actor.user) return send(res, 401, { error: "Sign in to use long-term memory." });
+    actor.user.memory = normalizeUserMemory(actor.user.memory);
+    const items = actor.user.memory.items
+      .filter((item) => item.status !== "dismissed")
+      .map(publicMemoryItem);
+    return send(res, 200, { items, summary: memorySummary(actor.user.memory) });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/memory") {
+    if (!actor.user) return send(res, 401, { error: "Sign in to use long-term memory." });
+    const body = await readBody(req);
+    const content = String(body.content || "").replace(/\s+/g, " ").trim().slice(0, 500);
+    if (content.length < 8) return send(res, 400, { error: "Memory must contain at least 8 characters." });
+    actor.user.memory = normalizeUserMemory(actor.user.memory);
+    const duplicate = actor.user.memory.items.find((item) => item.content.toLowerCase() === content.toLowerCase());
+    if (duplicate) return send(res, 409, { error: "This memory already exists.", item: publicMemoryItem(duplicate) });
+    const now = new Date().toISOString();
+    const item = {
+      id: randomUUID(),
+      category: memoryCategory(body.category || content),
+      content,
+      status: "pending",
+      sourceMessageId: "manual",
+      createdAt: now,
+      updatedAt: now,
+      reviewedAt: ""
+    };
+    actor.user.memory.items.unshift(item);
+    actor.user.memory = normalizeUserMemory(actor.user.memory);
+    await writeDb(db);
+    return send(res, 201, { item: publicMemoryItem(item), summary: memorySummary(actor.user.memory) });
+  }
+
+  if (req.method === "PATCH" && url.pathname.startsWith("/api/memory/")) {
+    if (!actor.user) return send(res, 401, { error: "Sign in to use long-term memory." });
+    const id = url.pathname.split("/").pop();
+    const body = await readBody(req);
+    actor.user.memory = normalizeUserMemory(actor.user.memory);
+    const item = actor.user.memory.items.find((entry) => entry.id === id);
+    if (!item) return send(res, 404, { error: "Memory not found." });
+    if (!["approve", "dismiss"].includes(body.action)) return send(res, 400, { error: "Memory action must be approve or dismiss." });
+    const now = new Date().toISOString();
+    item.status = body.action === "approve" ? "approved" : "dismissed";
+    item.updatedAt = now;
+    item.reviewedAt = now;
+    await writeDb(db);
+    return send(res, 200, { item: publicMemoryItem(item), summary: memorySummary(actor.user.memory) });
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/memory/")) {
+    if (!actor.user) return send(res, 401, { error: "Sign in to use long-term memory." });
+    const id = url.pathname.split("/").pop();
+    actor.user.memory = normalizeUserMemory(actor.user.memory);
+    const nextItems = actor.user.memory.items.filter((item) => item.id !== id);
+    if (nextItems.length === actor.user.memory.items.length) return send(res, 404, { error: "Memory not found." });
+    actor.user.memory.items = nextItems;
+    await writeDb(db);
+    return send(res, 204, "");
+  }
+
   if (req.method === "GET" && url.pathname === "/api/jarvis/status") {
     const corpus = await readJson(RAG_PATH, []);
     return send(res, 200, {
@@ -2138,7 +2319,8 @@ async function router(req, res) {
       },
       accounts: {
         emailDelivery: Boolean(EMAIL_WEBHOOK_URL),
-        verificationRequired: REQUIRE_EMAIL_VERIFICATION
+        verificationRequired: REQUIRE_EMAIL_VERIFICATION,
+        reviewedLongTermMemory: true
       },
       boundary: "Public chats are stored as conversation sessions only. They do not update the owner knowledge base."
     });
@@ -2224,7 +2406,11 @@ async function router(req, res) {
     let completion = null;
     if (llmEnabled()) {
       try {
-        completion = await generateDealLlmCommentary(analysis, dealCard, financialProfile);
+        const dealMemories = selectRelevantUserMemories(
+          approvedUserMemories(actor.user),
+          `${subject} ${JSON.stringify(dealCard)} ${JSON.stringify(financialProfile)}`
+        );
+        completion = await generateDealLlmCommentary(analysis, dealCard, financialProfile, dealMemories);
         analysis.aiCommentary = completion.text;
         analysis.voiceSummary = analysis.aiCommentary;
         mode = "llm";
@@ -2558,11 +2744,21 @@ async function router(req, res) {
     };
     session.messages.push(userMessage);
 
+    let memoryCandidate = null;
+    if (actor.user) {
+      actor.user.memory = normalizeUserMemory(actor.user.memory);
+      memoryCandidate = proposeLongTermMemory(query, actor.user.memory, userMessage.id);
+      if (memoryCandidate) {
+        actor.user.memory.items.unshift(memoryCandidate);
+        actor.user.memory = normalizeUserMemory(actor.user.memory);
+      }
+    }
+
     const retrievalStartedAt = Date.now();
     const result = await retrieveJarvisAnswer(query, db.brain, session, {
       dealCard: body.dealCard,
       financialProfile: body.financialProfile
-    }, db.knowledge);
+    }, db.knowledge, approvedUserMemories(actor.user));
     const jarvisMessage = {
       id: randomUUID(),
       role: "jarvis",
@@ -2591,6 +2787,7 @@ async function router(req, res) {
     await writeDb(db);
     return send(res, 200, {
       ...result,
+      memoryCandidate: memoryCandidate ? publicMemoryItem(memoryCandidate) : null,
       message: jarvisMessage,
       session: publicJarvisSession(session)
     });

@@ -45,7 +45,7 @@ async function request(baseUrl, pathname, { method = "GET", body, cookie = "", o
     body: body === undefined ? undefined : JSON.stringify(body)
   });
   const payload = response.status === 204 ? null : await response.json();
-  return { response, payload };
+  return { response, payload, cookie: String(response.headers.get("set-cookie") || "").split(";")[0] };
 }
 
 test("production phase keeps evidence owner-only and completes the account lifecycle", async (t) => {
@@ -148,9 +148,60 @@ test("production phase keeps evidence owner-only and completes the account lifec
   });
   assert.equal(login.response.status, 200);
 
+  const deniedMemory = await request(baseUrl, "/api/memory");
+  assert.equal(deniedMemory.response.status, 401);
+
+  const memberSession = await request(baseUrl, "/api/jarvis/sessions", {
+    method: "POST",
+    cookie: login.cookie,
+    body: {}
+  });
+  const memoryQuery = await request(baseUrl, "/api/jarvis/query", {
+    method: "POST",
+    cookie: login.cookie,
+    body: {
+      sessionId: memberSession.payload.session.id,
+      query: "Remember that I prefer freehold landed property for long-term appreciation."
+    }
+  });
+  assert.equal(memoryQuery.response.status, 200);
+  assert.equal(memoryQuery.payload.memoryCandidate.status, "pending");
+  assert.equal(memoryQuery.payload.sources.some((source) => source.type === "memory"), false);
+
+  const approvedMemory = await request(baseUrl, `/api/memory/${memoryQuery.payload.memoryCandidate.id}`, {
+    method: "PATCH",
+    cookie: login.cookie,
+    body: { action: "approve" }
+  });
+  assert.equal(approvedMemory.payload.item.status, "approved");
+
+  const nextSession = await request(baseUrl, "/api/jarvis/sessions", {
+    method: "POST",
+    cookie: login.cookie,
+    body: {}
+  });
+  const recalled = await request(baseUrl, "/api/jarvis/query", {
+    method: "POST",
+    cookie: login.cookie,
+    body: {
+      sessionId: nextSession.payload.session.id,
+      query: "What property do I prefer for appreciation?"
+    }
+  });
+  assert.ok(recalled.payload.sources.some((source) => source.type === "memory"));
+  assert.match(recalled.payload.answer, /freehold landed property/i);
+
+  await request(baseUrl, `/api/jarvis/sessions/${nextSession.payload.session.id}`, {
+    method: "DELETE",
+    cookie: login.cookie
+  });
+  const memoryAfterNewChat = await request(baseUrl, "/api/memory", { cookie: login.cookie });
+  assert.equal(memoryAfterNewChat.payload.summary.approved, 1);
+
   const users = await request(baseUrl, "/api/admin/users", { owner: true });
   const member = users.payload.users.find((user) => user.email === "production@example.com");
   assert.ok(member);
+  assert.equal("memory" in member, false);
   const disabled = await request(baseUrl, `/api/admin/users/${member.id}`, {
     method: "PATCH",
     owner: true,
@@ -160,6 +211,8 @@ test("production phase keeps evidence owner-only and completes the account lifec
 
   const db = JSON.parse(await readFile(path.join(dataDir, "db.json"), "utf8"));
   assert.equal(db.knowledge.documents.length, 1);
+  assert.ok(!JSON.stringify(db.knowledge).includes("freehold landed property"));
+  assert.equal(db.auth.users.find((user) => user.email === "production@example.com").memory.items[0].status, "approved");
   assert.equal(db.knowledge.retrievalEvents[0].queryHash.length, 24);
   assert.ok(!JSON.stringify(db).includes("replacement-password-456"));
 });

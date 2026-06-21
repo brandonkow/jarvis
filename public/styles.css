@@ -580,7 +580,8 @@ button {
   gap: 8px;
 }
 
-.authPanel {
+.authPanel,
+.memoryPanel {
   width: min(620px, 100%);
   margin: 0 auto;
   overflow: hidden;
@@ -594,7 +595,8 @@ button {
   backdrop-filter: blur(18px);
 }
 
-.authPanel[hidden] {
+.authPanel[hidden],
+.memoryPanel[hidden] {
   display: none;
 }
 
@@ -611,7 +613,16 @@ button {
   display: none;
 }
 
+.memoryOpen .transcript,
+.memoryOpen .contextDeck,
+.memoryOpen .aiDisclosure,
+.memoryOpen .commandBar,
+.memoryOpen .utilityBar {
+  display: none;
+}
+
 .authHeader,
+.memoryHeader,
 .authUser {
   display: flex;
   align-items: center;
@@ -620,12 +631,14 @@ button {
 }
 
 .authHeader > span,
+.memoryHeader > span,
 .authUser > span {
   display: grid;
   gap: 3px;
 }
 
 .authHeader small,
+.memoryHeader small,
 .authUser small {
   color: #5d8c97;
   font-size: 0.46rem;
@@ -634,6 +647,7 @@ button {
 }
 
 .authHeader b,
+.memoryHeader b,
 .authUser b {
   color: var(--cyan-bright);
   font-size: 0.72rem;
@@ -642,6 +656,7 @@ button {
 }
 
 .authHeader button,
+.memoryHeader button,
 .authUser button,
 .authActions button {
   border: 1px solid rgba(103, 229, 255, 0.16);
@@ -655,6 +670,7 @@ button {
 }
 
 .authHeader button:hover,
+.memoryHeader button:hover,
 .authUser button:hover,
 .authActions button:hover {
   border-color: rgba(103, 229, 255, 0.4);
@@ -775,6 +791,147 @@ button {
 
 .authUserActions input:focus {
   border-color: rgba(103, 229, 255, 0.46);
+}
+
+.memoryPanel {
+  display: grid;
+  min-height: 0;
+  max-height: min(72dvh, 620px);
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.memoryIntro,
+.memoryEmpty {
+  margin: 0;
+  color: #729ca6;
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+
+.memorySummary {
+  display: flex;
+  gap: 8px;
+}
+
+.memorySummary span {
+  border: 1px solid rgba(103, 229, 255, 0.13);
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #638d97;
+  font-size: 0.48rem;
+  letter-spacing: 0.11em;
+}
+
+.memorySummary b {
+  color: var(--cyan);
+  font-weight: 500;
+}
+
+.memoryForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.memoryForm input {
+  min-width: 0;
+  min-height: 38px;
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 9px;
+  outline: 0;
+  padding: 8px 10px;
+  color: var(--text);
+  background: rgba(0, 10, 17, 0.58);
+  font-size: 0.76rem;
+}
+
+.memoryForm button,
+.memoryActions button {
+  border: 1px solid rgba(103, 229, 255, 0.22);
+  border-radius: 999px;
+  padding: 7px 11px;
+  cursor: pointer;
+  color: var(--cyan);
+  background: rgba(41, 158, 181, 0.09);
+  font-size: 0.5rem;
+  letter-spacing: 0.11em;
+}
+
+.memoryForm button:disabled,
+.memoryActions button:disabled {
+  cursor: progress;
+  opacity: 0.5;
+}
+
+.memoryList {
+  display: grid;
+  min-height: 0;
+  gap: 7px;
+  overflow-y: auto;
+  padding-right: 3px;
+  overscroll-behavior: contain;
+}
+
+.memoryItem,
+.memorySuggestion {
+  border: 1px solid rgba(103, 229, 255, 0.15);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(1, 12, 19, 0.66);
+}
+
+.memoryItem > span,
+.memorySuggestion > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.memoryItem small,
+.memorySuggestion small {
+  color: #6aa5b2;
+  font-size: 0.47rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.memoryItem i {
+  color: #70aa93;
+  font-size: 0.44rem;
+  font-style: normal;
+  letter-spacing: 0.12em;
+}
+
+.memoryItem.pending i {
+  color: #c3a46d;
+}
+
+.memoryItem p,
+.memorySuggestion p {
+  margin: 7px 0 9px;
+  color: #a9cbd3;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.memorySuggestion {
+  width: min(88%, 780px);
+  justify-self: start;
+  border-color: rgba(103, 229, 255, 0.26);
+  background: linear-gradient(135deg, rgba(75, 201, 226, 0.09), transparent 32%), rgba(1, 12, 19, 0.82);
+}
+
+.memorySuggestion b {
+  color: var(--cyan-bright);
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
+.memoryActions {
+  display: flex;
+  gap: 6px;
 }
 
 .contextPanel {
@@ -1604,12 +1761,14 @@ button {
     transform: translateY(-32dvh) scale(0.42);
   }
 
-  .accountOpen .assistantStage {
+  .accountOpen .assistantStage,
+  .memoryOpen .assistantStage {
     transform: translateY(-28dvh) scale(0.5);
   }
 
   body:has(.contextPanel.expanded) .identity,
-  .accountOpen .identity {
+  .accountOpen .identity,
+  .memoryOpen .identity {
     opacity: 0;
   }
 
@@ -1632,11 +1791,13 @@ button {
     gap: 6px;
   }
 
-  .authPanel {
+  .authPanel,
+  .memoryPanel {
     padding: 12px;
   }
 
   .authHeader button,
+  .memoryHeader button,
   .authUser button,
   .authActions button {
     min-height: 40px;
@@ -1682,6 +1843,31 @@ button {
     width: 100%;
     min-height: 42px;
     font-size: 0.9rem;
+  }
+
+  .memoryPanel {
+    max-height: calc(100dvh - 104px);
+  }
+
+  .memoryForm input {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .memoryForm button,
+  .memoryActions button {
+    min-height: 42px;
+    padding: 8px 12px;
+    font-size: 0.56rem;
+  }
+
+  .memoryItem p,
+  .memorySuggestion p {
+    font-size: 0.78rem;
+  }
+
+  .memorySuggestion {
+    width: 100%;
   }
 
   .contextHeader {

@@ -152,7 +152,7 @@ test("accounts protect user sessions while guests remain device-scoped", async (
   assert.equal(me.payload.user.displayName, "EstateLab Member");
 
   const db = JSON.parse(await readFile(path.join(dataDir, "db.json"), "utf8"));
-  assert.equal(db.auth.version, 2);
+  assert.equal(db.auth.version, 3);
   assert.equal(db.auth.users[0].role, "member");
   assert.ok(!db.jarvis.sessions.some((session) => session.id === "legacy-session"));
   assert.notEqual(db.auth.users[0].passwordHash, "correct-horse-battery");

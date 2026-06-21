@@ -26,12 +26,14 @@ const SCHEMA_SQL = `
     display_name TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'member',
+    memory JSONB NOT NULL DEFAULT '{"version":1,"items":[]}'::jsonb,
     email_verified_at TIMESTAMPTZ,
     disabled_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL
   );
 
   ALTER TABLE estatelab_users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member';
+  ALTER TABLE estatelab_users ADD COLUMN IF NOT EXISTS memory JSONB NOT NULL DEFAULT '{"version":1,"items":[]}'::jsonb;
   ALTER TABLE estatelab_users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
   ALTER TABLE estatelab_users ADD COLUMN IF NOT EXISTS disabled_at TIMESTAMPTZ;
 
@@ -114,7 +116,7 @@ function serializableState(state) {
     brain: state?.brain && typeof state.brain === "object" ? state.brain : {},
     knowledge: state?.knowledge && typeof state.knowledge === "object" ? state.knowledge : { version: 1, documents: [], chunks: [], retrievalEvents: [] },
     jarvis: state?.jarvis && typeof state.jarvis === "object" ? state.jarvis : { sessions: [] },
-    auth: state?.auth && typeof state.auth === "object" ? state.auth : { version: 2, users: [], sessions: [], tokens: [] }
+    auth: state?.auth && typeof state.auth === "object" ? state.auth : { version: 3, users: [], sessions: [], tokens: [] }
   };
 }
 
@@ -182,7 +184,7 @@ export class PostgresStateStore {
       await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
       const revisionResult = await client.query("SELECT revision FROM estatelab_meta WHERE singleton = TRUE");
       const coreResult = await client.query("SELECT properties, comps, brain, knowledge FROM estatelab_core WHERE singleton = TRUE");
-      const usersResult = await client.query("SELECT id, email, display_name, password_hash, role, email_verified_at, disabled_at, created_at FROM estatelab_users ORDER BY created_at");
+      const usersResult = await client.query("SELECT id, email, display_name, password_hash, role, memory, email_verified_at, disabled_at, created_at FROM estatelab_users ORDER BY created_at");
       const authResult = await client.query("SELECT token_hash, user_id, created_at, expires_at FROM estatelab_auth_sessions WHERE expires_at > NOW() ORDER BY created_at DESC");
       const authTokenResult = await client.query("SELECT token_hash, user_id, purpose, created_at, expires_at FROM estatelab_auth_tokens WHERE expires_at > NOW() ORDER BY created_at DESC");
       const sessionsResult = await client.query("SELECT id, user_id, client_id, title, created_at, updated_at FROM estatelab_jarvis_sessions ORDER BY updated_at DESC");
@@ -223,13 +225,14 @@ export class PostgresStateStore {
           }))
         },
         auth: {
-          version: 2,
+          version: 3,
           users: usersResult.rows.map((row) => ({
             id: row.id,
             email: row.email,
             displayName: row.display_name,
             passwordHash: row.password_hash,
             role: row.role || "member",
+            memory: row.memory && typeof row.memory === "object" ? row.memory : { version: 1, items: [] },
             emailVerifiedAt: row.email_verified_at ? iso(row.email_verified_at) : "",
             disabledAt: row.disabled_at ? iso(row.disabled_at) : "",
             createdAt: iso(row.created_at)
@@ -304,16 +307,17 @@ export class PostgresStateStore {
 
     for (const user of users) {
       await client.query(`
-        INSERT INTO estatelab_users (id, email, display_name, password_hash, role, email_verified_at, disabled_at, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO estatelab_users (id, email, display_name, password_hash, role, memory, email_verified_at, disabled_at, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9)
         ON CONFLICT (id) DO UPDATE SET
           email = EXCLUDED.email,
           display_name = EXCLUDED.display_name,
           password_hash = EXCLUDED.password_hash,
           role = EXCLUDED.role,
+          memory = EXCLUDED.memory,
           email_verified_at = EXCLUDED.email_verified_at,
           disabled_at = EXCLUDED.disabled_at
-      `, [user.id, user.email, user.displayName, user.passwordHash, user.role || "member", user.emailVerifiedAt || null, user.disabledAt || null, user.createdAt]);
+      `, [user.id, user.email, user.displayName, user.passwordHash, user.role || "member", JSON.stringify(user.memory || { version: 1, items: [] }), user.emailVerifiedAt || null, user.disabledAt || null, user.createdAt]);
     }
 
     for (const session of jarvisSessions) {

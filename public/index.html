@@ -105,6 +105,24 @@
           </div>
         </section>
 
+        <section id="memoryPanel" class="memoryPanel" aria-label="Long-term memory" hidden>
+          <header class="memoryHeader">
+            <span><small>PRIVATE TO YOUR ACCOUNT</small><b>LONG-TERM MEMORY</b></span>
+            <button id="memoryClose" type="button" aria-label="Close memory panel">CLOSE</button>
+          </header>
+          <p class="memoryIntro">Only memories you approve can influence future conversations and be sent as context to the configured AI provider. They never change the shared EstateLab knowledge base.</p>
+          <div class="memorySummary" aria-label="Memory summary">
+            <span><b id="memoryApprovedCount">0</b> APPROVED</span>
+            <span><b id="memoryPendingCount">0</b> TO REVIEW</span>
+          </div>
+          <form id="memoryForm" class="memoryForm" autocomplete="off">
+            <label class="srOnly" for="memoryInput">Add a long-term memory</label>
+            <input id="memoryInput" maxlength="500" placeholder="Add a preference, goal, constraint, or lesson..." />
+            <button type="submit">ADD</button>
+          </form>
+          <div id="memoryList" class="memoryList"></div>
+        </section>
+
         <section class="contextDeck" aria-label="Deal and investor context">
           <section class="contextPanel">
             <button class="contextHeader" type="button" data-context-toggle="deal" aria-expanded="false" aria-controls="dealContextFields">
@@ -218,6 +236,7 @@
         </form>
 
         <div class="utilityBar" aria-label="Conversation controls">
+          <button id="memoryToggle" type="button" aria-expanded="false" aria-controls="memoryPanel" hidden>MEMORY</button>
           <button id="resetChatBtn" type="button" aria-label="Start a new chat">NEW CHAT</button>
           <button id="soundToggle" type="button" aria-pressed="true" aria-label="Toggle voice responses">VOICE ON</button>
           <button id="stopVoiceBtn" class="stopVoiceBtn" type="button" hidden>STOP</button>

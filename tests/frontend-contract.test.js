@@ -30,10 +30,14 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /class="orbCore"><b>A<\/b>/, "The orb must use only the Apex A mark.");
   assert.doesNotMatch(html, /<h1>APEX<\/h1>|class="productSuffix"/, "The central Apex Analytic wordmark must stay removed.");
   assert.match(html, /<form id="chatForm"[\s\S]*?id="analyzeDealBtn"[\s\S]*?<\/form>/, "Deal analysis must remain visible inside the message bar.");
+  assert.match(html, /id="memoryPanel"[\s\S]*?PRIVATE TO YOUR ACCOUNT[\s\S]*?id="memoryList"/, "Signed-in users need a private memory review screen.");
   assert.doesNotMatch(html, /ESTATELAB \/ JARVIS|<b>J<\/b>/, "Legacy visible branding must not return.");
   assert.match(app, /FRAMEWORK ONLY/, "Framework fallback responses need an explicit badge.");
   assert.match(app, /FRAMEWORK \+ AI/, "External reasoning responses need a model-neutral badge.");
   assert.doesNotMatch(app, /FRAMEWORK \+ DEEPSEEK|modelLabel\(/, "The frontend must not expose a specific reasoning model.");
+  assert.match(app, /result\.memoryCandidate/, "The chat must surface memory candidates for review.");
+  assert.match(app, /data-memory-action="approve"/, "Memory candidates must require explicit approval.");
+  assert.match(styles, /\.memoryOpen \.transcript[\s\S]*?display:\s*none;/, "The memory screen must replace chat content instead of opening a popup.");
 
   assert.match(styles, /\.conversation:has\(\.contextPanel\.expanded\) \.transcript[\s\S]*?display:\s*none;/, "Expanded cards must replace the transcript instead of overflowing beneath it.");
   assert.match(styles, /\.contextPanel\.expanded \.contextGrid[\s\S]*?overflow-y:\s*auto|\.contextGrid[\s\S]*?overflow-y:\s*auto/, "Expanded card fields must remain scrollable.");
