@@ -39,4 +39,6 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /max-height:\s*calc\(100dvh - 260px\)/, "Mobile expanded cards need a viewport-bound field area.");
   assert.match(styles, /\.identity \.productSuffix[\s\S]*?text-align:\s*center;/, "The Apex identity must remain centered on mobile.");
   assert.match(styles, /\.sourceSummary p[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);/, "Mobile source details must stack instead of squeezing text into columns.");
+  assert.match(styles, /\.cornerBottomLeft[\s\S]*?bottom:\s*max\(4px, env\(safe-area-inset-bottom\)\);[\s\S]*?left:\s*10px;/, "The mobile HUD frame must sit outside the bottom controls.");
+  assert.match(styles, /\.conversation[\s\S]*?bottom:\s*max\(24px, calc\(env\(safe-area-inset-bottom\) \+ 16px\)\);/, "Mobile controls need clearance above the HUD frame.");
 });
