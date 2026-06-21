@@ -815,6 +815,27 @@ button {
   display: none;
 }
 
+.conversation:has(.contextPanel.expanded) {
+  max-height: calc(100dvh - 88px);
+}
+
+.conversation:has(.contextPanel.expanded) .transcript,
+.conversation:has(.contextPanel.expanded) .aiDisclosure {
+  display: none;
+}
+
+.contextPanel.expanded {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.contextPanel.expanded .contextGrid {
+  min-height: 0;
+  max-height: min(58dvh, calc(100dvh - 280px));
+  overscroll-behavior: contain;
+}
+
 .aiDisclosure {
   width: 100%;
   margin: -3px 0 0;
@@ -1594,6 +1615,14 @@ button {
     padding: 0 12px 12px;
   }
 
+  .conversation:has(.contextPanel.expanded) {
+    max-height: calc(100dvh - 84px);
+  }
+
+  .contextPanel.expanded .contextGrid {
+    max-height: calc(100dvh - 260px);
+  }
+
   .contextGrid label {
     gap: 5px;
     font-size: 0.62rem;
@@ -1761,6 +1790,14 @@ button {
   .contextGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     max-height: calc(100dvh - 178px);
+  }
+
+  .conversation:has(.contextPanel.expanded) {
+    max-height: calc(100dvh - 46px);
+  }
+
+  .contextPanel.expanded .contextGrid {
+    max-height: calc(100dvh - 192px);
   }
 
   .contextGrid label {

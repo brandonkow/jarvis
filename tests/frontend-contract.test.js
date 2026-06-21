@@ -25,4 +25,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
     assert.ok(braceDepth >= 0, "Stylesheet has an unexpected closing brace.");
   }
   assert.equal(braceDepth, 0, "Stylesheet has an unclosed block.");
+
+  assert.match(styles, /\.conversation:has\(\.contextPanel\.expanded\) \.transcript[\s\S]*?display:\s*none;/, "Expanded cards must replace the transcript instead of overflowing beneath it.");
+  assert.match(styles, /\.contextPanel\.expanded \.contextGrid[\s\S]*?overflow-y:\s*auto|\.contextGrid[\s\S]*?overflow-y:\s*auto/, "Expanded card fields must remain scrollable.");
+  assert.match(styles, /max-height:\s*calc\(100dvh - 260px\)/, "Mobile expanded cards need a viewport-bound field area.");
 });
