@@ -1553,6 +1553,48 @@ button {
     transform: translateY(-26px);
   }
 
+  .identity {
+    display: grid;
+    justify-items: center;
+    width: min(92vw, 360px);
+    margin-top: 8px;
+  }
+
+  .identity .kicker {
+    max-width: 100%;
+    font-size: 0.5rem;
+    line-height: 1.45;
+    letter-spacing: 0.22em;
+    text-align: center;
+    text-wrap: balance;
+  }
+
+  .identity h1 {
+    width: 100%;
+    margin-top: 6px;
+    font-size: clamp(2.35rem, 13vw, 3.2rem);
+    letter-spacing: 0.22em;
+    text-align: center;
+    text-indent: 0.22em;
+  }
+
+  .identity .productSuffix {
+    width: 100%;
+    margin-top: -1px;
+    font-size: 0.58rem;
+    letter-spacing: 0.36em;
+    text-align: center;
+    text-indent: 0.36em;
+  }
+
+  .identity #assistantPrompt {
+    width: min(100%, 310px);
+    margin-top: 9px;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    text-align: center;
+  }
+
   .jarvisOrb {
     width: min(80vw, 290px);
   }
@@ -1689,19 +1731,48 @@ button {
   }
 
   .message {
-    max-width: 96%;
+    width: 100%;
+    max-width: 100%;
     padding: 11px 12px;
     font-size: 0.88rem;
     line-height: 1.5;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  .message.user {
+    width: min(92%, 520px);
+  }
+
+  .message.jarvis {
+    width: 100%;
   }
 
   .message strong {
+    margin-bottom: 5px;
     font-size: 0.62rem;
   }
 
+  .intelligenceBadge {
+    max-width: 100%;
+    margin-bottom: 8px;
+    font-size: 0.54rem;
+    line-height: 1.25;
+    letter-spacing: 0.1em;
+    text-align: left;
+    white-space: normal;
+  }
+
   .sourceSummary p {
-    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
     font-size: 0.62rem;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  .sourceSummary b {
+    font-size: 0.56rem;
   }
 
   .analysisMessage {
@@ -1713,6 +1784,11 @@ button {
     align-items: flex-start;
     flex-direction: column;
     gap: 7px;
+    text-align: left;
+  }
+
+  .analysisVerdict {
+    align-self: flex-start;
   }
 
   .analysisDetails {
@@ -1770,14 +1846,18 @@ button {
   }
 
   .utilityBar {
+    display: flex;
+    flex-wrap: wrap;
     gap: 7px;
     min-height: 40px;
     font-size: 0.57rem;
   }
 
   .utilityBar button {
+    flex: 1 1 88px;
     min-height: 40px;
     padding: 8px 12px;
+    text-align: center;
   }
 
   .aiDisclosure {

@@ -35,4 +35,6 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.conversation:has\(\.contextPanel\.expanded\) \.transcript[\s\S]*?display:\s*none;/, "Expanded cards must replace the transcript instead of overflowing beneath it.");
   assert.match(styles, /\.contextPanel\.expanded \.contextGrid[\s\S]*?overflow-y:\s*auto|\.contextGrid[\s\S]*?overflow-y:\s*auto/, "Expanded card fields must remain scrollable.");
   assert.match(styles, /max-height:\s*calc\(100dvh - 260px\)/, "Mobile expanded cards need a viewport-bound field area.");
+  assert.match(styles, /\.identity \.productSuffix[\s\S]*?text-align:\s*center;/, "The Apex identity must remain centered on mobile.");
+  assert.match(styles, /\.sourceSummary p[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);/, "Mobile source details must stack instead of squeezing text into columns.");
 });
