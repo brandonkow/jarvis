@@ -26,6 +26,10 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   }
   assert.equal(braceDepth, 0, "Stylesheet has an unclosed block.");
 
+  assert.match(html, /<title>Apex Analytic<\/title>/);
+  assert.match(html, /class="orbCore"><b>A<\/b>/, "The orb must use only the Apex A mark.");
+  assert.doesNotMatch(html, /ESTATELAB \/ JARVIS|<b>J<\/b>/, "Legacy visible branding must not return.");
+
   assert.match(styles, /\.conversation:has\(\.contextPanel\.expanded\) \.transcript[\s\S]*?display:\s*none;/, "Expanded cards must replace the transcript instead of overflowing beneath it.");
   assert.match(styles, /\.contextPanel\.expanded \.contextGrid[\s\S]*?overflow-y:\s*auto|\.contextGrid[\s\S]*?overflow-y:\s*auto/, "Expanded card fields must remain scrollable.");
   assert.match(styles, /max-height:\s*calc\(100dvh - 260px\)/, "Mobile expanded cards need a viewport-bound field area.");

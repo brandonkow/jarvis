@@ -223,7 +223,7 @@ function addMessage(role, text, sources = []) {
   const message = document.createElement("article");
   message.className = `message ${role}`;
   message.innerHTML = `
-    <strong>${role === "jarvis" ? "JARVIS" : "YOU"}</strong>
+    <strong>${role === "jarvis" ? "APEX" : "YOU"}</strong>
     <div class="messageText">${escapeHtml(text).replace(/\n/g, "<br>")}</div>
     ${role === "jarvis" ? sourcesMarkup(sources) : ""}
   `;
@@ -271,7 +271,7 @@ function addDealAnalysis(analysis, sources = []) {
     <p class="analysisSummary">${escapeHtml(analysis.summary)}</p>
     ${analysis.aiCommentary ? `
       <section class="analysisJarvisTake">
-        <h3>JARVIS TAKE</h3>
+        <h3>APEX ANALYSIS</h3>
         <p>${escapeHtml(analysis.aiCommentary)}</p>
       </section>
     ` : ""}
@@ -309,7 +309,7 @@ function renderSession(session) {
 function setSpeakingState(active) {
   speaking = active;
   jarvisOrb.classList.toggle("speaking", active);
-  jarvisOrb.setAttribute("aria-label", active ? "Stop Jarvis voice" : "Talk to Jarvis");
+  jarvisOrb.setAttribute("aria-label", active ? "Stop Apex Analytic voice" : "Talk to Apex Analytic");
   stopVoiceBtn.hidden = !active;
 }
 
@@ -561,7 +561,7 @@ async function requestJson(url, options = {}) {
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.error || "Jarvis backend is unavailable.");
+    throw new Error(payload.error || "Apex Analytic backend is unavailable.");
   }
   if (response.status === 204) return null;
   return response.json();
@@ -714,7 +714,7 @@ async function resetChat() {
     await createSession();
     setSystemState("System ready", "Clean chat ready.");
   } catch {
-    setSystemState("Connection issue", "Jarvis backend is unavailable.");
+    setSystemState("Connection issue", "Apex Analytic backend is unavailable.");
     setSessionState("OFFLINE");
   }
 }
@@ -734,7 +734,7 @@ async function ensureSession() {
       const history = await requestJson("/api/jarvis/sessions");
       if (history.sessions?.length) return loadSession(history.sessions[0].id);
     } catch {
-      // A new private session is safer than blocking Jarvis startup.
+      // A new private session is safer than blocking assistant startup.
     }
   }
   if (!sessionId) return createSession();
@@ -777,10 +777,10 @@ async function submitQuestion(question) {
     speak(result.answer);
     if (!voiceResponsesEnabled) setSystemState("System ready", "Ready when you are.");
   } catch (error) {
-    const message = error.message || "The Jarvis backend is unavailable.";
+    const message = error.message || "The Apex Analytic backend is unavailable.";
     addMessage("jarvis", message);
     speak(message);
-    setSystemState("Connection issue", "Start EstateLab and try again.");
+    setSystemState("Connection issue", "Start Apex Analytic and try again.");
     setSessionState("OFFLINE");
   } finally {
     if (!speaking && !window.speechSynthesis?.speaking) jarvisOrb.classList.remove("speaking");
@@ -806,10 +806,10 @@ async function runDealAnalysis() {
   collapseContextPanels();
   await ensureSession();
   stopSpeaking("Running the full framework.");
-  addMessage("user", "Run the seven-stage EstateLab analysis for this deal.");
+  addMessage("user", "Run the seven-stage Apex Analytic assessment for this deal.");
   analyzeDealBtn.disabled = true;
   analyzeDealBtn.textContent = "ANALYSING...";
-  setSystemState("Analyzing", "Running all seven EstateLab stages.");
+  setSystemState("Analyzing", "Running all seven Apex Analytic stages.");
   jarvisOrb.classList.add("speaking");
   try {
     const result = await requestJson("/api/jarvis/analyze-deal", {
@@ -953,7 +953,7 @@ async function bootJarvis() {
     setSessionState(`${intelligenceMode} READY`);
     setSystemState("System ready", "Ready when you are.");
   } catch {
-    setSystemState("Connection issue", "Jarvis backend is unavailable.");
+    setSystemState("Connection issue", "Apex Analytic backend is unavailable.");
     setSessionState("OFFLINE");
   }
 }

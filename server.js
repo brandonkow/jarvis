@@ -27,7 +27,8 @@ const OPENROUTER_API_KEY = String(globalThis.process?.env?.OPENROUTER_API_KEY ||
 const OPENAI_KEY_IS_OPENROUTER = /^sk-or-/i.test(RAW_OPENAI_API_KEY);
 const LLM_PROVIDER = String(globalThis.process?.env?.LLM_PROVIDER || (OPENROUTER_API_KEY || OPENAI_KEY_IS_OPENROUTER ? "openrouter" : "openai")).trim().toLowerCase();
 const LLM_API_KEY = String(globalThis.process?.env?.LLM_API_KEY || (LLM_PROVIDER === "openrouter" ? OPENROUTER_API_KEY || (OPENAI_KEY_IS_OPENROUTER ? RAW_OPENAI_API_KEY : "") : RAW_OPENAI_API_KEY)).trim();
-const LLM_MODEL = String(globalThis.process?.env?.LLM_MODEL || (LLM_PROVIDER === "openrouter" ? "openrouter/auto" : globalThis.process?.env?.OPENAI_MODEL || "gpt-4.1-mini")).trim();
+const RAW_LLM_MODEL = String(globalThis.process?.env?.LLM_MODEL || (LLM_PROVIDER === "openrouter" ? "openrouter/auto" : globalThis.process?.env?.OPENAI_MODEL || "gpt-4.1-mini")).trim();
+const LLM_MODEL = RAW_LLM_MODEL.replace(/^LLM_MODEL\s*=\s*/i, "").trim();
 const LLM_BASE_URL = String(globalThis.process?.env?.LLM_BASE_URL || (LLM_PROVIDER === "openrouter" ? "https://openrouter.ai/api/v1" : "https://api.openai.com/v1")).replace(/\/$/, "");
 const OPENROUTER_SITE_URL = String(globalThis.process?.env?.OPENROUTER_SITE_URL || "").trim();
 const OPENAI_SERVICES_API_KEY = String(globalThis.process?.env?.OPENAI_SERVICES_API_KEY || (OPENAI_KEY_IS_OPENROUTER ? "" : RAW_OPENAI_API_KEY)).trim();
@@ -46,6 +47,7 @@ const AUTH_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const AUTH_ATTEMPT_LIMIT = 10;
 const MAX_JSON_BODY_BYTES = 8 * 1024 * 1024;
 const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
+const DEFAULT_SESSION_TITLE = "New Apex Session";
 const scrypt = promisify(scryptCallback);
 const authAttempts = new Map();
 const requestWindows = new Map();
@@ -133,7 +135,7 @@ async function readStorageSeed(file, fallback) {
   try {
     return JSON.parse(await readFile(file, "utf8"));
   } catch (error) {
-    throw new Error(`EstateLab cannot read the storage seed at ${file}: ${error.message}`);
+    throw new Error(`Apex Analytic cannot read the storage seed at ${file}: ${error.message}`);
   }
 }
 
@@ -294,7 +296,7 @@ function normalizeJarvisSession(session) {
     id: String(session.id),
     createdAt: String(session.createdAt || new Date().toISOString()),
     updatedAt: String(session.updatedAt || session.createdAt || new Date().toISOString()),
-    title: String(session.title || "New Jarvis Session").trim(),
+    title: String(session.title || DEFAULT_SESSION_TITLE).trim(),
     clientId: String(session.clientId || "browser").trim(),
     userId: String(session.userId || "").trim(),
     messages
@@ -318,7 +320,7 @@ function createJarvisSession(body = {}, user = null) {
     id: randomUUID(),
     createdAt: now,
     updatedAt: now,
-    title: String(body.title || "New Jarvis Session").trim(),
+    title: String(body.title || DEFAULT_SESSION_TITLE).trim(),
     clientId: String(body.clientId || "browser").trim(),
     userId: String(user?.id || "").trim(),
     messages: []
@@ -459,7 +461,7 @@ async function deliverAuthToken(user, purpose, token, expiresAt) {
         ...(EMAIL_WEBHOOK_SECRET ? { "Authorization": `Bearer ${EMAIL_WEBHOOK_SECRET}` } : {})
       },
       body: JSON.stringify({
-        app: "EstateLab Jarvis",
+        app: "Apex Analytic",
         type: purpose,
         to: user.email,
         displayName: user.displayName,
@@ -561,8 +563,12 @@ function allowRequest(req, bucket, limit, windowMs) {
 
 function titleFromQuery(query) {
   const clean = String(query || "").replace(/\s+/g, " ").trim();
-  if (!clean) return "New Jarvis Session";
+  if (!clean) return DEFAULT_SESSION_TITLE;
   return clean.length > 46 ? `${clean.slice(0, 43).trim()}...` : clean;
+}
+
+function defaultSessionTitle(title) {
+  return [DEFAULT_SESSION_TITLE, "New Jarvis Session"].includes(String(title || ""));
 }
 
 function upsertJarvisSession(jarvis, session) {
@@ -935,10 +941,10 @@ function companionAnswer(kind) {
     return "Yes, I am here. Send me the property or market question and I will help you think it through.";
   }
   if (kind === "test") {
-    return "Signal is good. Jarvis is awake.";
+    return "Signal is good. Apex Analytic is ready.";
   }
   if (kind === "capability") {
-    return "I can help you screen properties, challenge your assumptions, test rental and resale risk, and turn EstateLab's framework into a clearer decision. Start with any area, project, price, rent, or concern.";
+    return "I can help you screen properties, challenge your assumptions, test rental and resale risk, and turn the Apex Analytic framework into a clearer decision. Start with any area, project, price, rent, or concern.";
   }
   if (kind === "need_context") {
     return "I can, but give me something concrete first: area, property type, price, expected rent, and your main concern. Then I can pressure-test it properly.";
@@ -1360,7 +1366,7 @@ function dealAnalysisText(analysis) {
     `${analysis.verdict}: ${analysis.summary}`,
     `Confidence ${analysis.confidence}%. Input completeness ${analysis.completeness}%.`
   ];
-  if (analysis.aiCommentary) lines.push("", "Jarvis commentary", analysis.aiCommentary);
+  if (analysis.aiCommentary) lines.push("", "Apex Analytic commentary", analysis.aiCommentary);
   lines.push("", "Seven-stage read", ...analysis.stages.map((item) => `- Stage ${item.number}, ${item.name}: ${item.status.toUpperCase()} (${item.score}/100). ${item.summary}`));
   if (analysis.hardStops.length) lines.push("", "Hard stops", ...analysis.hardStops.map((item) => `- ${item}`));
   if (analysis.watchouts.length) lines.push("", "Watch-outs", ...analysis.watchouts.map((item) => `- ${item}`));
@@ -1429,7 +1435,7 @@ async function requestLlmText({ instructions, input, maxOutputTokens = 700 }) {
         "Authorization": `Bearer ${LLM_API_KEY}`,
         "Content-Type": "application/json",
         ...(openRouter && OPENROUTER_SITE_URL ? { "HTTP-Referer": OPENROUTER_SITE_URL } : {}),
-        ...(openRouter ? { "X-Title": "EstateLab Jarvis" } : {})
+        ...(openRouter ? { "X-Title": "Apex Analytic" } : {})
       },
       body: JSON.stringify(openRouter
         ? {
@@ -1465,12 +1471,13 @@ async function requestOpenAIText(options) {
   return (await requestLlmText(options)).text;
 }
 
-const jarvisLlmInstructions = `You are Jarvis, a warm, direct real-estate thinking companion grounded in EstateLab's Malaysia-focused framework.
+const jarvisLlmInstructions = `You are Apex Analytic, a warm, direct real-estate thinking companion grounded in a Malaysia-focused investment framework.
 
 Rules:
 - Speak naturally, like an experienced human adviser, not a formal report generator.
 - Answer the user's actual message first. For greetings and small talk, be brief and human.
-- Treat the supplied EstateLab references and beliefs as working knowledge, not infallible truth.
+- Treat the supplied Apex Analytic references and beliefs as working knowledge, not infallible truth.
+- Never call yourself Jarvis or refer to the product as EstateLab. The product and assistant are both named Apex Analytic.
 - Clearly separate verified evidence, user-provided assumptions, and your inference.
 - Never invent live prices, transactions, rental evidence, laws, policy, or market events.
 - Never override deterministic calculations, hard stops, or legal and financing safety rules supplied in the context.
@@ -1484,12 +1491,12 @@ function conversationForPrompt(session, limit = 8) {
   if (!Array.isArray(session?.messages)) return "No prior conversation.";
   return session.messages
     .slice(-limit)
-    .map((message) => `${message.role === "user" ? "USER" : "JARVIS"}: ${message.content}`)
+    .map((message) => `${message.role === "user" ? "USER" : "APEX ANALYTIC"}: ${message.content}`)
     .join("\n");
 }
 
 function referencesForPrompt(references = []) {
-  if (!references.length) return "No directly matching EstateLab reference.";
+  if (!references.length) return "No directly matching Apex Analytic reference.";
   return references.map((reference) => `- ${reference.title}: ${reference.body}`).join("\n");
 }
 
@@ -1529,7 +1536,7 @@ ${conversationForPrompt(session)}
 STRUCTURED USER CONTEXT
 ${structuredContext}
 
-RELEVANT ESTATELAB REFERENCES
+RELEVANT APEX ANALYTIC REFERENCES
 ${referencesForPrompt(references)}
 
 RELEVANT RECORDED BELIEFS
@@ -1546,7 +1553,7 @@ Respond to the current user message. Use the deterministic analysis as a safety 
 }
 
 async function generateDealLlmCommentary(analysis, dealCard, financialProfile) {
-  const input = `A deterministic seven-stage EstateLab engine produced this result:
+  const input = `A deterministic seven-stage Apex Analytic engine produced this result:
 ${dealAnalysisText(analysis)}
 
 Deal context:
@@ -1555,7 +1562,7 @@ ${contextText(dealCard, dealContextLabels, "Deal card") || "Not supplied"}
 Investor context:
 ${contextText(financialProfile, profileContextLabels, "Financial profile") || "Not supplied"}
 
-Give a natural Jarvis commentary in 60 to 110 words. Start with the verdict, explain the single most important reason, state the strongest challenge, and end with the next evidence to obtain. Do not alter any score, metric, hard stop, or verdict.`;
+Give a natural Apex Analytic commentary in 60 to 110 words. Start with the verdict, explain the single most important reason, state the strongest challenge, and end with the next evidence to obtain. Do not alter any score, metric, hard stop, or verdict.`;
   return requestLlmText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 220 });
 }
 
@@ -1633,7 +1640,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         });
         return { answer: completion.text, sources: [], mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: "none" };
       } catch (error) {
-        console.warn(`Jarvis LLM fallback: ${error.message}`);
+        console.warn(`Apex Analytic LLM fallback: ${error.message}`);
       }
     }
     return { answer: fallbackAnswer, sources: [], mode: "framework", retrievalMode: "none" };
@@ -1787,7 +1794,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
       });
       return { answer: completion.text, sources, mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: evidenceResult.mode };
     } catch (error) {
-      console.warn(`Jarvis LLM fallback: ${error.message}`);
+      console.warn(`Apex Analytic LLM fallback: ${error.message}`);
     }
   }
 
@@ -1880,7 +1887,7 @@ async function router(req, res) {
 
   const publicRoute = isPublicApiRoute(req.method, url.pathname);
   if (publicRoute && url.pathname.startsWith("/api/jarvis/") && !allowRequest(req, "jarvis", 40, 10 * 60 * 1000)) {
-    return send(res, 429, { error: "Jarvis has received too many requests from this connection. Pause briefly and try again." }, { ...jsonHeaders, "Retry-After": "600" });
+    return send(res, 429, { error: "Apex Analytic has received too many requests from this connection. Pause briefly and try again." }, { ...jsonHeaders, "Retry-After": "600" });
   }
   if (publicRoute && ["/api/jarvis/transcribe", "/api/jarvis/speech"].includes(url.pathname) && !allowRequest(req, "audio", 16, 10 * 60 * 1000)) {
     return send(res, 429, { error: "Voice usage is temporarily limited. Try again shortly." }, { ...jsonHeaders, "Retry-After": "600" });
@@ -1889,7 +1896,7 @@ async function router(req, res) {
   if (req.method === "GET" && url.pathname === "/api/health") {
     return send(res, 200, {
       status: "ok",
-      app: "estatelab-jarvis",
+      app: "apex-analytic",
       storage: stateStore.kind,
       time: new Date().toISOString()
     });
@@ -1951,7 +1958,7 @@ async function router(req, res) {
     db.auth = replaceAuthToken(db.auth, verification.record);
     await writeDb(db);
     deliverAuthToken(user, verification.record.purpose, verification.token, verification.record.expiresAt)
-      .catch((error) => console.warn(`EstateLab verification delivery: ${error.message}`));
+      .catch((error) => console.warn(`Apex Analytic verification delivery: ${error.message}`));
     clearAuthAttempts(req);
     return send(res, 201, {
       authenticated: true,
@@ -2015,7 +2022,7 @@ async function router(req, res) {
     await writeDb(db);
     const delivered = await deliverAuthToken(actor.user, verification.record.purpose, verification.token, verification.record.expiresAt)
       .catch((error) => {
-        console.warn(`EstateLab verification delivery: ${error.message}`);
+        console.warn(`Apex Analytic verification delivery: ${error.message}`);
         return false;
       });
     return send(res, 200, {
@@ -2049,7 +2056,7 @@ async function router(req, res) {
       db.auth = replaceAuthToken(db.auth, reset.record);
       await writeDb(db);
       deliverAuthToken(user, reset.record.purpose, reset.token, reset.record.expiresAt)
-        .catch((error) => console.warn(`EstateLab reset delivery: ${error.message}`));
+        .catch((error) => console.warn(`Apex Analytic reset delivery: ${error.message}`));
       debug = debugTokenPayload("password-reset", reset.token);
     }
     return send(res, 200, {
@@ -2082,7 +2089,7 @@ async function router(req, res) {
     const corpus = await readJson(RAG_PATH, []);
     return send(res, 200, {
       status: "online",
-      mode: "public-jarvis",
+      mode: "public-apex",
       storage: stateStore.kind,
       knowledge: {
         references: Array.isArray(corpus) ? corpus.length : 0,
@@ -2106,7 +2113,7 @@ async function router(req, res) {
         emailDelivery: Boolean(EMAIL_WEBHOOK_URL),
         verificationRequired: REQUIRE_EMAIL_VERIFICATION
       },
-      boundary: "Public chats are stored as Jarvis sessions only. They do not update the owner knowledge base."
+      boundary: "Public chats are stored as conversation sessions only. They do not update the owner knowledge base."
     });
   }
 
@@ -2151,7 +2158,7 @@ async function router(req, res) {
     const id = url.pathname.split("/").pop();
     const clientId = requestClientId(req);
     const session = accessibleJarvisSession(db, id, actor, clientId);
-    if (!session) return send(res, 404, { error: "Jarvis session not found." });
+    if (!session) return send(res, 404, { error: "Conversation session not found." });
     const shouldClaim = Boolean(actor.user && !session.userId && session.clientId === clientId);
     claimJarvisSession(session, actor, clientId);
     if (shouldClaim) {
@@ -2164,7 +2171,7 @@ async function router(req, res) {
   if (req.method === "DELETE" && url.pathname.startsWith("/api/jarvis/sessions/")) {
     const id = url.pathname.split("/").pop();
     const session = accessibleJarvisSession(db, id, actor, requestClientId(req));
-    if (!session) return send(res, 404, { error: "Jarvis session not found." });
+    if (!session) return send(res, 404, { error: "Conversation session not found." });
     db.jarvis.sessions = db.jarvis.sessions.filter((item) => item.id !== id);
     await writeDb(db);
     return send(res, 204, "");
@@ -2183,7 +2190,7 @@ async function router(req, res) {
     if (!session) session = createJarvisSession({ clientId }, actor.user);
     claimJarvisSession(session, actor, clientId);
     const subject = dealCard.projectName || dealCard.area || "property deal";
-    if (!session.messages.length || session.title === "New Jarvis Session") session.title = `Deal analysis: ${subject}`;
+    if (!session.messages.length || defaultSessionTitle(session.title)) session.title = `Deal analysis: ${subject}`;
     const analysis = analyzeSevenStageDeal(dealCard, financialProfile);
     const sources = await dealAnalysisSources();
     let mode = "framework";
@@ -2202,7 +2209,7 @@ async function router(req, res) {
     session.messages.push({
       id: randomUUID(),
       role: "user",
-      content: `Run the seven-stage EstateLab analysis for ${subject}.`,
+      content: `Run the seven-stage Apex Analytic assessment for ${subject}.`,
       createdAt: now,
       sources: []
     });
@@ -2283,7 +2290,7 @@ async function router(req, res) {
     await writeDb(db);
     return send(res, 201, {
       document,
-      note: document.status === "stored" ? "The original file is stored, but this format needs text extraction before Jarvis can retrieve it." : "Evidence indexed for Jarvis retrieval."
+      note: document.status === "stored" ? "The original file is stored, but this format needs text extraction before Apex Analytic can retrieve it." : "Evidence indexed for Apex Analytic retrieval."
     });
   }
 
@@ -2504,13 +2511,13 @@ async function router(req, res) {
   if (req.method === "POST" && url.pathname === "/api/jarvis/query") {
     const body = await readBody(req);
     const query = String(body.query || "").trim();
-    if (!query) return send(res, 400, { error: "A Jarvis query is required." });
-    if (query.length > 4000) return send(res, 400, { error: "Keep each Jarvis message under 4000 characters." });
+    if (!query) return send(res, 400, { error: "An Apex Analytic query is required." });
+    if (query.length > 4000) return send(res, 400, { error: "Keep each Apex Analytic message under 4000 characters." });
     const clientId = requestClientId(req, body);
     let session = accessibleJarvisSession(db, body.sessionId, actor, clientId);
     if (!session) session = createJarvisSession({ clientId }, actor.user);
     claimJarvisSession(session, actor, clientId);
-    if (!session.messages.length || session.title === "New Jarvis Session") session.title = titleFromQuery(query);
+    if (!session.messages.length || defaultSessionTitle(session.title)) session.title = titleFromQuery(query);
 
     const userMessage = {
       id: randomUUID(),

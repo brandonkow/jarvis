@@ -1,8 +1,8 @@
-# EstateLab Production Operations
+# Apex Analytic Production Operations
 
 ## Owner Evidence
 
-Owner evidence is never accepted from the public Jarvis UI. Use the private owner API from a trusted machine or future server-side admin service.
+Owner evidence is never accepted from the public Apex Analytic UI. Use the private owner API from a trusted machine or future server-side admin service.
 
 ```http
 POST /api/owner/documents
@@ -35,7 +35,7 @@ Set `ESTATELAB_EMAIL_WEBHOOK_URL` to an HTTPS endpoint that accepts the payload 
 
 ```json
 {
-  "app": "EstateLab Jarvis",
+  "app": "Apex Analytic",
   "type": "email-verification",
   "to": "member@example.com",
   "displayName": "Member",
@@ -55,7 +55,7 @@ The owner token must remain server-side or on a trusted owner machine. Do not ad
 
 ## Voice
 
-Jarvis uses browser speech recognition and speech synthesis first. If recognition is missing, the orb records through `MediaRecorder`, then calls server transcription. If browser synthesis is missing, it requests server-generated MP3 speech. The stop control interrupts either path.
+Apex Analytic uses browser speech recognition and speech synthesis first. If recognition is missing, the orb records through `MediaRecorder`, then calls server transcription. If browser synthesis is missing, it requests server-generated MP3 speech. The stop control interrupts either path.
 
 Server routes:
 
@@ -82,7 +82,7 @@ After a Render deployment:
 1. Check `/api/health`; `storage` should be `postgres` when `DATABASE_URL` is configured.
 2. Check `/api/jarvis/status`; confirm AI, audio, document, and account-delivery capability flags.
 3. Upload one small owner evidence file and confirm it reports `indexed`.
-4. Ask Jarvis a question containing distinctive terms from that file and confirm an `EVIDENCE` source appears.
+4. Ask Apex Analytic a question containing distinctive terms from that file and confirm an `EVIDENCE` source appears.
 5. Review `/api/owner/retrieval/metrics`.
 6. Register a test member, verify the code, reset the password, and remove or disable the test account.
 7. Test voice once on desktop and once on mobile.
@@ -91,6 +91,6 @@ After a Render deployment:
 
 - Up to 500 evidence documents and 5,000 chunks are kept in the bounded state snapshot.
 - The latest 1,000 retrieval events are retained.
-- Each Jarvis session keeps the latest 80 messages; the state keeps the latest 80 sessions.
+- Each conversation session keeps the latest 80 messages; the state keeps the latest 80 sessions.
 - Public rate limits are process-local. Use a shared limiter before running multiple web-service instances.
 - Uploaded originals need a persistent Render disk. PostgreSQL keeps indexed text and metadata, but not the original file bytes.

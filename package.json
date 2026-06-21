@@ -1,8 +1,8 @@
 {
-  "name": "estatelab-jarvis",
+  "name": "apex-analytic",
   "version": "0.1.0",
   "private": true,
-  "description": "Jarvis-style EstateLab second brain for Malaysia real estate investment research.",
+  "description": "Apex Analytic real estate investment intelligence for the Malaysian market.",
   "type": "module",
   "scripts": {
     "start": "node server.js",
@@ -20,7 +20,7 @@
     "real-estate",
     "malaysia",
     "second-brain",
-    "jarvis",
+    "apex-analytic",
     "rag"
   ]
 }

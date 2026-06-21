@@ -81,7 +81,7 @@ test("OpenRouter reports the model that actually answered", async (t) => {
       ESTATELAB_DATA_DIR: dataDir,
       OPENAI_API_KEY: "",
       OPENROUTER_API_KEY: "test-openrouter-key",
-      LLM_MODEL: "openrouter/auto",
+      LLM_MODEL: "LLM_MODEL=deepseek/deepseek-v4-flash",
       LLM_BASE_URL: `http://127.0.0.1:${providerPort}`
     },
     stdio: "ignore"
@@ -99,13 +99,13 @@ test("OpenRouter reports the model that actually answered", async (t) => {
   await waitForHealth(baseUrl, child);
   const before = await jsonRequest(baseUrl, "/api/jarvis/status");
   assert.equal(before.payload.llm.provider, "openrouter");
-  assert.equal(before.payload.llm.configuredModel, "openrouter/auto");
+  assert.equal(before.payload.llm.configuredModel, "deepseek/deepseek-v4-flash");
   assert.equal(before.payload.llm.resolvedModel, null);
 
   const session = await jsonRequest(baseUrl, "/api/jarvis/sessions", { method: "POST", body: {} });
   const answer = await jsonRequest(baseUrl, "/api/jarvis/query", {
     method: "POST",
-    body: { sessionId: session.payload.session.id, query: "Hello Jarvis" }
+    body: { sessionId: session.payload.session.id, query: "Hello Apex Analytic" }
   });
   assert.equal(answer.response.status, 200);
   assert.equal(answer.payload.mode, "llm");
@@ -113,8 +113,8 @@ test("OpenRouter reports the model that actually answered", async (t) => {
   assert.equal(answer.payload.model, "anthropic/claude-test-resolved");
   assert.equal(captured.url, "/chat/completions");
   assert.equal(captured.authorization, "Bearer test-openrouter-key");
-  assert.equal(captured.title, "EstateLab Jarvis");
-  assert.equal(captured.body.model, "openrouter/auto");
+  assert.equal(captured.title, "Apex Analytic");
+  assert.equal(captured.body.model, "deepseek/deepseek-v4-flash");
   assert.equal(captured.body.messages[0].role, "system");
 
   const after = await jsonRequest(baseUrl, "/api/jarvis/status");

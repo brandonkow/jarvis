@@ -1,12 +1,12 @@
-# EstateLab Jarvis
+# Apex Analytic
 
-EstateLab Jarvis is a minimal full-stack app for a Malaysia-focused real estate investment second brain.
+Apex Analytic is a minimal full-stack app for a Malaysia-focused real estate investment second brain.
 
-The public user experience is intentionally simple: users interact with one Jarvis-style chat interface. The EstateLab knowledge base stays controlled by the owner; public users can query guidance and create chat sessions, but they cannot add to or change the underlying knowledge base.
+The public user experience is intentionally simple: users interact with one Apex Analytic interface. The knowledge base stays controlled by the owner; public users can query guidance and create chat sessions, but they cannot add to or change the underlying knowledge base.
 
 ## What Is Included
 
-- Jarvis-style browser UI with browser voice plus server speech fallback.
+- Apex Analytic browser UI with browser voice plus server speech fallback.
 - Optional member accounts with private, resumable chat sessions; guests remain device-scoped.
 - Email verification, password recovery, and owner-only account administration.
 - PostgreSQL production storage with automatic JSON fallback for local development.
@@ -14,9 +14,9 @@ The public user experience is intentionally simple: users interact with one Jarv
 - Public request limits for chat, voice, and account endpoints.
 - Seven-stage Deal Analysis using the Deal Card and Financial Profile, with structured verdicts, hard stops, stress metrics, counter-thesis, and missing evidence.
 - Node.js backend with a single production database driver dependency (`pg`).
-- Public Jarvis endpoints for chat, session creation, and knowledge status.
+- Public assistant endpoints for chat, session creation, and knowledge status.
 - Owner-protected APIs for property analysis, RAG querying, beliefs, decisions, and comparable data.
-- Seeded EstateLab knowledge base in `data/db.json` and `rag/corpus.json`.
+- Seeded Apex Analytic knowledge base in `data/db.json` and `rag/corpus.json`.
 - Deployment-ready health check at `/api/health`.
 
 ## Run Locally
@@ -59,11 +59,11 @@ DATABASE_URL=postgresql://user:password@host:5432/database
 ESTATELAB_PG_POOL_MAX=5
 ```
 
-`ESTATELAB_OWNER_TOKEN` protects the owner-only APIs. Public Jarvis chat endpoints remain accessible without this token.
+`ESTATELAB_OWNER_TOKEN` protects the owner-only APIs. Public chat endpoints remain accessible without this token. Legacy environment-variable and API-route names remain unchanged to preserve deployment compatibility.
 
-`ESTATELAB_DATA_DIR` controls the JSON fallback and PostgreSQL migration source. If the folder is empty on first start, EstateLab seeds it from the bundled `data/db.json`.
+`ESTATELAB_DATA_DIR` controls the JSON fallback and PostgreSQL migration source. If the folder is empty on first start, Apex Analytic seeds it from the bundled `data/db.json`.
 
-Jarvis supports OpenAI and OpenRouter for conversational reasoning. Set `OPENROUTER_API_KEY` to select OpenRouter automatically; set `LLM_MODEL` to an exact OpenRouter model slug for consistent behavior, or use `openrouter/auto` and inspect the resolved model reported by `/api/jarvis/status` and the frontend session indicator. `OPENAI_API_KEY` remains compatible with direct OpenAI reasoning. The keys are never sent to the browser.
+Apex Analytic supports OpenAI and OpenRouter for conversational reasoning. Set `OPENROUTER_API_KEY` to select OpenRouter automatically; set `LLM_MODEL` to an exact OpenRouter model slug for consistent behavior, or use `openrouter/auto` and inspect the resolved model reported by `/api/jarvis/status` and the frontend session indicator. `OPENAI_API_KEY` remains compatible with direct OpenAI reasoning. The keys are never sent to the browser.
 
 Advanced provider overrides are `LLM_PROVIDER`, `LLM_API_KEY`, and `LLM_BASE_URL`. An OpenRouter key accidentally stored in `OPENAI_API_KEY` is detected by its `sk-or-` prefix and routed correctly.
 
@@ -73,11 +73,11 @@ Embeddings and server voice use OpenAI-specific endpoints. When OpenRouter handl
 
 `ESTATELAB_EMAIL_WEBHOOK_URL` is an optional server-to-server delivery hook for verification and reset codes. The hook receives `type`, `to`, `displayName`, `token`, and `expiresAt`; set `ESTATELAB_EMAIL_WEBHOOK_SECRET` to add a bearer credential. Keep `ESTATELAB_AUTH_DEBUG_TOKENS=false` in production. Enable mandatory verification only after delivery is working.
 
-When AI mode is enabled, chat messages and any Deal Card or Financial Profile context submitted with the message are sent to OpenAI for response generation. Public input remains conversation data and is not promoted into EstateLab's owner-controlled knowledge base.
+When AI mode is enabled, chat messages and any Deal Card or Financial Profile context submitted with the message are sent to the configured provider for response generation. Public input remains conversation data and is not promoted into Apex Analytic's owner-controlled knowledge base.
 
 Member passwords are scrypt-hashed. Login cookies are opaque, `HttpOnly`, `SameSite=Strict`, and automatically marked `Secure` behind Render HTTPS. Only a hash of each login token is stored. Guest chat access is bound to the originating browser client ID.
 
-When `DATABASE_URL` is set, EstateLab creates its PostgreSQL schema automatically and uses transactional PostgreSQL storage. If the database is empty, the first startup imports the current JSON database as its seed. Without `DATABASE_URL`, EstateLab continues using `data/db.json`.
+When `DATABASE_URL` is set, Apex Analytic creates its PostgreSQL schema automatically and uses transactional PostgreSQL storage. If the database is empty, the first startup imports the current JSON database as its seed. Without `DATABASE_URL`, the app continues using `data/db.json`.
 
 ## Deploy On Render
 
@@ -97,7 +97,7 @@ A starter `render.yaml` blueprint is included. It defines a Node web service in 
 
 Note: Render persistent disks require a paid web service plan. The blueprint keeps the existing disk as a migration source and JSON fallback. Once PostgreSQL has been verified, runtime account and chat persistence no longer depends on that disk.
 
-The bundled EstateLab knowledge base ships with the repo. On first start, if the Render disk is empty, the app seeds the runtime database from `data/db.json`.
+The bundled Apex Analytic knowledge base ships with the repo. On first start, if the Render disk is empty, the app seeds the runtime database from `data/db.json`.
 
 ## API Boundary
 

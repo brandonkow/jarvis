@@ -560,6 +560,14 @@ button {
     0 0 44px rgba(96, 231, 255, 0.18);
 }
 
+.identity .productSuffix {
+  margin: -2px 0 0;
+  color: #79b8c4;
+  font-size: clamp(0.56rem, 1.2vw, 0.76rem);
+  letter-spacing: 0.62em;
+  text-indent: 0.62em;
+}
+
 .identity #assistantPrompt {
   min-height: 20px;
   margin: 10px 0 0;
