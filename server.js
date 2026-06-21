@@ -222,7 +222,7 @@ function emptyJarvis() {
 }
 
 function emptyAuth() {
-  return { version: 4, users: [], sessions: [], tokens: [] };
+  return { version: 5, users: [], sessions: [], tokens: [] };
 }
 
 function normalizeUserMemory(memory) {
@@ -341,11 +341,60 @@ function normalizeUserReports(reports) {
   return { version: 1, items };
 }
 
+function optionalJournalScore(value) {
+  if (value === "" || value === undefined || value === null) return "";
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.max(0, Math.min(100, Math.round(numeric))) : "";
+}
+
+function normalizeJournalEntry(item = {}) {
+  const validDecisions = new Set(["proceed", "pause", "reject", "investigate"]);
+  const validOutcomes = new Set(["not_reviewed", "abandoned", "holding", "sold"]);
+  const outcomeStatus = validOutcomes.has(item?.outcome?.status) ? item.outcome.status : "not_reviewed";
+  return {
+    id: String(item.id || randomUUID()),
+    reportId: String(item.reportId || "").slice(0, 100),
+    subject: reportText(item.subject || "Untitled deal", 160),
+    createdAt: String(item.createdAt || new Date().toISOString()),
+    updatedAt: String(item.updatedAt || item.createdAt || new Date().toISOString()),
+    lockedAt: String(item.lockedAt || ""),
+    prePurchase: {
+      decision: validDecisions.has(item?.prePurchase?.decision) ? item.prePurchase.decision : "investigate",
+      thesis: reportText(item?.prePurchase?.thesis, 2000),
+      counterThesis: reportText(item?.prePurchase?.counterThesis, 2000),
+      killCriterion: reportText(item?.prePurchase?.killCriterion, 1200),
+      holdingPeriod: reportText(item?.prePurchase?.holdingPeriod, 120),
+      confidence: Math.max(0, Math.min(100, Math.round(Number(item?.prePurchase?.confidence || 0)))),
+      notes: reportText(item?.prePurchase?.notes, 2000)
+    },
+    outcome: {
+      status: outcomeStatus,
+      actualRent: reportText(item?.outcome?.actualRent, 120),
+      currentValue: reportText(item?.outcome?.currentValue, 120),
+      result: reportText(item?.outcome?.result, 2000),
+      lesson: reportText(item?.outcome?.lesson, 2000),
+      processScore: optionalJournalScore(item?.outcome?.processScore),
+      executionScore: optionalJournalScore(item?.outcome?.executionScore),
+      outcomeScore: optionalJournalScore(item?.outcome?.outcomeScore),
+      luckScore: optionalJournalScore(item?.outcome?.luckScore),
+      reviewedAt: String(item?.outcome?.reviewedAt || "")
+    },
+    snapshot: normalizeReportAnalysis(item.snapshot)
+  };
+}
+
+function normalizeUserJournal(journal) {
+  const items = Array.isArray(journal?.items)
+    ? journal.items.map(normalizeJournalEntry).filter((item) => item.reportId && item.subject).slice(0, 100)
+    : [];
+  return { version: 1, items };
+}
+
 function normalizeAuth(auth) {
   const now = Date.now();
   const legacyUsersAreVerified = Number(auth?.version || 1) < 2;
   return {
-    version: 4,
+    version: 5,
     users: Array.isArray(auth?.users)
       ? auth.users.map((user) => ({
         id: String(user.id || ""),
@@ -356,6 +405,7 @@ function normalizeAuth(auth) {
         memory: normalizeUserMemory(user.memory),
         billing: normalizeUserBilling(user.billing),
         reports: normalizeUserReports(user.reports),
+        journal: normalizeUserJournal(user.journal),
         emailVerifiedAt: String(user.emailVerifiedAt || (legacyUsersAreVerified ? user.createdAt || new Date().toISOString() : "")),
         disabledAt: String(user.disabledAt || ""),
         createdAt: String(user.createdAt || new Date().toISOString())
@@ -608,6 +658,58 @@ function publicReportSummary(item) {
     confidence: item.analysis.confidence,
     weakestDimension: [...item.analysis.dimensions].sort((a, b) => a.score - b.score)[0] || null
   };
+}
+
+function journalSkillSignal(entry) {
+  const outcome = entry.outcome || {};
+  if (!outcome.reviewedAt) return "Outcome not reviewed";
+  const process = Number(outcome.processScore);
+  const execution = Number(outcome.executionScore);
+  const result = Number(outcome.outcomeScore);
+  const luck = Number(outcome.luckScore);
+  if (process >= 70 && execution >= 65 && result >= 65 && luck < 60) return "Disciplined process with supporting outcome";
+  if (process >= 70 && result < 50) return "Sound process, adverse outcome";
+  if (process < 60 && result >= 70) return luck >= 60 ? "Positive result with material luck" : "Result exceeded the recorded process";
+  if (process < 50 && result < 50) return "Weak process and weak result";
+  return "Mixed evidence; avoid a strong skill conclusion";
+}
+
+function publicJournalSummary(item) {
+  return {
+    id: item.id,
+    reportId: item.reportId,
+    subject: item.subject,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    locked: Boolean(item.lockedAt),
+    lockedAt: item.lockedAt,
+    decision: item.prePurchase.decision,
+    confidence: item.prePurchase.confidence,
+    outcomeStatus: item.outcome.status,
+    reviewed: Boolean(item.outcome.reviewedAt),
+    skillSignal: journalSkillSignal(item),
+    snapshotScore: item.snapshot.averageScore,
+    snapshotVerdict: item.snapshot.verdict
+  };
+}
+
+function journalCollectionSummary(journal) {
+  const items = normalizeUserJournal(journal).items;
+  const reviewed = items.filter((item) => item.outcome.reviewedAt);
+  const scored = reviewed.filter((item) => item.outcome.processScore !== "");
+  return {
+    total: items.length,
+    drafts: items.filter((item) => !item.lockedAt).length,
+    locked: items.filter((item) => item.lockedAt).length,
+    reviewed: reviewed.length,
+    averageProcessScore: scored.length
+      ? Math.round(scored.reduce((sum, item) => sum + Number(item.outcome.processScore), 0) / scored.length)
+      : null
+  };
+}
+
+function lockedUserJournal(user) {
+  return normalizeUserJournal(user?.journal).items.filter((item) => item.lockedAt);
 }
 
 function checkoutUrlFor(planId, user) {
@@ -1977,6 +2079,35 @@ function memoriesForPrompt(memories = []) {
   return memories.map((memory) => `- ${memory.category}: ${memory.content}`).join("\n");
 }
 
+function selectRelevantUserJournal(journal = [], query = "", limit = 3) {
+  const terms = tokenize(query);
+  return journal
+    .map((decision) => ({
+      ...decision,
+      score: termScore(terms, [
+        decision.subject,
+        decision.prePurchase.thesis,
+        decision.prePurchase.counterThesis,
+        decision.prePurchase.killCriterion,
+        decision.outcome.result,
+        decision.outcome.lesson
+      ].join(" "))
+    }))
+    .filter((decision) => decision.score > 0)
+    .sort((a, b) => b.score - a.score || String(b.updatedAt).localeCompare(String(a.updatedAt)))
+    .slice(0, limit);
+}
+
+function journalForPrompt(journal = []) {
+  if (!journal.length) return "No locked private decision-journal entry is relevant.";
+  return journal.map((decision) => [
+    `- ${decision.subject}: decision ${decision.prePurchase.decision}. Thesis: ${decision.prePurchase.thesis}`,
+    `  Counter-thesis: ${decision.prePurchase.counterThesis}`,
+    `  Kill criterion: ${decision.prePurchase.killCriterion}`,
+    decision.outcome.reviewedAt ? `  Outcome: ${decision.outcome.result}. Lesson: ${decision.outcome.lesson}. Skill signal: ${journalSkillSignal(decision)}` : "  Outcome not reviewed yet."
+  ].join("\n")).join("\n");
+}
+
 async function generateJarvisLlmAnswer({
   query,
   session,
@@ -1986,6 +2117,7 @@ async function generateJarvisLlmAnswer({
   beliefs,
   decisions,
   memories,
+  journal,
   fallbackAnswer
 }) {
   const decisionContext = decisions.length
@@ -2015,6 +2147,9 @@ ${decisionContext}
 
 APPROVED PRIVATE USER MEMORY
 ${memoriesForPrompt(memories)}
+
+LOCKED PRIVATE DECISION JOURNAL
+${journalForPrompt(journal)}
 
 DETERMINISTIC FALLBACK ANALYSIS
 ${fallbackAnswer}
@@ -2089,7 +2224,7 @@ async function retrieveGuidance(query, property, brain, knowledge = emptyKnowled
   };
 }
 
-async function retrieveJarvisAnswer(query, brain, session, context = {}, knowledge = emptyKnowledge(), userMemories = []) {
+async function retrieveJarvisAnswer(query, brain, session, context = {}, knowledge = emptyKnowledge(), userMemories = [], userJournal = []) {
   const dealCard = cleanContextRecord(context.dealCard, dealContextLabels);
   const financialProfile = cleanContextRecord(context.financialProfile, profileContextLabels);
   const hasStructuredContext = hasContextData({ dealCard, financialProfile });
@@ -2098,6 +2233,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     contextText(financialProfile, profileContextLabels, "Financial profile")
   ].filter(Boolean).join(" ");
   const relevantMemories = selectRelevantUserMemories(userMemories, `${query} ${contextForSearch}`);
+  const relevantJournal = selectRelevantUserJournal(userJournal, `${query} ${contextForSearch}`);
   const companionIntent = detectCompanionIntent(query);
   if (companionIntent && (companionIntent !== "need_context" || !hasStructuredContext)) {
     const fallbackAnswer = companionAnswer(companionIntent);
@@ -2112,6 +2248,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
           beliefs: [],
           decisions: [],
           memories: relevantMemories,
+          journal: [],
           fallbackAnswer
         });
         return { answer: completion.text, sources: [], mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: "none" };
@@ -2210,6 +2347,10 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     bulletSection("Owner evidence", ownerEvidence.slice(0, 2).map((reference) => `${reference.title}: ${shortSentence(reference.content, 180)}`), 2),
     bulletSection("Deal read", dealRead, 3),
     bulletSection("Your memory", relevantMemories.map((memory) => memory.content), 3),
+    bulletSection("Your decision journal", relevantJournal.map((decision) => {
+      const lesson = decision.outcome.reviewedAt ? ` Lesson: ${decision.outcome.lesson}` : "";
+      return `${decision.subject}: ${decision.prePurchase.decision}. ${decision.prePurchase.thesis}${lesson}`;
+    }), 2),
     bulletSection("Why", reasoning, 3),
     bulletSection("Watch-outs", risks, 2),
     bulletSection("Profile fit", profileFit, 3),
@@ -2261,6 +2402,13 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         type: "memory",
         preview: memory.category,
         score: memory.score
+      })),
+      ...relevantJournal.map((decision) => ({
+        id: decision.id,
+        title: decision.subject,
+        type: "journal",
+        preview: conciseText(decision.outcome.lesson || decision.prePurchase.thesis, 160),
+        score: decision.score
       }))
     ];
 
@@ -2275,6 +2423,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         beliefs: topBeliefs,
         decisions: topDecisions,
         memories: relevantMemories,
+        journal: relevantJournal,
         fallbackAnswer
       });
       return { answer: completion.text, sources, mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: evidenceResult.mode };
@@ -2334,6 +2483,8 @@ function isPublicApiRoute(method, pathname) {
     || (method === "GET" && pathname === "/api/reports")
     || (method === "GET" && pathname.startsWith("/api/reports/"))
     || (method === "DELETE" && pathname.startsWith("/api/reports/"))
+    || (["GET", "POST"].includes(method) && pathname === "/api/journal")
+    || (["GET", "PATCH", "DELETE"].includes(method) && pathname.startsWith("/api/journal/"))
     || (["GET", "POST"].includes(method) && pathname === "/api/memory")
     || (["PATCH", "DELETE"].includes(method) && pathname.startsWith("/api/memory/"))
     || (method === "GET" && pathname === "/api/jarvis/status")
@@ -2444,6 +2595,7 @@ async function router(req, res) {
       memory: normalizeUserMemory(),
       billing: normalizeUserBilling(),
       reports: normalizeUserReports(),
+      journal: normalizeUserJournal(),
       emailVerifiedAt: "",
       disabledAt: "",
       createdAt: new Date().toISOString()
@@ -2660,6 +2812,129 @@ async function router(req, res) {
     const nextItems = actor.user.reports.items.filter((item) => item.id !== id);
     if (nextItems.length === actor.user.reports.items.length) return send(res, 404, { error: "Deal report not found." });
     actor.user.reports.items = nextItems;
+    await writeDb(db);
+    return send(res, 204, "");
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/journal") {
+    if (!actor.user) return send(res, 401, { error: "Sign in to use your private decision journal." });
+    actor.user.journal = normalizeUserJournal(actor.user.journal);
+    return send(res, 200, {
+      decisions: actor.user.journal.items.map(publicJournalSummary),
+      summary: journalCollectionSummary(actor.user.journal)
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/journal") {
+    if (!actor.user) return send(res, 401, { error: "Sign in to record a private decision." });
+    const body = await readBody(req);
+    const reportId = String(body.reportId || "");
+    actor.user.reports = normalizeUserReports(actor.user.reports);
+    actor.user.journal = normalizeUserJournal(actor.user.journal);
+    const report = actor.user.reports.items.find((item) => item.id === reportId);
+    if (!report) return send(res, 404, { error: "Create or open a saved Deal Report before recording a decision." });
+    const existing = actor.user.journal.items.find((item) => item.reportId === reportId);
+    if (existing) return send(res, 200, { decision: existing, existing: true, summary: journalCollectionSummary(actor.user.journal) });
+    const deal = report.analysis.context.dealCard || {};
+    const profile = report.analysis.context.financialProfile || {};
+    const now = new Date().toISOString();
+    const decision = normalizeJournalEntry({
+      id: randomUUID(),
+      reportId,
+      subject: report.subject,
+      createdAt: now,
+      updatedAt: now,
+      prePurchase: {
+        decision: body.decision || "investigate",
+        thesis: body.thesis || deal.investmentThesis,
+        counterThesis: body.counterThesis || report.analysis.counterThesis,
+        killCriterion: body.killCriterion || deal.killCriterion,
+        holdingPeriod: body.holdingPeriod || profile.holdingPeriod,
+        confidence: body.confidence ?? report.analysis.confidence,
+        notes: body.notes || ""
+      },
+      outcome: { status: "not_reviewed" },
+      snapshot: report.analysis
+    });
+    actor.user.journal.items.unshift(decision);
+    actor.user.journal = normalizeUserJournal(actor.user.journal);
+    await writeDb(db);
+    return send(res, 201, { decision, existing: false, summary: journalCollectionSummary(actor.user.journal) });
+  }
+
+  if (req.method === "GET" && url.pathname.startsWith("/api/journal/")) {
+    if (!actor.user) return send(res, 401, { error: "Sign in to view your private decision journal." });
+    const id = url.pathname.split("/").pop();
+    actor.user.journal = normalizeUserJournal(actor.user.journal);
+    const decision = actor.user.journal.items.find((item) => item.id === id);
+    if (!decision) return send(res, 404, { error: "Decision record not found." });
+    return send(res, 200, { decision, summary: publicJournalSummary(decision) });
+  }
+
+  if (req.method === "PATCH" && url.pathname.startsWith("/api/journal/")) {
+    if (!actor.user) return send(res, 401, { error: "Sign in to update your private decision journal." });
+    const id = url.pathname.split("/").pop();
+    const body = await readBody(req);
+    actor.user.journal = normalizeUserJournal(actor.user.journal);
+    const decision = actor.user.journal.items.find((item) => item.id === id);
+    if (!decision) return send(res, 404, { error: "Decision record not found." });
+    const action = String(body.action || "update");
+    if (action === "update") {
+      if (decision.lockedAt) return send(res, 409, { error: "This pre-purchase thesis is locked and cannot be rewritten after the fact." });
+      if (body.decision !== undefined) decision.prePurchase.decision = body.decision;
+      if (body.thesis !== undefined) decision.prePurchase.thesis = reportText(body.thesis, 2000);
+      if (body.counterThesis !== undefined) decision.prePurchase.counterThesis = reportText(body.counterThesis, 2000);
+      if (body.killCriterion !== undefined) decision.prePurchase.killCriterion = reportText(body.killCriterion, 1200);
+      if (body.holdingPeriod !== undefined) decision.prePurchase.holdingPeriod = reportText(body.holdingPeriod, 120);
+      if (body.confidence !== undefined) decision.prePurchase.confidence = Math.max(0, Math.min(100, Math.round(Number(body.confidence || 0))));
+      if (body.notes !== undefined) decision.prePurchase.notes = reportText(body.notes, 2000);
+    } else if (action === "lock") {
+      if (decision.lockedAt) return send(res, 200, { decision, summary: publicJournalSummary(decision) });
+      if (decision.prePurchase.thesis.length < 8 || decision.prePurchase.counterThesis.length < 8 || decision.prePurchase.killCriterion.length < 8) {
+        return send(res, 400, { error: "Record a thesis, counter-thesis, and kill criterion before locking the decision." });
+      }
+      decision.lockedAt = new Date().toISOString();
+    } else if (action === "review") {
+      if (!decision.lockedAt) return send(res, 409, { error: "Lock the pre-purchase thesis before recording an outcome review." });
+      const outcomeStatus = String(body.outcomeStatus || "");
+      if (!["abandoned", "holding", "sold"].includes(outcomeStatus)) return send(res, 400, { error: "Choose abandoned, holding, or sold for the outcome status." });
+      const requiredScores = [body.processScore, body.executionScore, body.outcomeScore, body.luckScore];
+      if (requiredScores.some((score) => score === "" || score === undefined || !Number.isFinite(Number(score)))) {
+        return send(res, 400, { error: "Score process, execution, outcome, and luck before saving the review." });
+      }
+      if (reportText(body.result, 2000).length < 8 || reportText(body.lesson, 2000).length < 8) {
+        return send(res, 400, { error: "Record both what happened and the lesson before saving the review." });
+      }
+      decision.outcome = {
+        status: outcomeStatus,
+        actualRent: reportText(body.actualRent, 120),
+        currentValue: reportText(body.currentValue, 120),
+        result: reportText(body.result, 2000),
+        lesson: reportText(body.lesson, 2000),
+        processScore: optionalJournalScore(body.processScore),
+        executionScore: optionalJournalScore(body.executionScore),
+        outcomeScore: optionalJournalScore(body.outcomeScore),
+        luckScore: optionalJournalScore(body.luckScore),
+        reviewedAt: new Date().toISOString()
+      };
+    } else {
+      return send(res, 400, { error: "Unknown decision-journal action." });
+    }
+    decision.updatedAt = new Date().toISOString();
+    actor.user.journal = normalizeUserJournal(actor.user.journal);
+    const updated = actor.user.journal.items.find((item) => item.id === id);
+    await writeDb(db);
+    return send(res, 200, { decision: updated, summary: publicJournalSummary(updated), collection: journalCollectionSummary(actor.user.journal) });
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/journal/")) {
+    if (!actor.user) return send(res, 401, { error: "Sign in to manage your private decision journal." });
+    const id = url.pathname.split("/").pop();
+    actor.user.journal = normalizeUserJournal(actor.user.journal);
+    const decision = actor.user.journal.items.find((item) => item.id === id);
+    if (!decision) return send(res, 404, { error: "Decision record not found." });
+    if (decision.lockedAt) return send(res, 409, { error: "Locked decisions are retained to preserve the audit trail." });
+    actor.user.journal.items = actor.user.journal.items.filter((item) => item.id !== id);
     await writeDb(db);
     return send(res, 204, "");
   }
@@ -3217,7 +3492,7 @@ async function router(req, res) {
     const result = await retrieveJarvisAnswer(query, db.brain, session, {
       dealCard: body.dealCard,
       financialProfile: body.financialProfile
-    }, db.knowledge, approvedUserMemories(actor.user));
+    }, db.knowledge, approvedUserMemories(actor.user), lockedUserJournal(actor.user));
     const jarvisMessage = {
       id: randomUUID(),
       role: "jarvis",

@@ -385,3 +385,17 @@ At each review, record:
 ## Stage 7 Protection Rule
 
 > Record the prediction before the outcome, judge the process separately from the profit, and update confidence when evidence disagrees. A framework is valuable only when it can reveal that its owner was wrong.
+
+## Implemented Private Workflow
+
+Apex Analytic now applies this standard through a signed-in, account-private Decision Journal:
+
+1. A saved Deal Report creates the immutable evidence snapshot.
+2. The user records their own decision, confidence, thesis, counter-thesis, kill criterion, holding period, and assumptions.
+3. The record remains editable while it is a draft.
+4. The user locks the thesis before relying on the outcome.
+5. Locked pre-purchase reasoning cannot be edited or deleted.
+6. A later outcome review records what happened, the lesson, and separate scores for process, execution, outcome, and luck.
+7. Locked decisions and reviewed lessons become private context when relevant to later Apex conversations.
+
+The Decision Journal is separate from the owner-controlled shared knowledge base. One user's decisions are never available to another user and are not exposed through the owner user-list response.

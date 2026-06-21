@@ -58,6 +58,41 @@ const reportsClose = document.querySelector("#reportsClose");
 const reportsSavedCount = document.querySelector("#reportsSavedCount");
 const reportsUsageLabel = document.querySelector("#reportsUsageLabel");
 const reportsList = document.querySelector("#reportsList");
+const journalToggle = document.querySelector("#journalToggle");
+const journalPanel = document.querySelector("#journalPanel");
+const journalClose = document.querySelector("#journalClose");
+const journalSummary = document.querySelector("#journalSummary");
+const journalTotalCount = document.querySelector("#journalTotalCount");
+const journalReviewedCount = document.querySelector("#journalReviewedCount");
+const journalList = document.querySelector("#journalList");
+const journalEditor = document.querySelector("#journalEditor");
+const journalBack = document.querySelector("#journalBack");
+const journalDecisionId = document.querySelector("#journalDecisionId");
+const journalSubject = document.querySelector("#journalSubject");
+const journalDecision = document.querySelector("#journalDecision");
+const journalConfidence = document.querySelector("#journalConfidence");
+const journalHoldingPeriod = document.querySelector("#journalHoldingPeriod");
+const journalThesis = document.querySelector("#journalThesis");
+const journalCounterThesis = document.querySelector("#journalCounterThesis");
+const journalKillCriterion = document.querySelector("#journalKillCriterion");
+const journalNotes = document.querySelector("#journalNotes");
+const journalDraftActions = document.querySelector("#journalDraftActions");
+const journalSaveDraft = document.querySelector("#journalSaveDraft");
+const journalLock = document.querySelector("#journalLock");
+const journalDelete = document.querySelector("#journalDelete");
+const journalLockNotice = document.querySelector("#journalLockNotice");
+const journalOutcome = document.querySelector("#journalOutcome");
+const journalOutcomeStatus = document.querySelector("#journalOutcomeStatus");
+const journalActualRent = document.querySelector("#journalActualRent");
+const journalCurrentValue = document.querySelector("#journalCurrentValue");
+const journalProcessScore = document.querySelector("#journalProcessScore");
+const journalExecutionScore = document.querySelector("#journalExecutionScore");
+const journalOutcomeScore = document.querySelector("#journalOutcomeScore");
+const journalLuckScore = document.querySelector("#journalLuckScore");
+const journalResult = document.querySelector("#journalResult");
+const journalLesson = document.querySelector("#journalLesson");
+const journalSaveReview = document.querySelector("#journalSaveReview");
+const journalMessage = document.querySelector("#journalMessage");
 const shortlistToggle = document.querySelector("#shortlistToggle");
 const shortlistPanel = document.querySelector("#shortlistPanel");
 const shortlistClose = document.querySelector("#shortlistClose");
@@ -164,11 +199,13 @@ function renderAuthState(user) {
   authUserPanel.hidden = !signedIn;
   memoryToggle.hidden = !signedIn;
   reportsToggle.hidden = !signedIn;
+  journalToggle.hidden = !signedIn;
   billingSummary.hidden = !signedIn;
   authTitle.textContent = signedIn ? "ACCOUNT" : authMode === "register" ? "CREATE ACCOUNT" : "SIGN IN";
   if (!signedIn) {
     closeMemoryPanel();
     closeReportsPanel();
+    closeJournalPanel();
     billingState = null;
   }
   if (signedIn) {
@@ -187,6 +224,7 @@ function renderAuthState(user) {
 function openAuthPanel() {
   closeMemoryPanel();
   closeReportsPanel();
+  closeJournalPanel();
   closeShortlistPanel();
   collapseContextPanels();
   authPanel.hidden = false;
@@ -205,6 +243,7 @@ function closeAuthPanel() {
 
 function sourceLabel(type) {
   if (type === "memory") return "MEMORY";
+  if (type === "journal") return "JOURNAL";
   if (type === "belief") return "BELIEF";
   if (type === "decision") return "DECISION";
   if (type === "evidence") return "EVIDENCE";
@@ -213,6 +252,7 @@ function sourceLabel(type) {
 
 function sourceName(source) {
   if (source?.type === "memory") return "your approved memory";
+  if (source?.type === "journal") return "your decision journal";
   if (source?.type === "evidence") return "owner evidence";
   const title = String(source?.title || "").toLowerCase();
   if (title.includes("rental") || title.includes("installment") || title.includes("tenant")) return "rental rule";
@@ -320,6 +360,7 @@ async function openMemoryPanel() {
   if (!authenticatedUser) return openAuthPanel();
   closeAuthPanel();
   closeReportsPanel();
+  closeJournalPanel();
   closeShortlistPanel();
   collapseContextPanels();
   memoryPanel.hidden = false;
@@ -455,6 +496,7 @@ async function openReportsPanel() {
   if (!authenticatedUser) return openAuthPanel();
   closeAuthPanel();
   closeMemoryPanel();
+  closeJournalPanel();
   closeShortlistPanel();
   collapseContextPanels();
   reportsPanel.hidden = false;
@@ -482,12 +524,233 @@ async function handleReportAction(button) {
     const result = await requestJson(`/api/reports/${encodeURIComponent(id)}`);
     closeReportsPanel();
     transcript.innerHTML = "";
+    result.report.analysis.savedReportId = result.report.id;
     addDealAnalysis(result.report.analysis);
     renderBillingStatus(result.billing);
     setSystemState("System ready", `${result.report.subject} report loaded.`);
   } catch (error) {
     setSystemState("Connection issue", error.message || "The saved report is unavailable.");
     button.disabled = false;
+  }
+}
+
+function journalItemMarkup(item) {
+  const state = item.reviewed ? "REVIEWED" : item.locked ? "LOCKED" : "DRAFT";
+  const date = new Intl.DateTimeFormat("en-MY", { dateStyle: "medium" }).format(new Date(item.createdAt));
+  return `
+    <article class="journalItem ${escapeHtml(state.toLowerCase())}" data-journal-item="${escapeHtml(item.id)}">
+      <header><span><small>${escapeHtml(state)} / ${escapeHtml(date)}</small><b>${escapeHtml(item.subject)}</b></span><em>${escapeHtml(item.decision)}</em></header>
+      <p>${escapeHtml(item.skillSignal)}</p>
+      <div class="journalItemMeta"><span>REPORT ${escapeHtml(item.snapshotScore)}/100</span><span>CONFIDENCE ${escapeHtml(item.confidence)}%</span></div>
+      <button type="button" data-journal-action="open" data-journal-id="${escapeHtml(item.id)}">${item.locked ? "REVIEW" : "EDIT DRAFT"}</button>
+    </article>
+  `;
+}
+
+function renderJournalCollection(payload = {}) {
+  const decisions = Array.isArray(payload.decisions) ? payload.decisions : [];
+  journalTotalCount.textContent = String(payload.summary?.total || 0);
+  journalReviewedCount.textContent = String(payload.summary?.reviewed || 0);
+  journalList.innerHTML = decisions.length
+    ? decisions.map(journalItemMarkup).join("")
+    : '<p class="journalEmpty">No decisions recorded yet. Open a saved Deal Report and choose RECORD DECISION.</p>';
+  journalSummary.hidden = false;
+  journalList.hidden = false;
+  journalEditor.hidden = true;
+}
+
+function closeJournalPanel() {
+  journalPanel.hidden = true;
+  journalToggle.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("journalOpen");
+}
+
+async function loadJournalCollection() {
+  const payload = await requestJson("/api/journal");
+  renderJournalCollection(payload);
+  return payload;
+}
+
+async function openJournalPanel(decisionId = "") {
+  if (!authenticatedUser) return openAuthPanel();
+  closeAuthPanel();
+  closeMemoryPanel();
+  closeReportsPanel();
+  closeShortlistPanel();
+  collapseContextPanels();
+  journalPanel.hidden = false;
+  journalToggle.setAttribute("aria-expanded", "true");
+  document.body.classList.add("journalOpen");
+  journalList.innerHTML = '<p class="journalEmpty">Loading private decisions...</p>';
+  try {
+    await loadJournalCollection();
+    if (decisionId) await loadJournalDecision(decisionId);
+  } catch (error) {
+    journalList.innerHTML = `<p class="journalEmpty">${escapeHtml(error.message)}</p>`;
+  }
+}
+
+function setJournalDraftDisabled(disabled) {
+  for (const field of [journalDecision, journalConfidence, journalHoldingPeriod, journalThesis, journalCounterThesis, journalKillCriterion, journalNotes]) {
+    field.disabled = disabled;
+  }
+}
+
+function showJournalEditor(item) {
+  const locked = Boolean(item.lockedAt);
+  journalDecisionId.value = item.id;
+  journalSubject.textContent = item.subject;
+  journalDecision.value = item.prePurchase.decision;
+  journalConfidence.value = item.prePurchase.confidence;
+  journalHoldingPeriod.value = item.prePurchase.holdingPeriod;
+  journalThesis.value = item.prePurchase.thesis;
+  journalCounterThesis.value = item.prePurchase.counterThesis;
+  journalKillCriterion.value = item.prePurchase.killCriterion;
+  journalNotes.value = item.prePurchase.notes;
+  journalOutcomeStatus.value = item.outcome.status === "not_reviewed" ? "holding" : item.outcome.status;
+  journalActualRent.value = item.outcome.actualRent;
+  journalCurrentValue.value = item.outcome.currentValue;
+  journalProcessScore.value = item.outcome.processScore;
+  journalExecutionScore.value = item.outcome.executionScore;
+  journalOutcomeScore.value = item.outcome.outcomeScore;
+  journalLuckScore.value = item.outcome.luckScore;
+  journalResult.value = item.outcome.result;
+  journalLesson.value = item.outcome.lesson;
+  setJournalDraftDisabled(locked);
+  journalDraftActions.hidden = locked;
+  journalLock.dataset.confirming = "false";
+  journalLock.textContent = "LOCK THESIS";
+  journalLockNotice.hidden = !locked;
+  journalOutcome.hidden = !locked;
+  journalMessage.textContent = item.outcome.reviewedAt ? `Review saved. ${item.outcome.reviewedAt.slice(0, 10)}.` : "";
+  journalSummary.hidden = true;
+  journalList.hidden = true;
+  journalEditor.hidden = false;
+  journalEditor.scrollTop = 0;
+}
+
+async function loadJournalDecision(id) {
+  const result = await requestJson(`/api/journal/${encodeURIComponent(id)}`);
+  showJournalEditor(result.decision);
+  return result.decision;
+}
+
+function journalDraftPayload() {
+  return {
+    action: "update",
+    decision: journalDecision.value,
+    confidence: journalConfidence.value,
+    holdingPeriod: journalHoldingPeriod.value,
+    thesis: journalThesis.value,
+    counterThesis: journalCounterThesis.value,
+    killCriterion: journalKillCriterion.value,
+    notes: journalNotes.value
+  };
+}
+
+async function saveJournalDraft() {
+  const id = journalDecisionId.value;
+  journalMessage.textContent = "Saving draft...";
+  try {
+    const result = await requestJson(`/api/journal/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(journalDraftPayload())
+    });
+    showJournalEditor(result.decision);
+    journalMessage.textContent = "Draft saved.";
+  } catch (error) {
+    journalMessage.textContent = error.message;
+    journalLock.textContent = "LOCK THESIS";
+  }
+}
+
+async function lockJournalThesis() {
+  const id = journalDecisionId.value;
+  journalMessage.textContent = "Locking the pre-purchase record...";
+  try {
+    await requestJson(`/api/journal/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(journalDraftPayload())
+    });
+    const result = await requestJson(`/api/journal/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ action: "lock" })
+    });
+    showJournalEditor(result.decision);
+    journalMessage.textContent = "Thesis locked. Future reviews cannot rewrite it.";
+  } catch (error) {
+    journalMessage.textContent = error.message;
+    journalLock.textContent = "LOCK THESIS";
+  }
+}
+
+function requestJournalLock() {
+  if (journalLock.dataset.confirming !== "true") {
+    journalLock.dataset.confirming = "true";
+    journalLock.textContent = "CONFIRM LOCK";
+    journalMessage.textContent = "Locking is permanent. Press CONFIRM LOCK to preserve this thesis unchanged.";
+    return;
+  }
+  journalLock.dataset.confirming = "false";
+  journalLock.textContent = "LOCKING...";
+  void lockJournalThesis();
+}
+
+async function saveJournalReview() {
+  const id = journalDecisionId.value;
+  journalMessage.textContent = "Saving outcome review...";
+  try {
+    const result = await requestJson(`/api/journal/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        action: "review",
+        outcomeStatus: journalOutcomeStatus.value,
+        actualRent: journalActualRent.value,
+        currentValue: journalCurrentValue.value,
+        processScore: journalProcessScore.value,
+        executionScore: journalExecutionScore.value,
+        outcomeScore: journalOutcomeScore.value,
+        luckScore: journalLuckScore.value,
+        result: journalResult.value,
+        lesson: journalLesson.value
+      })
+    });
+    showJournalEditor(result.decision);
+    journalMessage.textContent = result.summary.skillSignal;
+  } catch (error) {
+    journalMessage.textContent = error.message;
+  }
+}
+
+async function deleteJournalDraft() {
+  const id = journalDecisionId.value;
+  journalMessage.textContent = "Deleting draft...";
+  try {
+    await requestJson(`/api/journal/${encodeURIComponent(id)}`, { method: "DELETE" });
+    await loadJournalCollection();
+    setSystemState("System ready", "Decision draft deleted.");
+  } catch (error) {
+    journalMessage.textContent = error.message;
+  }
+}
+
+async function createJournalDecision(analysis) {
+  if (!authenticatedUser) {
+    setSystemState("System ready", "Sign in to preserve a private decision record.");
+    return openAuthPanel();
+  }
+  if (!analysis?.savedReportId) {
+    setSystemState("System ready", "Open a saved Deal Report before recording the decision.");
+    return;
+  }
+  try {
+    const result = await requestJson("/api/journal", {
+      method: "POST",
+      body: JSON.stringify({ reportId: analysis.savedReportId })
+    });
+    await openJournalPanel(result.decision.id);
+  } catch (error) {
+    setSystemState("Connection issue", error.message || "The decision record could not be created.");
   }
 }
 
@@ -552,6 +815,7 @@ function openShortlistPanel() {
   closeAuthPanel();
   closeMemoryPanel();
   closeReportsPanel();
+  closeJournalPanel();
   collapseContextPanels();
   renderShortlist();
   shortlistPanel.hidden = false;
@@ -645,7 +909,9 @@ function handleAnalysisAction(button) {
     saveAnalysisToShortlist(analysis);
     button.textContent = "SAVED";
     setSystemState("System ready", `${analysisSubject(analysis)} saved to your shortlist.`);
+    return;
   }
+  if (action === "journal") void createJournalDecision(analysis);
 }
 
 function analysisSection(title, items = [], className = "") {
@@ -732,6 +998,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     </section>
     <div class="analysisActions">
       <button type="button" data-analysis-action="shortlist">SAVE TO SHORTLIST</button>
+      ${authenticatedUser && analysis.savedReportId ? '<button type="button" data-analysis-action="journal">RECORD DECISION</button>' : ""}
       <button type="button" data-analysis-action="report">DEAL REPORT</button>
     </div>
     ${sourcesMarkup(sources)}
@@ -1119,6 +1386,7 @@ async function logout() {
   try {
     closeMemoryPanel();
     closeReportsPanel();
+    closeJournalPanel();
     await requestJson("/api/auth/logout", { method: "POST", body: "{}" });
     renderAuthState(null);
     setAuthMode("login");
@@ -1275,6 +1543,7 @@ async function runDealAnalysis() {
     const responseMode = result.mode === "llm" ? "AI" : "FRAMEWORK";
     setSessionState(`${responseMode} / ${result.session.messages.length}`);
     if (result.billing) renderBillingStatus(result.billing);
+    if (result.savedReport) result.analysis.savedReportId = result.savedReport.id;
     addDealAnalysis(result.analysis, result.sources, result);
     speak(result.analysis.voiceSummary);
     if (!voiceResponsesEnabled) setSystemState("System ready", "Analysis complete.");
@@ -1361,6 +1630,20 @@ reportsList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-report-action]");
   if (button) void handleReportAction(button);
 });
+journalToggle.addEventListener("click", () => {
+  if (journalPanel.hidden) void openJournalPanel();
+  else closeJournalPanel();
+});
+journalClose.addEventListener("click", closeJournalPanel);
+journalList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-journal-action]");
+  if (button?.getAttribute("data-journal-action") === "open") void loadJournalDecision(button.getAttribute("data-journal-id"));
+});
+journalBack.addEventListener("click", () => void loadJournalCollection());
+journalSaveDraft.addEventListener("click", () => void saveJournalDraft());
+journalLock.addEventListener("click", requestJournalLock);
+journalDelete.addEventListener("click", () => void deleteJournalDraft());
+journalSaveReview.addEventListener("click", () => void saveJournalReview());
 billingActions.addEventListener("click", (event) => {
   const button = event.target.closest("[data-checkout-plan]");
   if (button) void startCheckout(button.getAttribute("data-checkout-plan"));
@@ -1427,6 +1710,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !authPanel.hidden) closeAuthPanel();
   if (event.key === "Escape" && !memoryPanel.hidden) closeMemoryPanel();
   if (event.key === "Escape" && !reportsPanel.hidden) closeReportsPanel();
+  if (event.key === "Escape" && !journalPanel.hidden) closeJournalPanel();
   if (event.key === "Escape" && !shortlistPanel.hidden) closeShortlistPanel();
 });
 window.addEventListener("afterprint", finishPrinting);

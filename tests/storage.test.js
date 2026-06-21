@@ -82,6 +82,10 @@ function sampleState(revision = 0) {
           version: 1,
           items: [{ id: "report-1", subject: "Test property", createdAt: "2026-01-01T00:00:00.000Z", analysis: { verdict: "SHORTLIST" } }]
         },
+        journal: {
+          version: 1,
+          items: [{ id: "journal-1", reportId: "report-1", subject: "Test property", lockedAt: "2026-01-01T00:00:00.000Z", prePurchase: { decision: "proceed", thesis: "Test thesis" }, outcome: { status: "not_reviewed" }, snapshot: { verdict: "SHORTLIST" } }]
+        },
         emailVerifiedAt: "2026-01-01T00:00:00.000Z",
         disabledAt: "",
         createdAt: "2026-01-01T00:00:00.000Z"
@@ -160,6 +164,7 @@ test("PostgreSQL store writes normalized state inside one transaction", async ()
   assert.equal(JSON.parse(userWrite.params[5]).items[0].id, "memory-1");
   assert.equal(JSON.parse(userWrite.params[6]).plan, "pro");
   assert.equal(JSON.parse(userWrite.params[7]).items[0].id, "report-1");
+  assert.equal(JSON.parse(userWrite.params[8]).items[0].id, "journal-1");
   assert.equal(client.released, true);
 });
 
@@ -175,6 +180,7 @@ test("PostgreSQL store creates schema and imports the seed once", async () => {
   assert.ok(client.calls.some((call) => call.text.includes("ADD COLUMN IF NOT EXISTS memory")));
   assert.ok(client.calls.some((call) => call.text.includes("ADD COLUMN IF NOT EXISTS billing")));
   assert.ok(client.calls.some((call) => call.text.includes("ADD COLUMN IF NOT EXISTS reports")));
+  assert.ok(client.calls.some((call) => call.text.includes("ADD COLUMN IF NOT EXISTS journal")));
   assert.ok(client.calls.some((call) => call.text.includes("ADD COLUMN IF NOT EXISTS mode")));
   assert.ok(client.calls.some((call) => call.text.includes("INSERT INTO estatelab_core")));
   assert.ok(client.calls.some((call) => call.text.includes("UPDATE estatelab_meta SET revision = 1")));
@@ -207,6 +213,7 @@ test("PostgreSQL store reconstructs users, sessions, and ordered messages", asyn
         memory: { version: 1, items: [{ id: "memory", content: "Remember this", status: "approved" }] },
         billing: { version: 1, plan: "advisor", status: "active", reportCredits: 1, usage: { period: "2026-06", count: 2 }, processedEvents: [] },
         reports: { version: 1, items: [{ id: "report", subject: "Saved", analysis: { verdict: "SHORTLIST" } }] },
+        journal: { version: 1, items: [{ id: "journal", reportId: "report", subject: "Saved", lockedAt: "2026-01-01T00:00:00.000Z", prePurchase: { decision: "proceed", thesis: "Thesis" }, outcome: { status: "not_reviewed" }, snapshot: { verdict: "SHORTLIST" } }] },
         created_at: new Date("2026-01-01T00:00:00.000Z")
       }] };
     }
@@ -229,6 +236,7 @@ test("PostgreSQL store reconstructs users, sessions, and ordered messages", asyn
   assert.equal(state.auth.users[0].memory.items[0].content, "Remember this");
   assert.equal(state.auth.users[0].billing.plan, "advisor");
   assert.equal(state.auth.users[0].reports.items[0].subject, "Saved");
+  assert.equal(state.auth.users[0].journal.items[0].subject, "Saved");
   assert.equal(state.auth.tokens[0].purpose, "email-verification");
   assert.equal(state.knowledge.documents[0].id, "d");
   assert.equal(state.jarvis.sessions[0].messages[0].content, "Hi");

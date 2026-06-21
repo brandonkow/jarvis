@@ -204,6 +204,7 @@ test("production phase keeps evidence owner-only and completes the account lifec
   assert.equal("memory" in member, false);
   assert.equal("reports" in member, false);
   assert.equal("billing" in member, false);
+  assert.equal("journal" in member, false);
   const disabled = await request(baseUrl, `/api/admin/users/${member.id}`, {
     method: "PATCH",
     owner: true,

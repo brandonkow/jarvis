@@ -17,6 +17,7 @@ The public user experience is intentionally simple: users interact with one Apex
 - Printable Apex Deal Reports plus a private browser shortlist for comparing up to four analysed properties.
 - Free, Pro, and Advisor entitlements with monthly report metering, configurable checkout handoff, and a signed provider-neutral billing webhook.
 - Private cross-device Deal Report history for signed-in accounts.
+- Private Decision Journal with immutable thesis locking, outcome reviews, skill-versus-luck scoring, and relevant lesson recall in later conversations.
 - Node.js backend with a single production database driver dependency (`pg`).
 - Public assistant endpoints for chat, session creation, and knowledge status.
 - Owner-protected APIs for property analysis, RAG querying, beliefs, decisions, and comparable data.
@@ -83,7 +84,7 @@ Embeddings and server voice use OpenAI-specific endpoints. When OpenRouter handl
 
 `ESTATELAB_EMAIL_WEBHOOK_URL` is an optional server-to-server delivery hook for verification and reset codes. The hook receives `type`, `to`, `displayName`, `token`, and `expiresAt`; set `ESTATELAB_EMAIL_WEBHOOK_SECRET` to add a bearer credential. Keep `ESTATELAB_AUTH_DEBUG_TOKENS=false` in production. Enable mandatory verification only after delivery is working.
 
-When AI mode is enabled, chat messages, approved private memories, and any Deal Card or Financial Profile context submitted with the message are sent to the configured provider for response generation. Public input is never promoted into Apex Analytic's owner-controlled knowledge base. Long-term memories remain private to the signed-in account, and pending suggestions do not influence responses until the user approves them.
+When AI mode is enabled, chat messages, approved private memories, relevant locked Decision Journal entries, and any Deal Card or Financial Profile context submitted with the message are sent to the configured provider for response generation. Public input is never promoted into Apex Analytic's owner-controlled knowledge base. Long-term memories and journal entries remain private to the signed-in account, and pending memory suggestions do not influence responses until the user approves them.
 
 Billing is provider-neutral. Keep `APEX_BILLING_ENFORCEMENT=false` until checkout and payment notifications are verified. Checkout URLs may use `{email}`, `{userId}`, and `{plan}` placeholders. A payment provider or automation must send signed subscription updates to `POST /api/billing/webhook`; see `docs/MONETIZATION.md` for the payload and launch sequence.
 
@@ -136,6 +137,11 @@ Public:
 - `GET /api/reports` (signed-in account)
 - `GET /api/reports/:id` (signed-in account)
 - `DELETE /api/reports/:id` (signed-in account)
+- `GET /api/journal` (signed-in account)
+- `POST /api/journal` (signed-in account)
+- `GET /api/journal/:id` (signed-in account)
+- `PATCH /api/journal/:id` (signed-in account)
+- `DELETE /api/journal/:id` (unlocked drafts only)
 - `GET /api/jarvis/sessions`
 - `POST /api/jarvis/sessions`
 - `GET /api/jarvis/sessions/:id`

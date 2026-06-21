@@ -111,6 +111,7 @@
           <div class="accountLibraryActions">
             <button id="memoryToggle" type="button" aria-expanded="false" aria-controls="memoryPanel" hidden>MEMORY</button>
             <button id="reportsToggle" type="button" aria-expanded="false" aria-controls="reportsPanel" hidden>REPORTS</button>
+            <button id="journalToggle" type="button" aria-expanded="false" aria-controls="journalPanel" hidden>JOURNAL</button>
           </div>
         </section>
 
@@ -142,6 +143,72 @@
             <span id="reportsUsageLabel">FREE PLAN</span>
           </div>
           <div id="reportsList" class="reportsList"></div>
+        </section>
+
+        <section id="journalPanel" class="journalPanel" aria-label="Private decision journal" hidden>
+          <header class="journalHeader">
+            <span><small>PRIVATE DECISION AUDIT</small><b>DECISION JOURNAL</b></span>
+            <button id="journalClose" type="button" aria-label="Close decision journal">CLOSE</button>
+          </header>
+          <p class="journalIntro">Locked entries stay private to your account. Relevant entries may be used as context by the configured AI provider.</p>
+          <div id="journalSummary" class="journalSummary">
+            <span><b id="journalTotalCount">0</b> DECISIONS</span>
+            <span><b id="journalReviewedCount">0</b> REVIEWED</span>
+          </div>
+          <div id="journalList" class="journalList"></div>
+
+          <form id="journalEditor" class="journalEditor" hidden>
+            <header>
+              <span><small>DECISION RECORD</small><b id="journalSubject">PROPERTY</b></span>
+              <button id="journalBack" type="button">BACK</button>
+            </header>
+            <input id="journalDecisionId" type="hidden" />
+            <div class="journalGrid">
+              <label>Decision
+                <select id="journalDecision">
+                  <option value="investigate">Investigate</option>
+                  <option value="proceed">Proceed</option>
+                  <option value="pause">Pause</option>
+                  <option value="reject">Reject</option>
+                </select>
+              </label>
+              <label>Confidence<input id="journalConfidence" type="number" min="0" max="100" inputmode="numeric" /></label>
+              <label>Planned Holding<input id="journalHoldingPeriod" placeholder="Years" /></label>
+              <label class="journalWide">Thesis<textarea id="journalThesis" placeholder="Why should this decision work?"></textarea></label>
+              <label class="journalWide">Counter-Thesis<textarea id="journalCounterThesis" placeholder="What is the strongest reason this may fail?"></textarea></label>
+              <label class="journalWide">Kill Criterion<textarea id="journalKillCriterion" placeholder="What evidence means stop or exit?"></textarea></label>
+              <label class="journalWide">Notes<textarea id="journalNotes" placeholder="Assumptions to preserve before the outcome"></textarea></label>
+            </div>
+            <div id="journalDraftActions" class="journalEditorActions">
+              <button id="journalSaveDraft" type="button">SAVE DRAFT</button>
+              <button id="journalLock" class="journalPrimary" type="button">LOCK THESIS</button>
+              <button id="journalDelete" type="button">DELETE DRAFT</button>
+            </div>
+            <p id="journalLockNotice" class="journalLockNotice" hidden>Thesis locked. The original decision can no longer be rewritten.</p>
+
+            <fieldset id="journalOutcome" class="journalOutcome" hidden>
+              <legend>OUTCOME REVIEW</legend>
+              <div class="journalGrid">
+                <label>Status
+                  <select id="journalOutcomeStatus">
+                    <option value="holding">Holding</option>
+                    <option value="sold">Sold</option>
+                    <option value="abandoned">Abandoned</option>
+                  </select>
+                </label>
+                <label>Actual Rent<input id="journalActualRent" placeholder="RM/month" /></label>
+                <label>Current / Exit Value<input id="journalCurrentValue" placeholder="RM" /></label>
+                <label>Process Score<input id="journalProcessScore" type="number" min="0" max="100" inputmode="numeric" /></label>
+                <label>Execution Score<input id="journalExecutionScore" type="number" min="0" max="100" inputmode="numeric" /></label>
+                <label>Outcome Score<input id="journalOutcomeScore" type="number" min="0" max="100" inputmode="numeric" /></label>
+                <label>Luck Score<input id="journalLuckScore" type="number" min="0" max="100" inputmode="numeric" /></label>
+                <label class="journalWide">What Happened<textarea id="journalResult" placeholder="Compare the outcome with the original thesis"></textarea></label>
+                <label class="journalWide">Lesson<textarea id="journalLesson" placeholder="What should Apex remember for the next decision?"></textarea></label>
+              </div>
+              <button id="journalSaveReview" class="journalPrimary" type="button">SAVE OUTCOME REVIEW</button>
+            </fieldset>
+            <p id="journalMessage" class="journalMessage" role="status"></p>
+          </form>
         </section>
 
         <section id="shortlistPanel" class="shortlistPanel" aria-label="Deal shortlist" hidden>
