@@ -44,6 +44,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /data-analysis-action="report"/, "Every structured analysis needs a printable deal report.");
   assert.match(app, /analysis\.dimensions/, "Deal results must render separate decision dimensions.");
   assert.match(app, /analysis\.scenarios/, "Deal results must render downside scenarios.");
+  assert.match(app, /marketIntelligenceMarkup\(analysis\.marketIntelligence\)/, "Deal results must render matched dated market intelligence.");
+  assert.match(app, /type === "market"/, "Market observations need a distinct source label.");
   assert.match(app, /\/api\/billing\/status/, "The account surface must load report entitlements.");
   assert.match(app, /\/api\/reports/, "The report-history surface must use private account storage.");
   assert.match(app, /\/api\/journal/, "The decision journal must use private account storage.");
@@ -51,6 +53,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.memoryOpen \.transcript[\s\S]*?display:\s*none;/, "The memory screen must replace chat content instead of opening a popup.");
   assert.match(styles, /\.reportsOpen \.transcript[\s\S]*?display:\s*none;/, "The report history must replace chat content instead of opening a popup.");
   assert.match(styles, /\.journalOpen \.transcript[\s\S]*?display:\s*none;/, "The decision journal must replace chat content instead of opening a popup.");
+  assert.match(styles, /\.analysisMarketPulse[\s\S]*?overflow-wrap:\s*anywhere;/, "Market observations must remain readable without overflowing the report.");
 
   assert.match(styles, /\.conversation:has\(\.contextPanel\.expanded\) \.transcript[\s\S]*?display:\s*none;/, "Expanded cards must replace the transcript instead of overflowing beneath it.");
   assert.match(styles, /\.contextPanel\.expanded \.contextGrid[\s\S]*?overflow-y:\s*auto|\.contextGrid[\s\S]*?overflow-y:\s*auto/, "Expanded card fields must remain scrollable.");

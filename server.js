@@ -289,6 +289,51 @@ function normalizeReportContext(context) {
   };
 }
 
+function normalizeReportMarketIntelligence(market = {}) {
+  const observations = Array.isArray(market.observations) ? market.observations.slice(0, 12).map((item) => ({
+    id: reportText(item?.id, 100),
+    title: reportText(item?.title, 240),
+    metricType: reportText(item?.metricType, 40),
+    value: item?.value === null || item?.value === undefined ? null : Number(item.value),
+    unit: reportText(item?.unit, 40),
+    observedAt: reportText(item?.observedAt, 40),
+    sourceType: reportText(item?.sourceType, 80),
+    confidence: ["high", "medium", "low"].includes(item?.confidence) ? item.confidence : "medium",
+    notes: reportText(item?.notes, 1800),
+    body: reportText(item?.body, 2200),
+    freshness: {
+      status: ["fresh", "aging", "stale"].includes(item?.freshness?.status) ? item.freshness.status : "stale",
+      ageDays: Math.max(0, Number(item?.freshness?.ageDays || 0)),
+      thresholdDays: Math.max(1, Number(item?.freshness?.thresholdDays || 180))
+    }
+  })).filter((item) => item.id && item.title) : [];
+  const trends = Array.isArray(market.trends) ? market.trends.slice(0, 8).map((trend) => ({
+    subject: reportText(trend?.subject, 160),
+    metricType: reportText(trend?.metricType, 40),
+    direction: ["up", "down", "stable"].includes(trend?.direction) ? trend.direction : "stable",
+    percentChange: trend?.percentChange === null || trend?.percentChange === undefined ? null : Number(trend.percentChange),
+    unit: reportText(trend?.unit, 40),
+    latestValue: Number(trend?.latestValue || 0),
+    previousValue: Number(trend?.previousValue || 0),
+    latestObservedAt: reportText(trend?.latestObservedAt, 40),
+    previousObservedAt: reportText(trend?.previousObservedAt, 40)
+  })) : [];
+  const counts = observations.reduce((summary, item) => {
+    summary[item.freshness.status] += 1;
+    return summary;
+  }, { fresh: 0, aging: 0, stale: 0 });
+  return {
+    observations,
+    trends,
+    summary: {
+      matched: observations.length,
+      ...counts,
+      latestObservedAt: reportText(market?.summary?.latestObservedAt, 40),
+      warning: reportText(market?.summary?.warning, 500)
+    }
+  };
+}
+
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
@@ -325,6 +370,7 @@ function normalizeReportAnalysis(analysis = {}) {
     watchouts: reportList(analysis.watchouts),
     missingEvidence: reportList(analysis.missingEvidence),
     nextActions: reportList(analysis.nextActions),
+    marketIntelligence: normalizeReportMarketIntelligence(analysis.marketIntelligence),
     context: normalizeReportContext(analysis.context)
   };
 }
@@ -432,7 +478,91 @@ function normalizeAuth(auth) {
 }
 
 function emptyKnowledge() {
-  return { version: 1, documents: [], chunks: [], retrievalEvents: [] };
+  return { version: 2, documents: [], chunks: [], retrievalEvents: [], projects: [], observations: [] };
+}
+
+const MARKET_METRIC_TYPES = new Set([
+  "transaction", "rent", "occupancy", "rental_enquiry", "supply", "auction",
+  "unsold_stock", "launch_sales", "management", "catalyst", "financing", "buyer_sentiment", "other"
+]);
+const MARKET_CONFIDENCE_LEVELS = new Set(["high", "medium", "low"]);
+const MARKET_FRESHNESS_DAYS = {
+  rent: 90,
+  occupancy: 90,
+  rental_enquiry: 60,
+  launch_sales: 90,
+  unsold_stock: 90,
+  buyer_sentiment: 90,
+  transaction: 180,
+  auction: 180,
+  supply: 180,
+  financing: 180,
+  management: 365,
+  catalyst: 365,
+  other: 180
+};
+
+function cleanMarketText(value, limit = 240) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, limit);
+}
+
+function cleanMarketDate(value, fallback = "") {
+  const timestamp = Date.parse(String(value || ""));
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : fallback;
+}
+
+function optionalMarketNumber(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function normalizeMarketProject(project) {
+  const now = new Date().toISOString();
+  const name = cleanMarketText(project?.name, 160);
+  if (!name) return null;
+  return {
+    id: cleanMarketText(project?.id || randomUUID(), 100),
+    name,
+    area: cleanMarketText(project?.area, 120),
+    state: cleanMarketText(project?.state, 80),
+    propertyType: cleanMarketText(project?.propertyType, 80),
+    developer: cleanMarketText(project?.developer, 120),
+    tenure: cleanMarketText(project?.tenure, 100),
+    completionYear: Math.max(0, Math.min(2200, Math.floor(Number(project?.completionYear || 0)))),
+    status: cleanMarketText(project?.status || "watching", 60).toLowerCase(),
+    aliases: Array.isArray(project?.aliases)
+      ? [...new Set(project.aliases.map((alias) => cleanMarketText(alias, 120)).filter(Boolean))].slice(0, 20)
+      : [],
+    createdAt: cleanMarketDate(project?.createdAt, now),
+    updatedAt: cleanMarketDate(project?.updatedAt || project?.createdAt, now)
+  };
+}
+
+function normalizeMarketObservation(observation, projectIds = new Set()) {
+  const now = new Date().toISOString();
+  const metricType = MARKET_METRIC_TYPES.has(String(observation?.metricType || "").toLowerCase())
+    ? String(observation.metricType).toLowerCase()
+    : "other";
+  const projectId = cleanMarketText(observation?.projectId, 100);
+  const confidence = String(observation?.confidence || "medium").toLowerCase();
+  return {
+    id: cleanMarketText(observation?.id || randomUUID(), 100),
+    projectId: projectIds.has(projectId) ? projectId : "",
+    projectName: cleanMarketText(observation?.projectName, 160),
+    area: cleanMarketText(observation?.area, 120),
+    state: cleanMarketText(observation?.state, 80),
+    metricType,
+    value: optionalMarketNumber(observation?.value),
+    unit: cleanMarketText(observation?.unit, 40),
+    observedAt: cleanMarketDate(observation?.observedAt || observation?.periodDate, now),
+    sourceType: cleanMarketText(observation?.sourceType || "owner observation", 80),
+    sourceReference: cleanMarketText(observation?.sourceReference || observation?.sourceUrl, 1000),
+    confidence: MARKET_CONFIDENCE_LEVELS.has(confidence) ? confidence : "medium",
+    notes: cleanMarketText(observation?.notes, 1800),
+    createdAt: cleanMarketDate(observation?.createdAt, now),
+    updatedAt: cleanMarketDate(observation?.updatedAt || observation?.createdAt, now)
+  };
 }
 
 function normalizeKnowledge(knowledge) {
@@ -475,7 +605,17 @@ function normalizeKnowledge(knowledge) {
       userId: String(event.userId || "")
     })).slice(-1000)
     : [];
-  return { version: 1, documents, chunks, retrievalEvents };
+  const projects = Array.isArray(knowledge?.projects)
+    ? knowledge.projects.map(normalizeMarketProject).filter(Boolean).slice(-1000)
+    : [];
+  const projectIds = new Set(projects.map((project) => project.id));
+  const observations = Array.isArray(knowledge?.observations)
+    ? knowledge.observations
+      .map((observation) => normalizeMarketObservation(observation, projectIds))
+      .filter((observation) => observation.projectId || observation.projectName || observation.area)
+      .slice(-10000)
+    : [];
+  return { version: 2, documents, chunks, retrievalEvents, projects, observations };
 }
 
 function normalizeBrain(brain) {
@@ -1313,6 +1453,207 @@ function uniqueSources(items, limit = 6) {
     .slice(0, limit);
 }
 
+function marketMetricLabel(metricType) {
+  return String(metricType || "other")
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function marketFreshness(observation, now = Date.now()) {
+  const thresholdDays = MARKET_FRESHNESS_DAYS[observation.metricType] || MARKET_FRESHNESS_DAYS.other;
+  const timestamp = Date.parse(observation.observedAt);
+  const ageDays = Number.isFinite(timestamp) ? Math.max(0, Math.floor((now - timestamp) / 86400000)) : Number.MAX_SAFE_INTEGER;
+  const status = ageDays <= thresholdDays ? "fresh" : ageDays <= thresholdDays * 2 ? "aging" : "stale";
+  return { status, ageDays, thresholdDays };
+}
+
+function marketProjectFor(observation, knowledge) {
+  return knowledge.projects.find((project) => project.id === observation.projectId) || null;
+}
+
+function marketObservationSubject(observation, project = null) {
+  return project?.name || observation.projectName || observation.area || "Area observation";
+}
+
+function marketSubjectKey(observation, project = null) {
+  return observation.projectId || `${marketObservationSubject(observation, project).toLowerCase()}|${observation.area.toLowerCase()}`;
+}
+
+function marketObservationValue(observation) {
+  if (observation.value === null) return "qualitative observation";
+  return `${observation.value}${observation.unit ? ` ${observation.unit}` : ""}`;
+}
+
+function marketObservationText(observation, project, freshness) {
+  const detail = conciseText(observation.notes || marketObservationValue(observation), 420);
+  return `${marketObservationSubject(observation, project)} - ${marketMetricLabel(observation.metricType)}: ${detail}. Observed ${observation.observedAt.slice(0, 10)}; ${freshness.status}, ${freshness.ageDays} days old; ${observation.confidence} confidence; source: ${observation.sourceType}.`;
+}
+
+function marketTrendFor(observation, knowledge) {
+  if (observation.value === null) return null;
+  const project = marketProjectFor(observation, knowledge);
+  const key = marketSubjectKey(observation, project);
+  const points = knowledge.observations
+    .filter((item) => item.metricType === observation.metricType && item.value !== null)
+    .filter((item) => marketSubjectKey(item, marketProjectFor(item, knowledge)) === key)
+    .sort((left, right) => String(right.observedAt).localeCompare(String(left.observedAt)));
+  if (points.length < 2) return null;
+  const latest = points[0];
+  const previous = points.find((item) => item.observedAt < latest.observedAt);
+  if (!previous || latest.value === null || previous.value === null) return null;
+  const change = latest.value - previous.value;
+  const percentChange = previous.value === 0 ? null : Number(((change / Math.abs(previous.value)) * 100).toFixed(1));
+  const stableBand = previous.value === 0 ? 0 : Math.abs(previous.value) * 0.02;
+  const direction = Math.abs(change) <= stableBand ? "stable" : change > 0 ? "up" : "down";
+  return {
+    subject: marketObservationSubject(latest, marketProjectFor(latest, knowledge)),
+    metricType: latest.metricType,
+    direction,
+    change: Number(change.toFixed(2)),
+    percentChange,
+    unit: latest.unit,
+    latestValue: latest.value,
+    previousValue: previous.value,
+    latestObservedAt: latest.observedAt,
+    previousObservedAt: previous.observedAt
+  };
+}
+
+function selectMarketIntelligence(query, knowledge = emptyKnowledge(), limit = 6) {
+  const terms = tokenize(query);
+  if (!terms.length || !knowledge.observations.length) {
+    return { observations: [], trends: [], summary: { matched: 0, fresh: 0, aging: 0, stale: 0, latestObservedAt: "", warning: "No matching owner market observations." } };
+  }
+  const ranked = knowledge.observations
+    .map((observation) => {
+      const project = marketProjectFor(observation, knowledge);
+      const searchText = [
+        project?.name, project?.aliases?.join(" "), project?.area, project?.state, project?.propertyType, project?.developer,
+        observation.projectName, observation.area, observation.state, observation.metricType, observation.notes,
+        observation.sourceType, observation.sourceReference
+      ].filter(Boolean).join(" ");
+      const score = termScore(terms, searchText);
+      const freshness = marketFreshness(observation);
+      const publicObservation = { ...observation };
+      delete publicObservation.sourceReference;
+      return {
+        ...publicObservation,
+        project: project ? { id: project.id, name: project.name, area: project.area, state: project.state } : null,
+        score,
+        freshness,
+        title: `${marketObservationSubject(observation, project)} - ${marketMetricLabel(observation.metricType)}`,
+        body: marketObservationText(observation, project, freshness)
+      };
+    })
+    .filter((observation) => observation.score > 0)
+    .sort((left, right) => right.score - left.score || String(right.observedAt).localeCompare(String(left.observedAt)))
+    .slice(0, Math.max(1, Math.min(20, limit)));
+  const trendKeys = new Set();
+  const trends = ranked.map((observation) => marketTrendFor(observation, knowledge)).filter((trend) => {
+    if (!trend) return false;
+    const key = `${trend.subject}|${trend.metricType}`;
+    if (trendKeys.has(key)) return false;
+    trendKeys.add(key);
+    return true;
+  });
+  const counts = ranked.reduce((summary, observation) => {
+    summary[observation.freshness.status] += 1;
+    return summary;
+  }, { fresh: 0, aging: 0, stale: 0 });
+  const latestObservedAt = ranked.map((item) => item.observedAt).sort().at(-1) || "";
+  const warning = counts.stale
+    ? `${counts.stale} matched observation${counts.stale === 1 ? " is" : "s are"} stale and must be re-verified.`
+    : counts.aging
+      ? `${counts.aging} matched observation${counts.aging === 1 ? " is" : "s are"} aging.`
+      : ranked.length ? "Matched observations are within their freshness windows." : "No matching owner market observations.";
+  return { observations: ranked, trends, summary: { matched: ranked.length, ...counts, latestObservedAt, warning } };
+}
+
+function marketIntelligenceForPrompt(marketIntelligence) {
+  if (!marketIntelligence?.observations?.length) return "No matching owner market observation.";
+  const lines = marketIntelligence.observations.map((observation) => `- ${observation.body}`);
+  const trends = marketIntelligence.trends.map((trend) => `- Trend: ${trend.subject} ${marketMetricLabel(trend.metricType)} is ${trend.direction}${trend.percentChange === null ? "" : ` (${trend.percentChange}% versus the prior observation)`}.`);
+  return [...lines, ...trends, `- Freshness warning: ${marketIntelligence.summary.warning}`].join("\n");
+}
+
+function marketSources(marketIntelligence) {
+  return (marketIntelligence?.observations || []).map((observation) => ({
+    id: observation.id,
+    title: observation.title,
+    type: "market",
+    preview: conciseText(observation.body, 180),
+    score: observation.score,
+    observedAt: observation.observedAt,
+    freshness: observation.freshness.status,
+    metricType: observation.metricType
+  }));
+}
+
+function marketInputError(message, statusCode = 400) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
+function findMarketProject(knowledge, { id = "", name = "", area = "" } = {}) {
+  if (id) return knowledge.projects.find((project) => project.id === id) || null;
+  const cleanName = cleanMarketText(name, 160).toLowerCase();
+  const cleanArea = cleanMarketText(area, 120).toLowerCase();
+  if (!cleanName) return null;
+  return knowledge.projects.find((project) => project.name.toLowerCase() === cleanName && (!cleanArea || project.area.toLowerCase() === cleanArea)) || null;
+}
+
+function marketProjectFromInput(body = {}, existing = null) {
+  const now = new Date().toISOString();
+  const project = normalizeMarketProject({
+    ...(existing || {}),
+    ...body,
+    id: existing?.id || randomUUID(),
+    createdAt: existing?.createdAt || now,
+    updatedAt: now
+  });
+  if (!project) throw marketInputError("Project name is required.");
+  return project;
+}
+
+function marketObservationFromInput(body = {}, knowledge, existing = null) {
+  const merged = { ...(existing || {}), ...body };
+  const metricType = String(merged.metricType || "").toLowerCase();
+  if (!MARKET_METRIC_TYPES.has(metricType)) {
+    throw marketInputError(`metricType must be one of: ${[...MARKET_METRIC_TYPES].join(", ")}.`);
+  }
+  if (!merged.observedAt || !Number.isFinite(Date.parse(String(merged.observedAt)))) {
+    throw marketInputError("A valid observedAt date is required.");
+  }
+  let project = null;
+  if (merged.projectId) {
+    project = findMarketProject(knowledge, { id: String(merged.projectId) });
+    if (!project) throw marketInputError("The linked market project does not exist.");
+  } else if (merged.projectName) {
+    project = findMarketProject(knowledge, { name: merged.projectName, area: merged.area });
+  }
+  const now = new Date().toISOString();
+  const projectIds = new Set(knowledge.projects.map((item) => item.id));
+  const observation = normalizeMarketObservation({
+    ...merged,
+    id: existing?.id || randomUUID(),
+    projectId: project?.id || "",
+    projectName: merged.projectName || project?.name || "",
+    area: merged.area || project?.area || "",
+    state: merged.state || project?.state || "",
+    createdAt: existing?.createdAt || now,
+    updatedAt: now
+  }, projectIds);
+  if (!observation.projectId && !observation.projectName && !observation.area) {
+    throw marketInputError("Link the observation to a project or provide a projectName or area.");
+  }
+  if (observation.value === null && !observation.notes) {
+    throw marketInputError("Provide a numeric value or a qualitative note.");
+  }
+  return observation;
+}
+
 function compactQuery(text) {
   return String(text || "")
     .toLowerCase()
@@ -1893,6 +2234,12 @@ function dealAnalysisText(analysis) {
   if (analysis.scenarios?.length) {
     lines.push("", "Downside scenarios", ...analysis.scenarios.map((item) => `- ${item.label}: ${item.value} per month. ${item.assumption}.`));
   }
+  if (analysis.marketIntelligence?.observations?.length) {
+    lines.push("", "Owner market intelligence");
+    lines.push(...analysis.marketIntelligence.observations.map((item) => `- ${item.body}`));
+    lines.push(...analysis.marketIntelligence.trends.map((trend) => `- Trend: ${trend.subject} ${marketMetricLabel(trend.metricType)} is ${trend.direction}${trend.percentChange === null ? "" : ` (${trend.percentChange}% versus the prior observation)`}.`));
+    lines.push(`- Freshness: ${analysis.marketIntelligence.summary.warning}`);
+  }
   lines.push("", "Seven-stage read", ...analysis.stages.map((item) => `- Stage ${item.number}, ${item.name}: ${item.status.toUpperCase()} (${item.score}/100). ${item.summary}`));
   if (analysis.hardStops.length) lines.push("", "Hard stops", ...analysis.hardStops.map((item) => `- ${item}`));
   if (analysis.watchouts.length) lines.push("", "Watch-outs", ...analysis.watchouts.map((item) => `- ${item}`));
@@ -2118,6 +2465,7 @@ async function generateJarvisLlmAnswer({
   decisions,
   memories,
   journal,
+  marketIntelligence = null,
   fallbackAnswer
 }) {
   const decisionContext = decisions.length
@@ -2150,6 +2498,9 @@ ${memoriesForPrompt(memories)}
 
 LOCKED PRIVATE DECISION JOURNAL
 ${journalForPrompt(journal)}
+
+OWNER-CONTROLLED MARKET INTELLIGENCE
+${marketIntelligenceForPrompt(marketIntelligence)}
 
 DETERMINISTIC FALLBACK ANALYSIS
 ${fallbackAnswer}
@@ -2190,6 +2541,7 @@ async function retrieveGuidance(query, property, brain, knowledge = emptyKnowled
     const document = knowledge.documents.find((item) => item.id === chunk.documentId);
     return { ...chunk, title: document?.title || "Owner evidence", tags: document?.tags || [] };
   });
+  const marketIntelligence = selectMarketIntelligence(`${query} ${property ? JSON.stringify(property) : ""}`, knowledge, 6);
 
   const beliefHits = brain.beliefs
     .map((belief) => ({ ...belief, score: termScore(queryTerms, `${belief.claim} ${belief.scope} ${belief.evidenceFor} ${belief.evidenceAgainst} ${belief.falsifier}`) }))
@@ -2205,6 +2557,7 @@ async function retrieveGuidance(query, property, brain, knowledge = emptyKnowled
   const sections = [];
   if (scored.length) sections.push(`Relevant reference guidance:\n${scored.map((doc) => `- ${doc.title}: ${doc.body}`).join("\n")}`);
   if (evidenceHits.length) sections.push(`Relevant owner evidence:\n${evidenceHits.map((item) => `- ${item.title}: ${item.content}`).join("\n")}`);
+  if (marketIntelligence.observations.length) sections.push(`Relevant owner market intelligence:\n${marketIntelligenceForPrompt(marketIntelligence)}`);
   if (beliefHits.length) {
     sections.push(`Your relevant recorded beliefs:\n${beliefHits.map((belief) => `- ${belief.claim} (${belief.confidence}% confidence). Falsifier: ${belief.falsifier || "not defined"}`).join("\n")}`);
   }
@@ -2218,6 +2571,7 @@ async function retrieveGuidance(query, property, brain, knowledge = emptyKnowled
     sources: [
       ...scored.map(({ id, title, tags }) => ({ id, title, tags, type: "reference" })),
       ...evidenceHits.map(({ id, title, tags, score }) => ({ id, title, tags, score, type: "evidence" })),
+      ...marketSources(marketIntelligence),
       ...beliefHits.map(({ id, claim }) => ({ id, title: claim, type: "belief" })),
       ...decisionHits.map(({ id, subject }) => ({ id, title: subject, type: "decision" }))
     ]
@@ -2275,6 +2629,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
       type: "evidence"
     };
   });
+  const marketIntelligence = selectMarketIntelligence(`${recentSessionContext} ${query} ${contextForSearch}`, knowledge, 6);
   const topReferences = corpus
     .map((doc) => ({ ...doc, score: termScore(queryTerms, `${doc.title} ${doc.tags?.join(" ")} ${doc.body}`) }))
     .filter((doc) => doc.score > 0)
@@ -2345,6 +2700,8 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
   const sections = [
     verdict,
     bulletSection("Owner evidence", ownerEvidence.slice(0, 2).map((reference) => `${reference.title}: ${shortSentence(reference.content, 180)}`), 2),
+    bulletSection("Market intelligence", marketIntelligence.observations.slice(0, 3).map((observation) => observation.body), 3),
+    marketIntelligence.observations.length ? bulletSection("Market freshness", [marketIntelligence.summary.warning], 1) : "",
     bulletSection("Deal read", dealRead, 3),
     bulletSection("Your memory", relevantMemories.map((memory) => memory.content), 3),
     bulletSection("Your decision journal", relevantJournal.map((decision) => {
@@ -2361,6 +2718,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
   const fallbackAnswer = sections.join("\n\n");
   const promptReferences = uniqueSources([
     ...ownerEvidence,
+    ...marketIntelligence.observations,
     ...topReferences,
     rentalReference,
     supplyReference,
@@ -2375,6 +2733,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         preview: conciseText(reference.content, 160),
         score: reference.score
       })),
+      ...marketSources(marketIntelligence),
       ...uniqueSources([...topReferences, rentalReference, supplyReference, buyerPoolReference, evidenceReference], 6).map((reference) => ({
         id: reference.id,
         title: reference.title,
@@ -2424,6 +2783,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         decisions: topDecisions,
         memories: relevantMemories,
         journal: relevantJournal,
+        marketIntelligence,
         fallbackAnswer
       });
       return { answer: completion.text, sources, mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: evidenceResult.mode };
@@ -3010,6 +3370,8 @@ async function router(req, res) {
         references: Array.isArray(corpus) ? corpus.length : 0,
         ownerDocuments: db.knowledge.documents.length,
         indexedChunks: db.knowledge.chunks.length,
+        trackedProjects: db.knowledge.projects.length,
+        marketObservations: db.knowledge.observations.length,
         activeBeliefs: db.brain.beliefs.filter((belief) => belief.status !== "retired").length,
         decisions: db.brain.decisions.length
       },
@@ -3118,7 +3480,15 @@ async function router(req, res) {
     const subject = dealCard.projectName || dealCard.area || "property deal";
     if (!session.messages.length || defaultSessionTitle(session.title)) session.title = `Deal analysis: ${subject}`;
     const analysis = analyzeSevenStageDeal(dealCard, financialProfile);
-    const sources = await dealAnalysisSources();
+    analysis.marketIntelligence = selectMarketIntelligence(`${subject} ${JSON.stringify(dealCard)}`, db.knowledge, 8);
+    const marketStage = analysis.stages.find((stage) => stage.number === 6);
+    if (marketStage && analysis.marketIntelligence.observations.length) {
+      marketStage.summary = `${analysis.marketIntelligence.summary.matched} owner market observation${analysis.marketIntelligence.summary.matched === 1 ? " matches" : "s match"} this deal. ${analysis.marketIntelligence.summary.warning}`;
+    }
+    const sources = [
+      ...marketSources(analysis.marketIntelligence),
+      ...await dealAnalysisSources()
+    ].slice(0, 12);
     let mode = "framework";
     let completion = null;
     if (llmEnabled()) {
@@ -3254,6 +3624,163 @@ async function router(req, res) {
       averageLatencyMs: events.length ? Math.round(events.reduce((sum, event) => sum + event.latencyMs, 0) / events.length) : 0,
       topSources: [...sourceCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([id, hits]) => ({ id, hits })),
       recent: events.slice(-50).reverse()
+    });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/owner/market/projects") {
+    const query = String(url.searchParams.get("q") || "").trim().toLowerCase();
+    const projects = db.knowledge.projects
+      .filter((project) => !query || [project.name, project.area, project.state, project.developer, project.aliases.join(" ")].join(" ").toLowerCase().includes(query))
+      .sort((left, right) => left.name.localeCompare(right.name));
+    return send(res, 200, {
+      projects: projects.map((project) => ({
+        ...project,
+        observationCount: db.knowledge.observations.filter((observation) => observation.projectId === project.id).length
+      })),
+      summary: { projects: projects.length, observations: db.knowledge.observations.length }
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/owner/market/projects") {
+    const body = await readBody(req);
+    const project = marketProjectFromInput(body);
+    if (findMarketProject(db.knowledge, { name: project.name, area: project.area })) {
+      return send(res, 409, { error: "A market project with this name and area already exists." });
+    }
+    db.knowledge.projects.push(project);
+    db.knowledge = normalizeKnowledge(db.knowledge);
+    await writeDb(db);
+    return send(res, 201, { project });
+  }
+
+  if (req.method === "PATCH" && url.pathname.startsWith("/api/owner/market/projects/")) {
+    const id = decodeURIComponent(url.pathname.split("/").pop());
+    const index = db.knowledge.projects.findIndex((project) => project.id === id);
+    if (index === -1) return send(res, 404, { error: "Market project not found." });
+    const project = marketProjectFromInput(await readBody(req), db.knowledge.projects[index]);
+    const duplicate = db.knowledge.projects.find((item) => item.id !== id && item.name.toLowerCase() === project.name.toLowerCase() && item.area.toLowerCase() === project.area.toLowerCase());
+    if (duplicate) return send(res, 409, { error: "A market project with this name and area already exists." });
+    db.knowledge.projects[index] = project;
+    await writeDb(db);
+    return send(res, 200, { project });
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/owner/market/projects/")) {
+    const id = decodeURIComponent(url.pathname.split("/").pop());
+    const project = db.knowledge.projects.find((item) => item.id === id);
+    if (!project) return send(res, 404, { error: "Market project not found." });
+    const linkedObservations = db.knowledge.observations.filter((observation) => observation.projectId === id).length;
+    const cascade = String(url.searchParams.get("cascade") || "").toLowerCase() === "true";
+    if (linkedObservations && !cascade) {
+      return send(res, 409, { error: "This project still has linked observations. Use ?cascade=true only when those records should also be deleted.", linkedObservations });
+    }
+    db.knowledge.projects = db.knowledge.projects.filter((item) => item.id !== id);
+    if (cascade) db.knowledge.observations = db.knowledge.observations.filter((observation) => observation.projectId !== id);
+    await writeDb(db);
+    return send(res, 200, { deleted: true, deletedObservations: cascade ? linkedObservations : 0 });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/owner/market/observations") {
+    const projectId = String(url.searchParams.get("projectId") || "").trim();
+    const metricType = String(url.searchParams.get("metricType") || "").trim().toLowerCase();
+    const area = String(url.searchParams.get("area") || "").trim().toLowerCase();
+    const freshnessFilter = String(url.searchParams.get("freshness") || "").trim().toLowerCase();
+    const limit = Math.max(1, Math.min(500, Number(url.searchParams.get("limit") || 200)));
+    const allMatches = db.knowledge.observations
+      .map((observation) => ({
+        ...observation,
+        project: marketProjectFor(observation, db.knowledge),
+        freshness: marketFreshness(observation),
+        trend: marketTrendFor(observation, db.knowledge)
+      }))
+      .filter((observation) => !projectId || observation.projectId === projectId)
+      .filter((observation) => !metricType || observation.metricType === metricType)
+      .filter((observation) => !area || `${observation.area} ${observation.project?.area || ""}`.toLowerCase().includes(area))
+      .filter((observation) => !freshnessFilter || observation.freshness.status === freshnessFilter)
+      .sort((left, right) => String(right.observedAt).localeCompare(String(left.observedAt)));
+    const counts = allMatches.reduce((summary, observation) => {
+      summary[observation.freshness.status] += 1;
+      return summary;
+    }, { fresh: 0, aging: 0, stale: 0 });
+    return send(res, 200, {
+      observations: allMatches.slice(0, limit),
+      summary: { matched: allMatches.length, returned: Math.min(allMatches.length, limit), ...counts }
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/owner/market/observations") {
+    const observation = marketObservationFromInput(await readBody(req), db.knowledge);
+    db.knowledge.observations.push(observation);
+    db.knowledge = normalizeKnowledge(db.knowledge);
+    await writeDb(db);
+    return send(res, 201, {
+      observation: { ...observation, freshness: marketFreshness(observation), trend: marketTrendFor(observation, db.knowledge) }
+    });
+  }
+
+  if (req.method === "PATCH" && url.pathname.startsWith("/api/owner/market/observations/")) {
+    const id = decodeURIComponent(url.pathname.split("/").pop());
+    const index = db.knowledge.observations.findIndex((observation) => observation.id === id);
+    if (index === -1) return send(res, 404, { error: "Market observation not found." });
+    const observation = marketObservationFromInput(await readBody(req), db.knowledge, db.knowledge.observations[index]);
+    db.knowledge.observations[index] = observation;
+    await writeDb(db);
+    return send(res, 200, {
+      observation: { ...observation, freshness: marketFreshness(observation), trend: marketTrendFor(observation, db.knowledge) }
+    });
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/owner/market/observations/")) {
+    const id = decodeURIComponent(url.pathname.split("/").pop());
+    if (!db.knowledge.observations.some((observation) => observation.id === id)) return send(res, 404, { error: "Market observation not found." });
+    db.knowledge.observations = db.knowledge.observations.filter((observation) => observation.id !== id);
+    await writeDb(db);
+    return send(res, 204, "");
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/owner/market/import") {
+    const body = await readBody(req);
+    const incomingProjects = Array.isArray(body.projects) ? body.projects : [];
+    const incomingObservations = Array.isArray(body.observations) ? body.observations : [];
+    if (incomingProjects.length + incomingObservations.length > 200) {
+      return send(res, 413, { error: "Each market import is limited to 200 combined projects and observations." });
+    }
+    const projectReferences = new Map();
+    const importedProjects = [];
+    const importedObservations = [];
+    const skipped = [];
+    incomingProjects.forEach((input, index) => {
+      try {
+        const existing = findMarketProject(db.knowledge, { name: input?.name, area: input?.area });
+        const project = existing || marketProjectFromInput(input);
+        if (!existing) {
+          db.knowledge.projects.push(project);
+          importedProjects.push(project);
+        }
+        if (input?.id) projectReferences.set(String(input.id), project.id);
+        projectReferences.set(`${project.name.toLowerCase()}|${project.area.toLowerCase()}`, project.id);
+      } catch (error) {
+        skipped.push({ type: "project", index, error: error.message });
+      }
+    });
+    incomingObservations.forEach((input, index) => {
+      try {
+        const referenceKey = `${cleanMarketText(input?.projectName, 160).toLowerCase()}|${cleanMarketText(input?.area, 120).toLowerCase()}`;
+        const resolvedProjectId = projectReferences.get(String(input?.projectId || "")) || projectReferences.get(referenceKey) || input?.projectId || "";
+        const observation = marketObservationFromInput({ ...input, projectId: resolvedProjectId }, db.knowledge);
+        db.knowledge.observations.push(observation);
+        importedObservations.push(observation);
+      } catch (error) {
+        skipped.push({ type: "observation", index, error: error.message });
+      }
+    });
+    db.knowledge = normalizeKnowledge(db.knowledge);
+    await writeDb(db);
+    return send(res, 201, {
+      imported: { projects: importedProjects.length, observations: importedObservations.length },
+      skipped,
+      projects: importedProjects,
+      observations: importedObservations
     });
   }
 

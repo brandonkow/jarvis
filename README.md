@@ -12,6 +12,7 @@ The public user experience is intentionally simple: users interact with one Apex
 - Email verification, password recovery, and owner-only account administration.
 - PostgreSQL production storage with automatic JSON fallback for local development.
 - Owner-controlled evidence uploads, private original-file storage, chunking, optional embeddings, hybrid retrieval, and retrieval monitoring.
+- Owner-controlled project intelligence with dated market observations, metric trends, and freshness warnings in chat and Deal Reports.
 - Public request limits for chat, voice, and account endpoints.
 - Seven-stage Deal Analysis using the Deal Card and Financial Profile, with hard-stop precedence, four decision dimensions, evidence grading, downside scenarios, and a counter-thesis.
 - Printable Apex Deal Reports plus a private browser shortlist for comparing up to four analysed properties.
@@ -158,6 +159,7 @@ Owner-only:
 - Raw RAG guidance API
 - Comparable transaction APIs
 - Evidence document and retrieval-monitoring APIs
+- Market project, observation, freshness, trend, and batch-import APIs
 - User administration APIs
 
 Owner-only calls require:

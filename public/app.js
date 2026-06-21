@@ -244,6 +244,7 @@ function closeAuthPanel() {
 function sourceLabel(type) {
   if (type === "memory") return "MEMORY";
   if (type === "journal") return "JOURNAL";
+  if (type === "market") return "MARKET";
   if (type === "belief") return "BELIEF";
   if (type === "decision") return "DECISION";
   if (type === "evidence") return "EVIDENCE";
@@ -253,6 +254,7 @@ function sourceLabel(type) {
 function sourceName(source) {
   if (source?.type === "memory") return "your approved memory";
   if (source?.type === "journal") return "your decision journal";
+  if (source?.type === "market") return "dated market observation";
   if (source?.type === "evidence") return "owner evidence";
   const title = String(source?.title || "").toLowerCase();
   if (title.includes("rental") || title.includes("installment") || title.includes("tenant")) return "rental rule";
@@ -265,6 +267,9 @@ function sourceName(source) {
 }
 
 function sourceConfidence(sources = []) {
+  const marketSources = sources.filter((source) => source.type === "market");
+  if (marketSources.some((source) => source.freshness === "stale")) return "Medium - includes owner observations that need refreshing";
+  if (marketSources.some((source) => source.freshness === "fresh")) return "Medium-high - dated owner evidence matched, still verify the deal";
   const hasBelief = sources.some((source) => source.type === "belief");
   if (sources.length >= 4 || hasBelief) return "Medium - framework-backed, still needs live market proof";
   if (sources.length >= 2) return "Low-medium - useful framework match, evidence still thin";
@@ -924,6 +929,37 @@ function analysisSection(title, items = [], className = "") {
   `;
 }
 
+function marketIntelligenceMarkup(market = {}) {
+  const observations = Array.isArray(market.observations) ? market.observations : [];
+  if (!observations.length) return "";
+  const trends = Array.isArray(market.trends) ? market.trends : [];
+  const summary = market.summary || {};
+  const trendMarkup = trends.slice(0, 4).map((trend) => {
+    const change = trend.percentChange === null || trend.percentChange === undefined ? "" : ` ${Number(trend.percentChange) > 0 ? "+" : ""}${trend.percentChange}%`;
+    return `<span class="marketTrend ${escapeHtml(trend.direction)}"><small>${escapeHtml(String(trend.metricType || "").replaceAll("_", " "))}</small><b>${escapeHtml(trend.direction)}${escapeHtml(change)}</b></span>`;
+  }).join("");
+  const observationMarkup = observations.slice(0, 6).map((observation) => {
+    const status = observation.freshness?.status || "stale";
+    const age = Number(observation.freshness?.ageDays || 0);
+    const fullDetail = observation.notes || (observation.value === null ? "Qualitative observation" : `${observation.value}${observation.unit ? ` ${observation.unit}` : ""}`);
+    const detail = fullDetail.length > 420 ? `${fullDetail.slice(0, 417).trim()}...` : fullDetail;
+    return `
+      <li>
+        <span><b>${escapeHtml(observation.title)}</b><small>${escapeHtml(detail)}</small></span>
+        <em class="${escapeHtml(status)}">${escapeHtml(status)} / ${escapeHtml(age)}d</em>
+      </li>
+    `;
+  }).join("");
+  return `
+    <section class="analysisMarketPulse">
+      <header><h3>OWNER MARKET PULSE</h3><span>${escapeHtml(summary.matched || observations.length)} MATCHED</span></header>
+      ${trendMarkup ? `<div class="marketTrends">${trendMarkup}</div>` : ""}
+      <ul>${observationMarkup}</ul>
+      <p>${escapeHtml(summary.warning || "Check the observation dates before relying on this market read.")}</p>
+    </section>
+  `;
+}
+
 function addDealAnalysis(analysis, sources = [], intelligence = {}) {
   document.body.classList.add("conversationActive");
   const message = document.createElement("article");
@@ -985,6 +1021,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     ${dimensionMarkup ? `<section class="analysisDimensionSection"><h3>FOUR-PART DECISION READ</h3><div class="analysisDimensions">${dimensionMarkup}</div></section>` : ""}
     ${metricMarkup ? `<div class="analysisMetrics">${metricMarkup}</div>` : ""}
     ${scenarioMarkup ? `<section class="analysisScenarioSection"><h3>DOWNSIDE SCENARIOS</h3><div class="analysisScenarios">${scenarioMarkup}</div><p>Stress assumptions are decision tests, not forecasts.</p></section>` : ""}
+    ${marketIntelligenceMarkup(analysis.marketIntelligence)}
     <ol class="analysisStages">${stageMarkup}</ol>
     <div class="analysisDetails">
       ${analysisSection("Hard stops", analysis.hardStops, "danger")}
