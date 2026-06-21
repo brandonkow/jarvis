@@ -75,6 +75,13 @@ LLM_MODEL=openrouter/auto
 
 For repeatable investment analysis, replace `openrouter/auto` with the exact model slug chosen in OpenRouter. Every successful LLM reply returns `provider` and `model`. `GET /api/jarvis/status` reports both `configuredModel` and `resolvedModel`; the frontend displays the resolved model after a reply. With auto-routing, these values can differ by request.
 
+Every assistant response also carries a persistent intelligence badge:
+
+- `FRAMEWORK ONLY`: the deterministic framework generated the response because no reasoning model answered.
+- `FRAMEWORK + DEEPSEEK`: DeepSeek successfully generated that response using the retrieved framework context.
+
+The badge belongs to the individual message and remains visible after refresh or cross-device session recovery.
+
 ## Deployment Checks
 
 After a Render deployment:

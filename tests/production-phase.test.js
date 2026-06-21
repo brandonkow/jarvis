@@ -105,6 +105,9 @@ test("production phase keeps evidence owner-only and completes the account lifec
     }
   });
   assert.equal(query.response.status, 200);
+  assert.equal(query.payload.mode, "framework");
+  assert.equal(query.payload.message.mode, "framework");
+  assert.equal(query.payload.message.model, "");
   assert.ok(query.payload.sources.some((source) => source.type === "evidence" && source.title === "Bayan Lepas tenant interview"));
   assert.match(query.payload.answer, /Owner evidence/i);
 

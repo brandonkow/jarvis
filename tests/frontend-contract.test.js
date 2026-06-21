@@ -29,6 +29,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /<title>Apex Analytic<\/title>/);
   assert.match(html, /class="orbCore"><b>A<\/b>/, "The orb must use only the Apex A mark.");
   assert.doesNotMatch(html, /ESTATELAB \/ JARVIS|<b>J<\/b>/, "Legacy visible branding must not return.");
+  assert.match(app, /FRAMEWORK ONLY/, "Framework fallback responses need an explicit badge.");
+  assert.match(app, /FRAMEWORK \+ DEEPSEEK/, "DeepSeek reasoning responses need an explicit badge.");
 
   assert.match(styles, /\.conversation:has\(\.contextPanel\.expanded\) \.transcript[\s\S]*?display:\s*none;/, "Expanded cards must replace the transcript instead of overflowing beneath it.");
   assert.match(styles, /\.contextPanel\.expanded \.contextGrid[\s\S]*?overflow-y:\s*auto|\.contextGrid[\s\S]*?overflow-y:\s*auto/, "Expanded card fields must remain scrollable.");

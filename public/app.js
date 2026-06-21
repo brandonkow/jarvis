@@ -218,12 +218,25 @@ function sourcesMarkup(sources = []) {
   `;
 }
 
-function addMessage(role, text, sources = []) {
+function intelligenceMarkup({ mode = "", provider = "", model = "" } = {}) {
+  if (mode === "framework") {
+    return '<span class="intelligenceBadge framework" title="No external reasoning model generated this response"><i></i>FRAMEWORK ONLY</span>';
+  }
+  if (mode !== "llm") return "";
+  const deepSeek = /deepseek/i.test(`${provider} ${model}`);
+  const label = deepSeek ? "FRAMEWORK + DEEPSEEK" : `FRAMEWORK + ${modelLabel(model)}`;
+  return '<span class="intelligenceBadge reasoning" title="Reasoning model: '
+    + escapeHtml(model || provider || "configured LLM")
+    + '"><i></i>' + escapeHtml(label) + '</span>';
+}
+
+function addMessage(role, text, sources = [], intelligence = {}) {
   document.body.classList.add("conversationActive");
   const message = document.createElement("article");
   message.className = `message ${role}`;
   message.innerHTML = `
     <strong>${role === "jarvis" ? "APEX" : "YOU"}</strong>
+    ${role === "jarvis" ? intelligenceMarkup(intelligence) : ""}
     <div class="messageText">${escapeHtml(text).replace(/\n/g, "<br>")}</div>
     ${role === "jarvis" ? sourcesMarkup(sources) : ""}
   `;
@@ -241,7 +254,7 @@ function analysisSection(title, items = [], className = "") {
   `;
 }
 
-function addDealAnalysis(analysis, sources = []) {
+function addDealAnalysis(analysis, sources = [], intelligence = {}) {
   document.body.classList.add("conversationActive");
   const message = document.createElement("article");
   const verdictClass = String(analysis.verdict || "investigate").toLowerCase();
@@ -264,6 +277,7 @@ function addDealAnalysis(analysis, sources = []) {
 
   message.className = "message jarvis analysisMessage";
   message.innerHTML = `
+    ${intelligenceMarkup(intelligence)}
     <div class="analysisHeader">
       <span><small>SEVEN-STAGE VERDICT</small><b>${escapeHtml(analysis.verdict)}</b></span>
       <i class="analysisVerdict ${escapeHtml(verdictClass)}">${escapeHtml(analysis.confidence)}% CONFIDENCE</i>
@@ -302,7 +316,7 @@ function renderSession(session) {
   transcript.innerHTML = "";
   if (!session?.messages?.length) return;
   for (const message of session.messages) {
-    addMessage(message.role, message.content, message.sources || []);
+    addMessage(message.role, message.content, message.sources || [], message);
   }
 }
 
@@ -773,7 +787,7 @@ async function submitQuestion(question) {
   jarvisOrb.classList.add("speaking");
   try {
     const result = await askJarvis(cleanQuestion);
-    addMessage("jarvis", result.answer, result.sources);
+    addMessage("jarvis", result.answer, result.sources, result);
     speak(result.answer);
     if (!voiceResponsesEnabled) setSystemState("System ready", "Ready when you are.");
   } catch (error) {
@@ -825,7 +839,7 @@ async function runDealAnalysis() {
     window.localStorage.setItem(sessionKey, sessionId);
     const responseMode = result.mode === "llm" ? modelLabel(result.model) : "FRAMEWORK";
     setSessionState(`${responseMode} / ${result.session.messages.length}`);
-    addDealAnalysis(result.analysis, result.sources);
+    addDealAnalysis(result.analysis, result.sources, result);
     speak(result.analysis.voiceSummary);
     if (!voiceResponsesEnabled) setSystemState("System ready", "Analysis complete.");
   } catch (error) {

@@ -310,6 +310,9 @@ function normalizeJarvisMessage(message) {
     role: message.role === "user" ? "user" : "jarvis",
     content: String(message.content).trim(),
     createdAt: String(message.createdAt || new Date().toISOString()),
+    mode: ["framework", "llm"].includes(message.mode) ? message.mode : "",
+    provider: String(message.provider || "").trim().slice(0, 40),
+    model: String(message.model || "").trim().slice(0, 160),
     sources: Array.isArray(message.sources) ? message.sources.slice(0, 8) : []
   };
 }
@@ -2218,6 +2221,9 @@ async function router(req, res) {
       role: "jarvis",
       content: dealAnalysisText(analysis),
       createdAt: new Date().toISOString(),
+      mode,
+      provider: mode === "llm" ? completion.provider : "",
+      model: mode === "llm" ? completion.model : "",
       sources
     };
     session.messages.push(jarvisMessage);
@@ -2538,6 +2544,9 @@ async function router(req, res) {
       role: "jarvis",
       content: result.answer,
       createdAt: new Date().toISOString(),
+      mode: result.mode,
+      provider: result.provider || "",
+      model: result.model || "",
       sources: result.sources
     };
     session.messages.push(jarvisMessage);

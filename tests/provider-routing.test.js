@@ -111,6 +111,9 @@ test("OpenRouter reports the model that actually answered", async (t) => {
   assert.equal(answer.payload.mode, "llm");
   assert.equal(answer.payload.provider, "openrouter");
   assert.equal(answer.payload.model, "anthropic/claude-test-resolved");
+  assert.equal(answer.payload.message.mode, "llm");
+  assert.equal(answer.payload.message.provider, "openrouter");
+  assert.equal(answer.payload.message.model, "anthropic/claude-test-resolved");
   assert.equal(captured.url, "/chat/completions");
   assert.equal(captured.authorization, "Bearer test-openrouter-key");
   assert.equal(captured.title, "Apex Analytic");

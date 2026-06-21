@@ -89,6 +89,9 @@ function sampleState(revision = 0) {
           role: "user",
           content: "Hello",
           createdAt: "2026-01-01T00:01:00.000Z",
+          mode: "llm",
+          provider: "openrouter",
+          model: "deepseek/deepseek-v4-flash",
           sources: []
         }]
       }]
@@ -141,6 +144,7 @@ test("PostgreSQL store creates schema and imports the seed once", async () => {
   await store.init(sampleState());
   assert.equal(client.calls[0].text, "BEGIN");
   assert.ok(client.calls.some((call) => call.text.includes("CREATE TABLE IF NOT EXISTS estatelab_users")));
+  assert.ok(client.calls.some((call) => call.text.includes("ADD COLUMN IF NOT EXISTS mode")));
   assert.ok(client.calls.some((call) => call.text.includes("INSERT INTO estatelab_core")));
   assert.ok(client.calls.some((call) => call.text.includes("UPDATE estatelab_meta SET revision = 1")));
   assert.equal(client.calls.at(-1).text, "COMMIT");
@@ -174,7 +178,7 @@ test("PostgreSQL store reconstructs users, sessions, and ordered messages", asyn
       return { rows: [{ id: "s", user_id: "u", client_id: "c", title: "Title", created_at: new Date("2026-01-01T00:00:00.000Z"), updated_at: new Date("2026-01-01T00:01:00.000Z") }] };
     }
     if (text.startsWith("SELECT id, session_id, position")) {
-      return { rows: [{ id: "m", session_id: "s", position: 0, role: "user", content: "Hi", created_at: new Date("2026-01-01T00:01:00.000Z"), sources: [] }] };
+      return { rows: [{ id: "m", session_id: "s", position: 0, role: "jarvis", content: "Hi", created_at: new Date("2026-01-01T00:01:00.000Z"), mode: "llm", provider: "openrouter", model: "deepseek/deepseek-v4-flash", sources: [] }] };
     }
     return { rows: [] };
   });
@@ -185,6 +189,8 @@ test("PostgreSQL store reconstructs users, sessions, and ordered messages", asyn
   assert.equal(state.auth.tokens[0].purpose, "email-verification");
   assert.equal(state.knowledge.documents[0].id, "d");
   assert.equal(state.jarvis.sessions[0].messages[0].content, "Hi");
+  assert.equal(state.jarvis.sessions[0].messages[0].mode, "llm");
+  assert.equal(state.jarvis.sessions[0].messages[0].model, "deepseek/deepseek-v4-flash");
   assert.equal(client.calls[0].text, "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
   assert.equal(client.calls.at(-1).text, "COMMIT");
 });

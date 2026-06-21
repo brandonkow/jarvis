@@ -84,8 +84,15 @@ const SCHEMA_SQL = `
     role TEXT NOT NULL,
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
+    mode TEXT NOT NULL DEFAULT '',
+    provider TEXT NOT NULL DEFAULT '',
+    model TEXT NOT NULL DEFAULT '',
     sources JSONB NOT NULL DEFAULT '[]'::jsonb
   );
+
+  ALTER TABLE estatelab_jarvis_messages ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT '';
+  ALTER TABLE estatelab_jarvis_messages ADD COLUMN IF NOT EXISTS provider TEXT NOT NULL DEFAULT '';
+  ALTER TABLE estatelab_jarvis_messages ADD COLUMN IF NOT EXISTS model TEXT NOT NULL DEFAULT '';
 
   CREATE UNIQUE INDEX IF NOT EXISTS estatelab_jarvis_messages_position_idx
     ON estatelab_jarvis_messages (session_id, position);
@@ -179,7 +186,7 @@ export class PostgresStateStore {
       const authResult = await client.query("SELECT token_hash, user_id, created_at, expires_at FROM estatelab_auth_sessions WHERE expires_at > NOW() ORDER BY created_at DESC");
       const authTokenResult = await client.query("SELECT token_hash, user_id, purpose, created_at, expires_at FROM estatelab_auth_tokens WHERE expires_at > NOW() ORDER BY created_at DESC");
       const sessionsResult = await client.query("SELECT id, user_id, client_id, title, created_at, updated_at FROM estatelab_jarvis_sessions ORDER BY updated_at DESC");
-      const messagesResult = await client.query("SELECT id, session_id, position, role, content, created_at, sources FROM estatelab_jarvis_messages ORDER BY session_id, position");
+      const messagesResult = await client.query("SELECT id, session_id, position, role, content, created_at, mode, provider, model, sources FROM estatelab_jarvis_messages ORDER BY session_id, position");
       await client.query("COMMIT");
 
       const messagesBySession = new Map();
@@ -190,6 +197,9 @@ export class PostgresStateStore {
           role: row.role,
           content: row.content,
           createdAt: iso(row.created_at),
+          mode: row.mode || "",
+          provider: row.provider || "",
+          model: row.model || "",
           sources: Array.isArray(row.sources) ? row.sources : []
         });
         messagesBySession.set(row.session_id, messages);
@@ -343,9 +353,9 @@ export class PostgresStateStore {
     await client.query("DELETE FROM estatelab_jarvis_messages");
     for (const message of messages) {
       await client.query(`
-        INSERT INTO estatelab_jarvis_messages (id, session_id, position, role, content, created_at, sources)
-        VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
-      `, [message.id, message.sessionId, message.position, message.role, message.content, message.createdAt, JSON.stringify(message.sources || [])]);
+        INSERT INTO estatelab_jarvis_messages (id, session_id, position, role, content, created_at, mode, provider, model, sources)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
+      `, [message.id, message.sessionId, message.position, message.role, message.content, message.createdAt, message.mode || "", message.provider || "", message.model || "", JSON.stringify(message.sources || [])]);
     }
 
     await client.query("DELETE FROM estatelab_auth_sessions WHERE NOT (token_hash = ANY($1::text[])) OR expires_at <= NOW()", [authSessions.map((session) => String(session.tokenHash))]);

@@ -993,6 +993,41 @@ button {
   letter-spacing: 0.18em;
 }
 
+.intelligenceBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin: 1px 0 7px;
+  border: 1px solid rgba(103, 229, 255, 0.19);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #78a6b1;
+  background: rgba(1, 10, 17, 0.55);
+  font-size: 0.48rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+}
+
+.intelligenceBadge i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #668c95;
+  box-shadow: 0 0 8px rgba(102, 140, 149, 0.35);
+}
+
+.intelligenceBadge.reasoning {
+  border-color: rgba(103, 229, 255, 0.34);
+  color: var(--cyan);
+  background: rgba(42, 171, 199, 0.09);
+}
+
+.intelligenceBadge.reasoning i {
+  background: var(--cyan);
+  box-shadow: 0 0 10px rgba(97, 232, 255, 0.72);
+}
+
 .messageText {
   white-space: normal;
 }
