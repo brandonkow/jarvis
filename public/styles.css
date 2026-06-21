@@ -1325,7 +1325,7 @@ button {
 
 .commandBar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 7px;
   border: 1px solid rgba(103, 229, 255, 0.24);
   border-radius: 999px;
@@ -1377,6 +1377,29 @@ button {
   background: rgba(41, 158, 181, 0.16);
 }
 
+.commandAnalyzeBtn {
+  align-self: center;
+  min-height: 32px;
+  border: 1px solid rgba(103, 229, 255, 0.3);
+  border-radius: 999px;
+  padding: 0 12px;
+  cursor: pointer;
+  color: var(--cyan);
+  background: rgba(41, 158, 181, 0.09);
+  font-size: 0.52rem;
+  letter-spacing: 0.12em;
+}
+
+.commandAnalyzeBtn:hover {
+  border-color: rgba(103, 229, 255, 0.56);
+  background: rgba(41, 158, 181, 0.18);
+}
+
+.commandAnalyzeBtn:disabled {
+  cursor: progress;
+  opacity: 0.5;
+}
+
 .utilityBar {
   display: flex;
   flex-wrap: wrap;
@@ -1404,22 +1427,6 @@ button {
   border-color: rgba(103, 229, 255, 0.34);
   color: var(--cyan);
   background: rgba(41, 158, 181, 0.09);
-}
-
-.utilityBar .analyzeDealBtn {
-  border-color: rgba(103, 229, 255, 0.28);
-  color: var(--cyan);
-  background: rgba(41, 158, 181, 0.09);
-}
-
-.utilityBar .analyzeDealBtn:hover {
-  border-color: rgba(103, 229, 255, 0.52);
-  background: rgba(41, 158, 181, 0.18);
-}
-
-.utilityBar .analyzeDealBtn:disabled {
-  cursor: progress;
-  opacity: 0.5;
 }
 
 .stopVoiceBtn {
@@ -1843,6 +1850,12 @@ button {
 
   .commandButton svg {
     width: 18px;
+  }
+
+  .commandAnalyzeBtn {
+    min-height: 40px;
+    padding: 0 10px;
+    font-size: 0.55rem;
   }
 
   .utilityBar {

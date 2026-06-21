@@ -28,6 +28,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
 
   assert.match(html, /<title>Apex Analytic<\/title>/);
   assert.match(html, /class="orbCore"><b>A<\/b>/, "The orb must use only the Apex A mark.");
+  assert.match(html, /<form id="chatForm"[\s\S]*?id="analyzeDealBtn"[\s\S]*?<\/form>/, "Deal analysis must remain visible inside the message bar.");
   assert.doesNotMatch(html, /ESTATELAB \/ JARVIS|<b>J<\/b>/, "Legacy visible branding must not return.");
   assert.match(app, /FRAMEWORK ONLY/, "Framework fallback responses need an explicit badge.");
   assert.match(app, /FRAMEWORK \+ AI/, "External reasoning responses need a model-neutral badge.");
