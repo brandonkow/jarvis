@@ -101,6 +101,7 @@ const shortlistClear = document.querySelector("#shortlistClear");
 const dealFields = Array.from(document.querySelectorAll("[data-deal-field]"));
 const profileFields = Array.from(document.querySelectorAll("[data-profile-field]"));
 const contextToggles = Array.from(document.querySelectorAll("[data-context-toggle]"));
+const contextResetButtons = Array.from(document.querySelectorAll("[data-context-reset]"));
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = SpeechRecognition ? new SpeechRecognition() : null;
@@ -1095,6 +1096,15 @@ function restoreContext(fields, attributeName, storageKey) {
   }
 }
 
+function resetContextCard(panelName) {
+  const isDeal = panelName === "deal";
+  const fields = isDeal ? dealFields : profileFields;
+  const storageKey = isDeal ? dealContextKey : profileContextKey;
+  for (const field of fields) field.value = "";
+  window.localStorage.removeItem(storageKey);
+  setSystemState("System ready", `${isDeal ? "Deal" : "Profile"} details cleared.`);
+}
+
 function savedContextPanelState() {
   try {
     return JSON.parse(window.localStorage.getItem(contextPanelKey) || "{}");
@@ -1142,6 +1152,9 @@ function bootContextPanels() {
       const expanded = toggle.getAttribute("aria-expanded") === "true";
       setContextPanelState(toggle, !expanded);
     });
+  }
+  for (const button of contextResetButtons) {
+    button.addEventListener("click", () => resetContextCard(button.getAttribute("data-context-reset")));
   }
 }
 

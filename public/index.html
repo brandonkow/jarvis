@@ -223,10 +223,13 @@
 
         <section class="contextDeck" aria-label="Deal and investor context">
           <section class="contextPanel">
-            <button class="contextHeader" type="button" data-context-toggle="deal" aria-expanded="false" aria-controls="dealContextFields">
-              <span>Deal</span>
-              <b class="contextAction">OPEN</b>
-            </button>
+            <header class="contextHeader">
+              <button class="contextToggle" type="button" data-context-toggle="deal" aria-expanded="false" aria-controls="dealContextFields">
+                <span>Deal</span>
+                <b class="contextAction">OPEN</b>
+              </button>
+              <button class="contextReset" type="button" data-context-reset="deal" aria-label="Clear all Deal card details">RESET</button>
+            </header>
             <div id="dealContextFields" class="contextGrid" data-context-body="deal" hidden>
               <label>Area<input data-deal-field="area" placeholder="Penang, KL, Selangor..." /></label>
               <label>Project<input data-deal-field="projectName" placeholder="Development name" /></label>
@@ -312,10 +315,13 @@
           </section>
 
           <section class="contextPanel">
-            <button class="contextHeader" type="button" data-context-toggle="profile" aria-expanded="false" aria-controls="profileContextFields">
-              <span>Profile</span>
-              <b class="contextAction">OPEN</b>
-            </button>
+            <header class="contextHeader">
+              <button class="contextToggle" type="button" data-context-toggle="profile" aria-expanded="false" aria-controls="profileContextFields">
+                <span>Profile</span>
+                <b class="contextAction">OPEN</b>
+              </button>
+              <button class="contextReset" type="button" data-context-reset="profile" aria-label="Clear all Profile card details">RESET</button>
+            </header>
             <div id="profileContextFields" class="contextGrid" data-context-body="profile" hidden>
               <label>Monthly Income<input data-profile-field="monthlyIncome" placeholder="RM8,000" inputmode="decimal" /></label>
               <label>Cash Reserve<input data-profile-field="cashReserveMonths" placeholder="Months of expenses/salary" inputmode="decimal" /></label>
