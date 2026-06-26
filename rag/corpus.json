@@ -588,6 +588,36 @@
     "body": "The founder views a discount up to around 20 percent as potentially reasonable when justified, while more than 20 percent may become unrealistic or insulting unless severe weakness or seller distress supports it. Measure the discount against defensible market value, not inflated asking price. Before advising an offer, Apex should check rental and sale demand, project transactions, area median, auction bids, listing duration, seller motivation, and the user's financing readiness. The maximum offer should at least allow rent to break even with installment, and holding-power mandates should include recurring charges, vacancy, maintenance, and stress tests."
   },
   {
+    "id": "execution-professional-network-filter",
+    "title": "Agent, banker, and lawyer filtering",
+    "tags": ["agent", "banker", "lawyer", "professional network", "transaction risk"],
+    "body": "A valuable agent can access first-hand good deals and quality tenant profiles. A useful banker can match bank loan options to different client financial profiles and compare approval paths, rates, and product terms. A reliable lawyer advises based on the transaction situation, reports progress, and does not overcharge. Red flags include hard-selling agents, bankers who say the profile is weak without proposing solutions, and lawyers who reply late or fail to update progress."
+  },
+  {
+    "id": "execution-professional-competence-tests",
+    "title": "Professional competence tests",
+    "tags": ["agent questions", "bank loan", "lawyer progress", "loan disbursement", "coordination"],
+    "body": "Test an agent by asking beyond the project being sold: overall market sentiment, substitutes, rental demand, buyer profile, transaction activity, weaknesses, and future supply. Test a banker by asking for comparisons across bank rates, product specs, approval likelihood, lock-in, tenure, margin, and documentation. Do not judge a lawyer only after completion delay; ask upfront for milestones, update frequency, required documents, consent or title risks, and escalation steps. Poor coordination often causes loan disbursement delay."
+  },
+  {
+    "id": "execution-site-visit-confidence-cap",
+    "title": "Site visit requirement and confidence cap",
+    "tags": ["site visit", "physical inspection", "new project", "vibe", "confidence"],
+    "body": "A physical site visit is required before Apex gives a strong recommendation because data cannot fully reveal vibe, resident behaviour, arrival experience, smell, noise, maintenance culture, security attitude, or emotional liveability. For new projects, uncompleted projects, or remote cases, Apex may give only a provisional view and should cap confidence until the user or a trusted person inspects the development, completed phase, developer's past comparable project, or closest substitute environment."
+  },
+  {
+    "id": "execution-site-visit-inspection-points",
+    "title": "Site visit inspection points",
+    "tags": ["guardhouse", "lobby", "lift", "car park", "corridor", "refuse room", "facilities"],
+    "body": "During site visit, inspect the guardhouse service attitude; lobby comfort and homecoming feeling; lift speed and waiting time; car park brightness, speed ramps, height, width, and movement; corridor width and rain-splash protection; refuse-room tiles, ventilation, smell, and cleanliness; and facility cleanliness, maintenance, and actual usage. The lobby is a welcoming statement, not merely a waiting area."
+  },
+  {
+    "id": "execution-resident-behaviour-aging-quality",
+    "title": "Resident behaviour and aging quality",
+    "tags": ["resident behaviour", "own stay vibe", "building aging", "management", "project culture"],
+    "body": "Own-stay vibe improves when families use the facilities, layouts include both large and small units, residents are respectful and responsible, and the project feels like a community rather than an investor-only product. Arrogant, inconsiderate, or careless resident behaviour weakens confidence. A building can be old but age well if it remains clean, cared for, and orderly; neglected condition, unresolved defects, bad smell, weak lighting, and apathy are aging-badly signals."
+  },
+  {
     "id": "framework-seven-stage-canonical-map",
     "title": "Canonical EstateLab seven-stage framework",
     "tags": ["framework", "seven stages", "property selection", "investor suitability", "financing", "holding", "portfolio", "market timing", "decision journal"],

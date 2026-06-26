@@ -187,6 +187,131 @@ The main negotiation protection is:
 
 > Advise a minimum offer, maximum offer, and walk-away point before emotion enters the negotiation.
 
+## Agent, Banker, And Lawyer Filtering
+
+### Professional Value
+
+A property agent is genuinely valuable when the agent can access first-hand good deals and quality tenant profiles, not merely open the door or repeat listing details.
+
+A banker is genuinely useful when the banker can advise which bank, loan package, and approval path fits different client financial profiles. The banker should compare options instead of treating approval as a one-size-fits-all process.
+
+A lawyer is reliable when the lawyer advises based on the actual transaction situation, communicates progress clearly, and does not overcharge.
+
+### Red Flags
+
+Immediate professional red flags include:
+
+- Agent: only knows how to hard sell.
+- Banker: says the profile is not strong without proposing a solution, alternative bank, required documents, lower loan amount, or timing plan.
+- Lawyer: replies late and does not report progress.
+
+Apex should treat poor communication as transaction risk because property completion depends on coordination and timing, not just legal correctness.
+
+### Testing Professional Competence
+
+To test whether an agent understands the project, ask questions beyond the project being sold, such as:
+
+- Overall market sentiment.
+- Nearby substitutes.
+- Rental demand.
+- Buyer profile.
+- Transaction activity.
+- Weaknesses of the project.
+- Future supply.
+
+An agent who only repeats project selling points may not understand the market.
+
+To test whether a banker is giving proper financing advice, ask for comparison across bank rates, product specifications, approval likelihood, lock-in terms, tenure, margin, documentation needs, and profile suitability.
+
+To test whether a lawyer is handling the transaction properly, Apex should not wait until completion delay proves the problem. The founder observes that it is hard to know in advance and often judges by time taken for completion. Apex should improve this by asking for expected milestones, update frequency, required documents, consent or title risks, and escalation steps at the start.
+
+### Coordination Risk
+
+Poor coordination between agent, banker, lawyer, buyer, and seller commonly leads to loan disbursement delay.
+
+Apex should treat this as an execution risk when:
+
+- Documents are incomplete.
+- Bank valuation, approval, or loan documentation is late.
+- The lawyer does not update parties.
+- The agent does not coordinate seller-side documents.
+- The buyer does not understand deadlines.
+- Consent, caveat, perfection, or title issues are discovered late.
+
+### Trusted Professional Network
+
+Apex should recommend that users build their own trusted professional network where possible.
+
+Professional advice should always be challenged by asking relevant questions that are not directly limited to the specific case the professional is handling. This tests whether the professional understands the broader market, financing, transaction, and risk context instead of only defending the immediate deal.
+
+## Site Visit And Physical Inspection
+
+### Site Visit Requirement
+
+Founder rule:
+
+> A site visit is required before Apex gives a strong recommendation.
+
+Data and virtual research cannot fully reveal vibe, resident behaviour, arrival experience, smell, noise, maintenance culture, security attitude, or emotional liveability.
+
+For new projects, uncompleted projects, or situations where physical inspection is temporarily impossible, Apex may provide only a provisional view. It should clearly state that confidence remains capped until the user or a trusted person performs a physical inspection of the development, completed phase, developer's past comparable project, or closest substitute environment.
+
+### First Impressions
+
+When entering a development, the founder first observes the design of the grand lobby.
+
+The lobby should create the feeling of coming home. It is not merely a waiting area; it is a welcoming statement. A strong lobby feels comfortable, peaceful, and pleasant enough for residents and visitors to relax.
+
+### Own-Stay Vibe
+
+A development has stronger own-stay vibe when:
+
+- Families are present within the facility compound.
+- There is a mixture of large and small layouts.
+- The project feels like a living community rather than only an investor product.
+- Residents appear respectful and responsible.
+
+The founder becomes uncomfortable when the resident profile, behaviour, or attitude feels poor even if the numbers look attractive. Resident behaviour can determine whether the project remains desirable, well-maintained, and saleable.
+
+### Inspection Points
+
+During site visit, Apex should guide the user to observe:
+
+- **Guardhouse**: service attitude, professionalism, and whether security feels alert and respectful.
+- **Lobby**: design comfort, peacefulness, cleanliness, and whether it creates a welcoming homecoming feeling.
+- **Lift area**: lift speed, waiting time, and how efficiently lifts reach each floor.
+- **Car park**: brightness, speed ramps, parking height, parking width, and ease of movement.
+- **Corridor**: corridor width and measures to block rain splash.
+- **Refuse room**: full-height or partial wall tiles, ventilation, smell, cleanliness, and containment.
+- **Facilities**: cleanliness, maintenance condition, actual usage, and whether the facilities still support the target resident profile.
+
+### Resident Behaviour
+
+Resident behaviour that gives confidence:
+
+- Respectful.
+- Responsible.
+- Considerate.
+- Family-oriented where relevant.
+- Willing to preserve common areas.
+
+Resident behaviour that worries the founder:
+
+- Arrogant.
+- Inconsiderate.
+- Poor common-area discipline.
+- Behaviour that damages the feeling of safety, comfort, cleanliness, or community.
+
+Apex should judge observable conduct and project culture, not protected identity, race, or class stereotypes.
+
+### Aging Quality
+
+A building can age well when it looks old but remains clean, cared for, and orderly.
+
+A building ages badly when the reverse is true: dirt, neglect, poor maintenance, unresolved defects, weak lighting, bad smell, and visible resident or management apathy.
+
+Old condition alone is not fatal. Neglected condition is the problem.
+
 ## Apex Operating Rules
 
 When sourcing or negotiation details are supplied, Apex should:
@@ -201,6 +326,10 @@ When sourcing or negotiation details are supplied, Apex should:
 8. Recommend a minimum offer, maximum offer, and walk-away price when enough evidence exists.
 9. Warn against acting fast unless readiness and kill criteria already exist.
 10. Challenge advice from inexperienced or conflicted sources.
+11. Test professional competence with broader questions, not only case-specific claims.
+12. Treat communication delay by agent, banker, or lawyer as an execution risk.
+13. Cap recommendation confidence when no physical site visit has been completed.
+14. Use site visits to inspect arrival experience, resident behaviour, lift performance, car park quality, corridor design, refuse-room condition, and facility maintenance.
 
 ## Founder Calibration Notes
 
@@ -209,3 +338,5 @@ When sourcing or negotiation details are supplied, Apex should:
 - Agent follow-up intensity is a useful market signal but can produce false positives.
 - Social media discussion rate is useful for market sentiment, but it must not replace completed transactions, achieved rent, and project-level inspection.
 - The 20% negotiation threshold should be measured against defensible market value, not inflated asking price.
+- The founder's professional-filtering rules are practical, but Apex should improve lawyer assessment by requiring early milestone reporting instead of waiting until completion delay reveals the issue.
+- The site-visit requirement is one of the strongest framework rules. Apex can analyze uncompleted or remote cases provisionally, but should not issue high-confidence support without some physical evidence.
