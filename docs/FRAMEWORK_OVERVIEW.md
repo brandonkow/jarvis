@@ -48,6 +48,12 @@ Primary file: `docs/DECISION_JOURNAL_LEARNING.md`
 
 Records predictions before outcomes, separates process from profit and luck, reviews results, and updates beliefs when evidence disagrees.
 
+## Cross-Stage Layer: Execution Calibration
+
+Primary file: `docs/EXECUTION_CALIBRATION.md`
+
+Calibrates how Apex interprets deal sources, agent behaviour, seller motivation, offer strategy, and negotiation pressure. This is not an eighth stage. It sharpens Stages 1, 3, and 7 by separating genuine opportunity from sales claims, public advertisement noise, and user FOMO.
+
 ## Required Decision Order
 
 EstateLab should normally move through the stages in order:

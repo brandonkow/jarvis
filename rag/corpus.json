@@ -558,9 +558,39 @@
     "body": "The investor should make the final decision because only they fully know their circumstances, but personal judgment and external advice must face the same evidence tests. Blindly following others is dangerous, and automatically trusting oneself is also dangerous. Independence means owning a decision that has survived comparison, challenge, kill criteria, and downside analysis."
   },
   {
+    "id": "execution-deal-sourcing-hierarchy",
+    "title": "Deal sourcing hierarchy and public-advertisement caution",
+    "tags": ["deal sourcing", "agent", "auction", "property portal", "social media", "private deal flow"],
+    "body": "Useful opportunities may come from auction pages, agency in-house apps, social media, property portals, and forums, but social media is the most misleading source. Strong deals often circulate within agencies, family or friends, loyal clients, and prospects before public advertisement. A heavily advertised deal should trigger the question of why earlier buyer pools did not absorb it, but advertisement alone is not a hard rejection rule. Verify the claim with area median price, project transactions, auction bids, achieved rent, and seller motivation."
+  },
+  {
+    "id": "execution-agent-source-confidence",
+    "title": "Agent behaviour and advice-source filter",
+    "tags": ["agent", "source quality", "advice", "beginner mistake", "inventory"],
+    "body": "An agent approaching once may indicate a genuinely strong deal because other buyers exist, while repeated follow-up can signal inventory pressure, weak demand, or an overpriced listing. Treat this as a behavioural clue, not conclusive evidence. Beginners often trust one source or take market advice from inexperienced people who may not own property. Apex should test any advice by the person's relevant transaction experience, project knowledge, incentives, and whether the claim survives completed evidence."
+  },
+  {
+    "id": "execution-fast-action-with-kill-criteria",
+    "title": "Fast action versus FOMO",
+    "tags": ["speed", "FOMO", "booking", "kill criteria", "readiness"],
+    "body": "A genuinely good deal may require action within the same day or even hours. Fast action is acceptable only when the buyer has pre-defined criteria, financing readiness, cash reserve, evidence checks, and kill criteria. Fast booking without comparable evidence, site-risk awareness, seller verification, or financing readiness is FOMO rather than execution skill."
+  },
+  {
+    "id": "execution-seller-motivation-negotiation",
+    "title": "Seller motivation and negotiation style",
+    "tags": ["seller motivation", "negotiation", "subsale", "offer price", "walk away"],
+    "body": "The best buying opportunities often come from sellers needing cash urgently due to debt, family issues, personal matters, or market downturn pressure. A motivated seller is open to negotiation and may consider unusual requests, while late replies, insincerity, and unrealistic self-valuation suggest weak seriousness. There is no universal Malaysian subsale negotiation script: adjust based on seller urgency, property demand, buyer competition, evidence-supported fair value, and the buyer's walk-away price."
+  },
+  {
+    "id": "execution-offer-band-discipline",
+    "title": "Minimum offer, maximum offer, and walk-away point",
+    "tags": ["offer", "negotiation", "discount", "market value", "rental breakeven"],
+    "body": "The founder views a discount up to around 20 percent as potentially reasonable when justified, while more than 20 percent may become unrealistic or insulting unless severe weakness or seller distress supports it. Measure the discount against defensible market value, not inflated asking price. Before advising an offer, Apex should check rental and sale demand, project transactions, area median, auction bids, listing duration, seller motivation, and the user's financing readiness. The maximum offer should at least allow rent to break even with installment, and holding-power mandates should include recurring charges, vacancy, maintenance, and stress tests."
+  },
+  {
     "id": "framework-seven-stage-canonical-map",
     "title": "Canonical EstateLab seven-stage framework",
     "tags": ["framework", "seven stages", "property selection", "investor suitability", "financing", "holding", "portfolio", "market timing", "decision journal"],
-    "body": "EstateLab has seven canonical stages: property selection; investor suitability; financing and deal structure; holding power and asset management; portfolio strategy and scaling; market intelligence and timing; and decision journal and second-brain learning. Future insights should refine an existing stage unless a genuine structural gap leads to an explicit redesign. Later-stage advantages do not normally rescue earlier-stage hard stops."
+    "body": "EstateLab has seven canonical stages: property selection; investor suitability; financing and deal structure; holding power and asset management; portfolio strategy and scaling; market intelligence and timing; and decision journal and second-brain learning. Execution calibration is a cross-stage layer for deal sourcing, agent behaviour, seller motivation, and negotiation, not an eighth stage. Future insights should refine an existing stage or cross-stage layer unless a genuine structural gap leads to an explicit redesign. Later-stage advantages do not normally rescue earlier-stage hard stops."
   }
 ]
