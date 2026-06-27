@@ -399,6 +399,20 @@ function normalizeReportAnalysis(analysis = {}) {
         action: reportText(item?.action, 400)
       }))
     },
+    executionPlan: {
+      summary: reportText(analysis?.executionPlan?.summary, 600),
+      posture: reportText(analysis?.executionPlan?.posture, 80),
+      openingAnchor: reportText(analysis?.executionPlan?.openingAnchor, 80),
+      maximumOffer: reportText(analysis?.executionPlan?.maximumOffer, 80),
+      walkAway: reportText(analysis?.executionPlan?.walkAway, 500),
+      actions: objectList(analysis?.executionPlan?.actions, 12, (item) => ({
+        lane: reportText(item?.lane, 80),
+        status: ["clear", "verify", "caution", "stop"].includes(item?.status) ? item.status : "verify",
+        label: reportText(item?.label, 140),
+        action: reportText(item?.action, 420)
+      })),
+      basis: reportList(analysis?.executionPlan?.basis, 6)
+    },
     learningLoop: {
       summary: reportText(analysis?.learningLoop?.summary, 500),
       memoryCount: Math.max(0, Number(analysis?.learningLoop?.memoryCount || 0)),
@@ -2517,6 +2531,138 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       : "Core due-diligence tasks are marked done; preserve evidence before committing.",
     tasks: dueDiligenceTasks
   };
+  const breakEvenOffer = price && installment && rent && rent > maintenance
+    ? ((rent - maintenance) / installment) * price
+    : 0;
+  const offerCandidates = [
+    price,
+    fairValue,
+    !isAppreciationGoal ? breakEvenOffer : 0
+  ].filter((value) => Number.isFinite(value) && value > 0);
+  const offerEvidenceReady = Boolean(fairValue && (isAppreciationGoal || breakEvenOffer));
+  const maximumOfferAmount = offerEvidenceReady && offerCandidates.length ? Math.min(...offerCandidates) : 0;
+  const openingAnchorAmount = fairValue
+    ? Math.min(price || fairValue, fairValue * 0.8)
+    : price
+      ? price * 0.9
+      : 0;
+  const publicDealSignal = hasSignal(dealNarrative, [/heavily advertised/, /advertis(ed|ement)/, /property portal/, /social media/, /fake listing/]);
+  const agentPressureSignal = hasSignal(dealNarrative, [/hard sell/, /keep follow/, /keeps follow/, /desperate/, /push(ing)? inventory/, /urgent booking/]);
+  const motivatedSellerSignal = hasSignal(dealNarrative, [/motivated seller/, /urgent sale/, /need cash/, /cash urgent/, /debt/, /family issue/, /open to negotiation/]);
+  const demandProofStrong = dealCard.comparableTransactions === "3 or more"
+    && ["Signed tenancy or achieved rent", "Agent-confirmed"].includes(dealCard.rentEvidence || "");
+  const executionStatus = (stop, caution, clear) => stop ? "stop" : caution ? "caution" : clear ? "clear" : "verify";
+  const executionAction = (lane, label, status, action) => ({ lane, label, status, action });
+  const offerPosture = rejectStops.length
+    ? "No offer"
+    : pauseStops.length
+      ? "Pause before offer"
+      : blockers.length
+        ? "Verify before offer"
+        : verdict === "SHORTLIST"
+          ? "Controlled negotiation"
+          : "Evidence-first negotiation";
+  const offerBasis = [
+    fairValue ? `Conservative value supplied: ${formatRinggit(fairValue)}.` : "Conservative value proof is missing.",
+    breakEvenOffer ? `Rent break-even ceiling from supplied instalment: ${formatRinggit(breakEvenOffer)}.` : "Rent-to-instalment ceiling cannot be calculated yet.",
+    discountToFairValue !== null ? `Input discount to conservative value: ${money(discountToFairValue)}%.` : "",
+    holdingCashFlow !== null ? `Current holding cash flow: ${formatRinggit(holdingCashFlow)} per month.` : ""
+  ].filter(Boolean);
+  const executionActions = [
+    executionAction(
+      "Sourcing",
+      "Source credibility",
+      executionStatus(false, publicDealSignal || agentPressureSignal || fakeListingSignal, demandProofStrong),
+      publicDealSignal || agentPressureSignal || fakeListingSignal
+        ? "Treat the source as weak until completed transactions, achieved rent, and direct project checks support the claim. A good public deal can exist, but advertisement pressure is not proof."
+        : "Still verify whether the opportunity reached you through a credible source or only after better-connected buyers passed on it."
+    ),
+    executionAction(
+      "Offer",
+      "Offer discipline",
+      executionStatus(rejectStops.length, pauseStops.length || blockers.length || !maximumOfferAmount, maximumOfferAmount && verdict === "SHORTLIST"),
+      maximumOfferAmount
+        ? `Use ${formatRinggit(openingAnchorAmount)} as a disciplined opening anchor and do not exceed ${formatRinggit(maximumOfferAmount)} unless new evidence changes value, rent, or holding safety.`
+        : "Do not set a final offer until conservative value, achieved rent, and instalment are known."
+    ),
+    executionAction(
+      "Negotiation",
+      "Seller motivation",
+      executionStatus(false, !motivatedSellerSignal && verdict !== "SHORTLIST", motivatedSellerSignal),
+      motivatedSellerSignal
+        ? "Seller motivation appears possible; negotiate firmly but do not let urgency replace legal, financing, and site evidence."
+        : "Ask why the seller is selling, how flexible the price is, and whether they can complete cleanly before deciding how hard to negotiate."
+    ),
+    executionAction(
+      "Agent",
+      "Agent filter",
+      executionStatus(false, agentPressureSignal, demandProofStrong),
+      "Ask the agent questions beyond this listing: nearest substitutes, recent completed prices, rental urgency, owner profile, title path, and why this deal is not already taken."
+    ),
+    executionAction(
+      "Banker",
+      "Banker filter",
+      executionStatus(postDealDsr !== null && postDealDsr >= 80, !installment || !postDealDsr, installment && postDealDsr !== null && postDealDsr < 80),
+      "Require comparison across loan package, margin, lock-in, tenure, DSR impact, valuation basis, and approval route instead of focusing only on interest rate."
+    ),
+    executionAction(
+      "Lawyer",
+      "Lawyer filter",
+      executionStatus(dealCard.legalCheck === "Issue found" || documentRisk, dealCard.legalCheck !== "Clear", dealCard.legalCheck === "Clear"),
+      "Ask for expected milestones, title and consent risks, seller authority, arrears, stakeholder fund flow, document list, and update frequency before paying more."
+    ),
+    executionAction(
+      "Site",
+      "Physical inspection",
+      executionStatus(false, dealCard.siteVisit !== "Completed", dealCard.siteVisit === "Completed"),
+      "The site visit must test lobby feeling, guardhouse attitude, lift speed, car park brightness, corridor, refuse room, facilities, resident behaviour, unit placement, leakage, noise, and view."
+    ),
+    executionAction(
+      "Management",
+      "JMB and building reality",
+      executionStatus(dealCard.managementQuality === "Weak", !dealCard.managementQuality || dealCard.managementQuality === "Mixed", dealCard.managementQuality === "Strong"),
+      "Ask management about arrears, sinking fund health, complaints, unresolved defects, response speed, lift issues, and whether residents are improving or weakening the building culture."
+    ),
+    executionAction(
+      "Renovation",
+      "Budget discipline",
+      executionStatus(false, !price, price && dealCard.ownStayAppeal === "Strong"),
+      price
+        ? `Keep investment renovation disciplined around a ${formatRinggit(price * 0.05)} ceiling unless a specific tenant or buyer segment justifies more. Spend on durable fixtures before emotional furniture.`
+        : "Set a renovation ceiling before viewing design ideas; do not let emotional furnishing consume the investment margin."
+    ),
+    executionAction(
+      "Tenant",
+      "Tenant screening",
+      executionStatus(false, !rent, Boolean(rent)),
+      "Before accepting a tenant, verify identity, work or study status, intended use, occupant count, affordability, references where possible, deposit structure, and any unusual request that feels fishy."
+    ),
+    executionAction(
+      "Exit",
+      "Resale preparation",
+      executionStatus(false, dealCard.exitBuyerPool !== "Own-stay and investor", dealCard.exitBuyerPool === "Own-stay and investor"),
+      "Define the intended exit buyer, expected selling condition, staging or renovation need, minimum acceptable price, likely buyer objection, and trigger for selling before purchase."
+    )
+  ];
+  const stopExecution = executionActions.filter((item) => item.status === "stop").length;
+  const cautionExecution = executionActions.filter((item) => item.status === "caution").length;
+  const executionPlan = {
+    summary: stopExecution
+      ? "Execution should not move into offer mode while stop-level legal, financing, or deal-boundary risks remain."
+      : cautionExecution
+        ? `${cautionExecution} execution guardrail${cautionExecution === 1 ? "" : "s"} need proof before offer discipline is trusted.`
+        : "Execution guardrails are clean enough for controlled negotiation, subject to live professional checks.",
+    posture: offerPosture,
+    openingAnchor: openingAnchorAmount ? formatRinggit(openingAnchorAmount) : "Need value proof",
+    maximumOffer: maximumOfferAmount ? formatRinggit(maximumOfferAmount) : "Need value/rent proof",
+    walkAway: rejectStops.length
+      ? "Walk away unless the deal is restructured into a clean, legally supportable transaction."
+      : maximumOfferAmount
+        ? `Walk away if the seller requires more than ${formatRinggit(maximumOfferAmount)} or if legal, title, management, site-visit, rent, or financing proof weakens.`
+        : "Walk away from pressure to book before value, rent, legal status, and financing are proven.",
+    actions: executionActions,
+    basis: uniqueText(offerBasis, 6)
+  };
   const voiceSummary = `My current verdict is ${verdict.toLowerCase()}. ${verdictSummary} The main issue is ${primaryRisk}`;
 
   const scenarioInputsReady = Boolean(rent && installment);
@@ -2574,6 +2720,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     investorReadiness,
     evidenceChecklist,
     dueDiligencePlan,
+    executionPlan,
     hardStops: hardStopText,
     recommendationBlockers: blockers,
     watchouts: uniqueText(watchouts, 8),
@@ -2605,6 +2752,17 @@ function dealAnalysisText(analysis) {
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", `- ${analysis.dueDiligencePlan.summary}`);
     lines.push(...analysis.dueDiligencePlan.tasks.map((item) => `- ${item.owner} / ${item.priority} / ${item.status}: ${item.label}. ${item.action}`));
+  }
+  if (analysis.executionPlan?.actions?.length) {
+    lines.push(
+      "",
+      "Execution calibration",
+      `- Posture: ${analysis.executionPlan.posture || "Verify before offer"}.`,
+      `- Opening anchor: ${analysis.executionPlan.openingAnchor || "Need value proof"}.`,
+      `- Maximum offer: ${analysis.executionPlan.maximumOffer || "Need value/rent proof"}.`,
+      `- Walk-away rule: ${analysis.executionPlan.walkAway || "Do not proceed under pressure."}`
+    );
+    lines.push(...analysis.executionPlan.actions.map((item) => `- ${item.lane} / ${item.status}: ${item.label}. ${item.action}`));
   }
   if (analysis.learningLoop?.signals?.length) {
     lines.push("", "Learning loop", `- ${analysis.learningLoop.summary}`);

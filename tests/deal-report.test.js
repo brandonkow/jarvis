@@ -126,6 +126,12 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.dueDiligencePlan.tasks.length, 10);
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Lawyer" && item.status === "done"));
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Agent" && /subsale/i.test(item.action)));
+  assert.equal(result.payload.analysis.executionPlan.posture, "Controlled negotiation");
+  assert.equal(result.payload.analysis.executionPlan.openingAnchor, "RM400,000");
+  assert.equal(result.payload.analysis.executionPlan.maximumOffer, "RM400,000");
+  assert.equal(result.payload.analysis.executionPlan.actions.length, 11);
+  assert.ok(result.payload.analysis.executionPlan.actions.some((item) => item.lane === "Offer" && item.status === "clear"));
+  assert.ok(result.payload.analysis.executionPlan.actions.some((item) => item.lane === "Renovation" && /RM20,000/.test(item.action)));
 
   const provisional = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,
@@ -139,6 +145,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(provisional.payload.analysis.decisionFocus.label, "Clear before shortlist");
   assert.ok(provisional.payload.analysis.evidenceChecklist.some((item) => item.label === "Site visit and project feel" && item.status === "missing"));
   assert.ok(provisional.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Site Visit" && item.priority === "high" && item.status === "required"));
+  assert.ok(provisional.payload.analysis.executionPlan.actions.some((item) => item.lane === "Site" && item.status === "caution"));
 
   const boundaryBreach = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,
@@ -153,6 +160,8 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(boundaryBreach.payload.analysis.hardStops.some((message) => /bulk purchase/i.test(message)));
   assert.equal(boundaryBreach.payload.analysis.challengeMode.label, "Refuse validation");
   assert.equal(boundaryBreach.payload.analysis.decisionFocus.tone, "danger");
+  assert.equal(boundaryBreach.payload.analysis.executionPlan.posture, "No offer");
+  assert.ok(boundaryBreach.payload.analysis.executionPlan.walkAway.includes("clean, legally supportable"));
 
   const forcedFinancing = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,

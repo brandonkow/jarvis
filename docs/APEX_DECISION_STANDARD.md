@@ -84,6 +84,17 @@ The v1.4 due-diligence pack converts a report into tasks:
 - Include the pack in the UI report, copied text report, saved report history, and print view.
 - Treat the pack as a decision workflow, not a substitute for professional legal, valuation, financing, or tax advice.
 
+## v1.5 Execution Calibration
+
+The v1.5 execution layer converts the report into practical action guardrails:
+
+- State the negotiation posture: no offer, pause before offer, verify before offer, evidence-first negotiation, or controlled negotiation.
+- Estimate an opening anchor and maximum-offer guardrail from supplied asking price, conservative value, rent, maintenance, and instalment.
+- Make the walk-away rule explicit before the user negotiates, books, renovates, accepts a tenant, or prepares an exit.
+- Flag sourcing and agent-pressure risk so advertised, heavily pushed, or inconsistent deals are not mistaken for genuine opportunities.
+- Test agent, banker, lawyer, site visit, management, renovation, tenant-screening, and exit actions separately.
+- Keep execution calibration subordinate to hard stops and blockers. A strong negotiation plan cannot rescue an unsafe legal, financing, title, management, or transaction structure.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

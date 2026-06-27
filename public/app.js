@@ -989,6 +989,18 @@ function analysisExportText(analysis) {
     lines.push("", "Due diligence pack", analysis.dueDiligencePlan.summary || "");
     for (const item of analysis.dueDiligencePlan.tasks) lines.push(`- ${item.owner} / ${item.priority} / ${item.status}: ${item.label}. ${item.action}`);
   }
+  if (analysis.executionPlan?.actions?.length) {
+    lines.push(
+      "",
+      "Execution calibration",
+      analysis.executionPlan.summary || "",
+      `Posture: ${analysis.executionPlan.posture || "Verify before offer"}`,
+      `Opening anchor: ${analysis.executionPlan.openingAnchor || "Need value proof"}`,
+      `Maximum offer: ${analysis.executionPlan.maximumOffer || "Need value/rent proof"}`,
+      `Walk-away rule: ${analysis.executionPlan.walkAway || "Do not proceed under pressure."}`
+    );
+    for (const item of analysis.executionPlan.actions) lines.push(`- ${item.lane} / ${item.status}: ${item.label}. ${item.action}`);
+  }
   if (analysis.learningLoop?.signals?.length) {
     lines.push("", "Learning loop", analysis.learningLoop.summary || "");
     for (const item of analysis.learningLoop.signals) lines.push(`- ${item.label}: ${item.body} ${item.action}`);
@@ -1152,6 +1164,32 @@ function dueDiligenceMarkup(plan = {}) {
   `;
 }
 
+function executionPlanMarkup(plan = {}) {
+  const actions = Array.isArray(plan.actions) ? plan.actions : [];
+  if (!actions.length) return "";
+  return `
+    <section class="analysisExecution">
+      <header>
+        <span><small>EXECUTION CALIBRATION</small><b>${escapeHtml(plan.summary || "Use these guardrails before offer, booking, renovation, tenant approval, or exit.")}</b></span>
+        <em>${escapeHtml(plan.posture || "Verify before offer")}</em>
+      </header>
+      <div class="executionOffer">
+        <span><small>OPENING ANCHOR</small><b>${escapeHtml(plan.openingAnchor || "Need value proof")}</b></span>
+        <span><small>MAXIMUM OFFER</small><b>${escapeHtml(plan.maximumOffer || "Need value/rent proof")}</b></span>
+        <span><small>WALK-AWAY RULE</small><b>${escapeHtml(plan.walkAway || "Do not proceed under pressure.")}</b></span>
+      </div>
+      <div class="executionActions">
+        ${actions.map((item) => `
+          <article class="executionAction ${escapeHtml(item.status)}">
+            <i>${escapeHtml(item.status)}</i>
+            <span><b>${escapeHtml(item.lane)} / ${escapeHtml(item.label)}</b><small>${escapeHtml(item.action)}</small></span>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function learningLoopMarkup(loop = {}) {
   const signals = Array.isArray(loop.signals) ? loop.signals : [];
   if (!signals.length) return "";
@@ -1238,6 +1276,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     ${metricMarkup ? `<div class="analysisMetrics">${metricMarkup}</div>` : ""}
     ${evidenceChecklistMarkup(analysis.evidenceChecklist || [])}
     ${dueDiligenceMarkup(analysis.dueDiligencePlan)}
+    ${executionPlanMarkup(analysis.executionPlan)}
     ${learningLoopMarkup(analysis.learningLoop)}
     ${scenarioMarkup ? `<section class="analysisScenarioSection"><h3>DOWNSIDE SCENARIOS</h3><div class="analysisScenarios">${scenarioMarkup}</div><p>Stress assumptions are decision tests, not forecasts.</p></section>` : ""}
     ${marketIntelligenceMarkup(analysis.marketIntelligence)}
