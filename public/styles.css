@@ -1418,7 +1418,7 @@ button {
   max-height: min(72dvh, 650px);
   width: min(920px, 100%);
   margin: 0 auto;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   gap: 10px;
   overflow: hidden;
   border: 1px solid rgba(103, 229, 255, 0.24);
@@ -1493,6 +1493,70 @@ button {
   line-height: 1.5;
 }
 
+.shortlistSummary:empty {
+  display: none;
+}
+
+.shortlistCompare {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px 12px;
+  border: 1px solid rgba(103, 229, 255, 0.14);
+  border-radius: 10px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(112, 255, 191, 0.055), transparent 50%), rgba(0, 10, 17, 0.36);
+}
+
+.shortlistCompare > span {
+  display: grid;
+  gap: 2px;
+}
+
+.shortlistCompare small {
+  color: #5d8c97;
+  font-size: 0.45rem;
+  letter-spacing: 0.15em;
+}
+
+.shortlistCompare b,
+.shortlistCompare strong {
+  color: #add6dd;
+  font-size: 0.67rem;
+  font-weight: 500;
+}
+
+.shortlistCompare strong {
+  justify-self: end;
+  text-align: right;
+}
+
+.shortlistCompare div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  grid-column: 1 / -1;
+}
+
+.shortlistCompare em,
+.shortlistSignals span {
+  border: 1px solid rgba(103, 229, 255, 0.13);
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #8db9c2;
+  font-size: 0.47rem;
+  font-style: normal;
+  letter-spacing: 0.08em;
+}
+
+.shortlistCompare p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #729ca6;
+  font-size: 0.58rem;
+  line-height: 1.45;
+}
+
 .shortlistList {
   display: grid;
   min-height: 0;
@@ -1510,6 +1574,14 @@ button {
   border-radius: 10px;
   padding: 11px;
   background: rgba(1, 12, 19, 0.66);
+}
+
+.shortlistItem.blocked {
+  border-color: rgba(255, 210, 116, 0.22);
+}
+
+.shortlistItem.clean {
+  border-color: rgba(112, 255, 191, 0.18);
 }
 
 .shortlistItem header em {
@@ -1545,6 +1617,12 @@ button {
 .shortlistItem p b {
   color: #9fc9d1;
   font-weight: 500;
+}
+
+.shortlistSignals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 
 .shortlistActions {
@@ -3236,6 +3314,15 @@ button {
   .shortlistPanel {
     max-height: calc(100dvh - 150px);
     padding: 11px;
+  }
+
+  .shortlistCompare {
+    grid-template-columns: 1fr;
+  }
+
+  .shortlistCompare strong {
+    justify-self: start;
+    text-align: left;
   }
 
   .shortlistDimensions {

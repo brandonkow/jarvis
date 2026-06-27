@@ -64,6 +64,16 @@ The v1.2 learning loop lets Apex use private user learning without pretending th
 - **Learning signals** may add a next action or sharpen the challenge mode, but they do not change deterministic scores, hard stops, legal boundaries, or required evidence.
 - **Owner knowledge base** remains separate from user memory. Normal users cannot write to the shared Apex framework or owner evidence store.
 
+## v1.3 Deal Comparison
+
+The v1.3 comparison layer turns the device shortlist into a decision aid:
+
+- Compare up to four analysed deals side by side.
+- Rank by adjusted score, not just headline score.
+- Penalise hard stops, decision blockers, reject/pause verdicts, and weak dimensions.
+- Show the cleanest current pick only when a deal has no blockers.
+- Keep the weakest dimension, investor readiness, decision focus, confidence, and learning-signal count visible on each card.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

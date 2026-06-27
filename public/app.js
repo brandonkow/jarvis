@@ -96,6 +96,7 @@ const journalMessage = document.querySelector("#journalMessage");
 const shortlistToggle = document.querySelector("#shortlistToggle");
 const shortlistPanel = document.querySelector("#shortlistPanel");
 const shortlistClose = document.querySelector("#shortlistClose");
+const shortlistSummary = document.querySelector("#shortlistSummary");
 const shortlistList = document.querySelector("#shortlistList");
 const shortlistClear = document.querySelector("#shortlistClear");
 const dealFields = Array.from(document.querySelectorAll("[data-deal-field]"));
@@ -782,18 +783,69 @@ function analysisSubject(analysis) {
   return deal.projectName || deal.area || "Untitled deal";
 }
 
+function shortlistWeakestDimension(item) {
+  return [...(item.dimensions || [])].sort((a, b) => Number(a.score || 0) - Number(b.score || 0))[0] || null;
+}
+
+function shortlistBlockers(item) {
+  return [
+    ...(item.hardStops || []),
+    ...(item.recommendationBlockers || [])
+  ].filter(Boolean);
+}
+
+function shortlistRankScore(item) {
+  const blockerPenalty = shortlistBlockers(item).length * 18;
+  const verdictPenalty = ["REJECT", "PAUSE"].includes(String(item.verdict || "").toUpperCase()) ? 24 : 0;
+  const weakest = shortlistWeakestDimension(item);
+  const weakPenalty = weakest && Number(weakest.score || 0) < 55 ? 10 : 0;
+  return Math.max(0, Number(item.averageScore || 0) - blockerPenalty - verdictPenalty - weakPenalty);
+}
+
+function shortlistSummaryMarkup(items) {
+  if (!items.length) return "";
+  const ranked = items.slice().sort((a, b) => shortlistRankScore(b) - shortlistRankScore(a));
+  const cleanItems = ranked.filter((item) => !shortlistBlockers(item).length && !["REJECT", "PAUSE"].includes(String(item.verdict || "").toUpperCase()));
+  const pick = cleanItems[0] || ranked[0];
+  const blockedCount = items.filter((item) => shortlistBlockers(item).length || ["REJECT", "PAUSE"].includes(String(item.verdict || "").toUpperCase())).length;
+  const weakest = shortlistWeakestDimension(pick);
+  return `
+    <section class="shortlistCompare">
+      <span><small>APEX COMPARISON</small><b>${escapeHtml(cleanItems.length ? "Cleanest current pick" : "No clean pick yet")}</b></span>
+      <strong>${escapeHtml(pick.subject)}</strong>
+      <div>
+        <em>${escapeHtml(shortlistRankScore(pick))} adjusted</em>
+        <em>${escapeHtml(blockedCount)} blocked</em>
+        <em>${escapeHtml(weakest ? `${weakest.label}: ${weakest.score}` : "weak link: n/a")}</em>
+      </div>
+      <p>${escapeHtml(cleanItems.length ? "Compare the adjusted score, then check the weak link before choosing." : "Clear hard stops and decision blockers before treating any shortlisted deal as a contender.")}</p>
+    </section>
+  `;
+}
+
 function shortlistItemMarkup(item) {
   const dimensions = (item.dimensions || []).map((dimension) => `
     <span class="shortlistDimension ${escapeHtml(dimension.status)}">
       <small>${escapeHtml(dimension.label)}</small><b>${escapeHtml(dimension.score)}</b>
     </span>
   `).join("");
-  const weakest = [...(item.dimensions || [])].sort((a, b) => a.score - b.score)[0];
+  const weakest = shortlistWeakestDimension(item);
+  const blockers = shortlistBlockers(item);
+  const readiness = item.investorReadiness?.label || "Readiness unknown";
+  const focus = item.decisionFocus?.body || item.summary || "No decision focus recorded.";
+  const learningCount = item.learningLoop?.signals?.length || 0;
+  const blocked = blockers.length || ["REJECT", "PAUSE"].includes(String(item.verdict || "").toUpperCase());
   return `
-    <article class="shortlistItem" data-shortlist-item="${escapeHtml(item.id)}">
-      <header><span><small>${escapeHtml(item.verdict)}</small><b>${escapeHtml(item.subject)}</b></span><em>${escapeHtml(item.averageScore)}/100</em></header>
+    <article class="shortlistItem ${blocked ? "blocked" : "clean"}" data-shortlist-item="${escapeHtml(item.id)}">
+      <header><span><small>${escapeHtml(item.verdict)} / ${escapeHtml(readiness)}</small><b>${escapeHtml(item.subject)}</b></span><em>${escapeHtml(shortlistRankScore(item))} adj</em></header>
       <div class="shortlistDimensions">${dimensions}</div>
       <p><b>Weak link</b> ${escapeHtml(weakest ? `${weakest.label} (${weakest.score}/100)` : "Evidence not available")}</p>
+      <p><b>Decision focus</b> ${escapeHtml(focus)}</p>
+      <div class="shortlistSignals">
+        <span>${escapeHtml(blockers.length)} blocker${blockers.length === 1 ? "" : "s"}</span>
+        <span>${escapeHtml(learningCount)} learning signal${learningCount === 1 ? "" : "s"}</span>
+        <span>${escapeHtml(item.confidence || 0)}% confidence</span>
+      </div>
       <div class="shortlistActions">
         <button type="button" data-shortlist-action="load" data-shortlist-id="${escapeHtml(item.id)}">LOAD DEAL</button>
         <button type="button" data-shortlist-action="remove" data-shortlist-id="${escapeHtml(item.id)}">REMOVE</button>
@@ -805,6 +857,7 @@ function shortlistItemMarkup(item) {
 function renderShortlist() {
   const items = readShortlist();
   writeShortlist(items);
+  shortlistSummary.innerHTML = shortlistSummaryMarkup(items);
   shortlistList.innerHTML = items.length
     ? items.map(shortlistItemMarkup).join("")
     : '<p class="shortlistEmpty">No analysed deals saved yet. Run an analysis, then choose SAVE TO SHORTLIST.</p>';
@@ -846,7 +899,9 @@ function saveAnalysisToShortlist(analysis) {
     scenarios: analysis.scenarios || [],
     hardStops: analysis.hardStops || [],
     recommendationBlockers: analysis.recommendationBlockers || [],
+    decisionFocus: analysis.decisionFocus || null,
     investorReadiness: analysis.investorReadiness || null,
+    learningLoop: analysis.learningLoop || null,
     counterThesis: analysis.counterThesis,
     context: analysis.context || {}
   };
