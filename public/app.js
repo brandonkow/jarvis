@@ -1032,6 +1032,7 @@ function saveAnalysisToShortlist(analysis) {
     hardStops: analysis.hardStops || [],
     recommendationBlockers: analysis.recommendationBlockers || [],
     decisionFocus: analysis.decisionFocus || null,
+    personalizedChallenge: analysis.personalizedChallenge || null,
     investorReadiness: analysis.investorReadiness || null,
     learningLoop: analysis.learningLoop || null,
     counterThesis: analysis.counterThesis,
@@ -1196,6 +1197,10 @@ function analysisExportText(analysis) {
       );
     }
     for (const item of analysis.learningLoop.signals) lines.push(`- ${item.label}: ${item.body} ${item.action}`);
+  }
+  if (analysis.personalizedChallenge?.message) {
+    lines.push("", `V3.3 personalized challenge: ${analysis.personalizedChallenge.label || "Personalized challenge"}`, `- ${analysis.personalizedChallenge.message}`);
+    for (const item of analysis.personalizedChallenge.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
   }
   if (analysis.hardStops?.length) lines.push("", "Hard stops", ...analysis.hardStops.map((item) => `- ${item}`));
   if (analysis.recommendationBlockers?.length) lines.push("", "Decision blockers", ...analysis.recommendationBlockers.map((item) => `- ${item}`));
@@ -1524,6 +1529,31 @@ function decisionFocusMarkup(analysis = {}) {
   `;
 }
 
+function personalizedChallengeMarkup(challenge = {}) {
+  if (!challenge.message || challenge.status === "inactive") return "";
+  const checks = Array.isArray(challenge.checks) ? challenge.checks : [];
+  return `
+    <section class="analysisPersonalChallenge ${escapeHtml(challenge.status || "challenge")}">
+      <header>
+        <span><small>V3.3 PERSONALIZED CHALLENGE</small><b>${escapeHtml(challenge.label || "Personalized challenge")}</b></span>
+        <em>${escapeHtml(challenge.status || "challenge")}</em>
+      </header>
+      <p>${escapeHtml(challenge.message)}</p>
+      ${challenge.profileBasis ? `<blockquote>${escapeHtml(challenge.profileBasis)}</blockquote>` : ""}
+      ${checks.length ? `
+        <div>
+          ${checks.map((item) => `
+            <article class="personalChallengeCheck ${escapeHtml(item.status || "check")}">
+              <i>${escapeHtml(item.status || "check")}</i>
+              <span><b>${escapeHtml(item.label)}</b><small>${escapeHtml(item.action)}</small></span>
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
 function readinessMarkup(readiness = {}) {
   if (!readiness.label) return "";
   const flags = Array.isArray(readiness.flags) ? readiness.flags.slice(0, 4) : [];
@@ -1808,6 +1838,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     </div>
     <p class="analysisSummary">${escapeHtml(analysis.summary)}</p>
     ${decisionFocusMarkup(analysis)}
+    ${personalizedChallengeMarkup(analysis.personalizedChallenge)}
     ${analysis.aiCommentary ? `
       <section class="analysisJarvisTake">
         <h3>APEX ANALYSIS</h3>

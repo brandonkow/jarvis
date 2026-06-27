@@ -201,6 +201,9 @@ test("decision journal locks pre-purchase reasoning and recalls reviewed lessons
   assert.equal(learnedReport.payload.analysis.learningLoop.journalCount, 1);
   assert.equal(learnedReport.payload.analysis.learningLoop.profile.approvedCount, 1);
   assert.match(learnedReport.payload.analysis.learningLoop.profile.riskStyle, /cautious/i);
+  assert.equal(learnedReport.payload.analysis.personalizedChallenge.status, "reminder");
+  assert.match(learnedReport.payload.analysis.personalizedChallenge.message, /management response/i);
+  assert.ok(learnedReport.payload.analysis.personalizedChallenge.checks.some((check) => /management/i.test(check.action)));
   assert.ok(learnedReport.payload.analysis.learningLoop.signals.some((signal) => signal.type === "memory" && /management response/i.test(signal.body)));
   assert.ok(learnedReport.payload.analysis.learningLoop.signals.some((signal) => signal.type === "journal" && /Management response/i.test(signal.body)));
   assert.ok(learnedReport.payload.analysis.nextActions.some((action) => /remembered lesson/i.test(action)));

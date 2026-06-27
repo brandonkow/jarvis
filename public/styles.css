@@ -2484,6 +2484,122 @@ button {
   font-size: 0.63rem;
 }
 
+.analysisPersonalChallenge {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  border: 1px solid rgba(255, 210, 116, 0.18);
+  border-left: 2px solid rgba(255, 210, 116, 0.58);
+  border-radius: 10px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(255, 210, 116, 0.07), transparent 55%), rgba(0, 11, 18, 0.42);
+}
+
+.analysisPersonalChallenge.hard {
+  border-color: rgba(255, 126, 126, 0.24);
+  border-left-color: #e68e8e;
+}
+
+.analysisPersonalChallenge.reminder {
+  border-color: rgba(103, 229, 255, 0.14);
+  border-left-color: rgba(103, 229, 255, 0.46);
+}
+
+.analysisPersonalChallenge header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.analysisPersonalChallenge header span {
+  display: grid;
+  gap: 3px;
+}
+
+.analysisPersonalChallenge small,
+.personalChallengeCheck small {
+  color: #67b7c7;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+}
+
+.analysisPersonalChallenge header b {
+  color: #c9e6eb;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.analysisPersonalChallenge header em {
+  border: 1px solid rgba(255, 210, 116, 0.24);
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #d7b970;
+  font-size: 0.46rem;
+  font-style: normal;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.analysisPersonalChallenge p,
+.analysisPersonalChallenge blockquote {
+  margin: 0;
+  color: #9fc7cf;
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+.analysisPersonalChallenge blockquote {
+  border-left: 2px solid rgba(103, 229, 255, 0.22);
+  padding-left: 8px;
+  color: #7faab3;
+}
+
+.analysisPersonalChallenge > div {
+  display: grid;
+  gap: 6px;
+}
+
+.personalChallengeCheck {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  border: 1px solid rgba(103, 229, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(0, 10, 17, 0.28);
+}
+
+.personalChallengeCheck i {
+  align-self: start;
+  border: 1px solid rgba(255, 210, 116, 0.22);
+  border-radius: 999px;
+  padding: 3px 6px;
+  color: #d7b970;
+  font-size: 0.42rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.personalChallengeCheck.hard i {
+  color: #e68e8e;
+  border-color: rgba(255, 126, 126, 0.28);
+}
+
+.personalChallengeCheck span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.personalChallengeCheck b {
+  color: #a8d0d8;
+  font-size: 0.58rem;
+  font-weight: 500;
+}
+
 .analysisJarvisTake {
   margin-top: 9px;
   border-left: 2px solid rgba(103, 229, 255, 0.34);
@@ -4735,6 +4851,11 @@ button {
   .analysisJarvisTake p,
   .analysisDecisionFocus b,
   .analysisDecisionFocus p,
+  .analysisPersonalChallenge header b,
+  .analysisPersonalChallenge p,
+  .analysisPersonalChallenge blockquote,
+  .personalChallengeCheck b,
+  .personalChallengeCheck small,
   .analysisReadiness p,
   .analysisReadiness ul,
   .evidenceItem b,
@@ -4938,6 +5059,11 @@ button {
   body.printMode .analysisJarvisTake p,
   body.printMode .analysisDecisionFocus b,
   body.printMode .analysisDecisionFocus p,
+  body.printMode .analysisPersonalChallenge header b,
+  body.printMode .analysisPersonalChallenge p,
+  body.printMode .analysisPersonalChallenge blockquote,
+  body.printMode .personalChallengeCheck b,
+  body.printMode .personalChallengeCheck small,
   body.printMode .analysisReadiness p,
   body.printMode .analysisReadiness li,
   body.printMode .evidenceItem b,
@@ -4991,6 +5117,8 @@ button {
   body.printMode .analysisScenario,
   body.printMode .analysisMarketPulse,
   body.printMode .analysisDecisionFocus,
+  body.printMode .analysisPersonalChallenge,
+  body.printMode .personalChallengeCheck,
   body.printMode .analysisReadiness,
   body.printMode .analysisEvidence,
   body.printMode .evidenceItem,
@@ -5027,6 +5155,7 @@ button {
   body.printMode .analysisMarketPulse,
   body.printMode .analysisOverview,
   body.printMode .analysisEvidence,
+  body.printMode .analysisPersonalChallenge,
   body.printMode .analysisDiligence,
   body.printMode .analysisStress,
   body.printMode .analysisPortfolioGate,

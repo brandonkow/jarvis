@@ -101,6 +101,17 @@ Pending and approved memories are classified into clearer review types:
 
 Each memory item should show its review priority and profile impact before approval. High-priority memories include warnings, mistakes, constraints, and hard rules because they may later affect challenge mode.
 
+## v3.3 Personalized Challenge Mode
+
+Personalized challenge mode uses the approved memory profile to test the current deal against the user's own remembered standards.
+
+- Apex keeps the generic framework challenge and the personalized challenge separate.
+- The personalized challenge may reference personal warnings, investment rules, avoided risks, cash-flow rules, preferred assets, or lessons.
+- It may add next actions and report checks, but it must not change deterministic scores by itself.
+- It must not soften hard stops. If a legal, financing, title, management, or holding-power hard stop exists, the personalized challenge becomes stricter, not more permissive.
+- It should ask: "Does this deal still obey your own rule, preference, or past lesson?"
+- If memory reasoning is off, no personalized challenge should be generated from user memory.
+
 ## v1.3 Deal Comparison
 
 The v1.3 comparison layer turns the device shortlist into a decision aid:

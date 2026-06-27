@@ -63,6 +63,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /data-analysis-action="report"/, "Every structured analysis needs a printable deal report.");
   assert.match(app, /data-analysis-action="copy"/, "Every structured analysis needs a text copy export.");
   assert.match(app, /decisionFocusMarkup\(analysis\)/, "Deal reports need a single decision-focus explanation.");
+  assert.match(app, /personalizedChallengeMarkup\(analysis\.personalizedChallenge\)/, "V3.3 deal reports need a separate personalized challenge card.");
   assert.match(app, /readinessMarkup\(analysis\.investorReadiness\)/, "Deal reports need an investor readiness summary.");
   assert.match(app, /evidenceChecklistMarkup\(analysis\.evidenceChecklist/, "Deal reports need an evidence checklist.");
   assert.match(app, /dueDiligenceMarkup\(analysis\.dueDiligencePlan\)/, "Deal reports need a due-diligence task pack.");
@@ -81,6 +82,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /shortlistSummaryMarkup\(items\)/, "The shortlist must render a comparison summary.");
   assert.match(app, /recommendationBlockers: analysis\.recommendationBlockers/, "Shortlisted deals must preserve decision blockers for comparison.");
   assert.match(app, /decisionFocus: analysis\.decisionFocus/, "Shortlisted deals must preserve decision focus for comparison.");
+  assert.match(app, /personalizedChallenge: analysis\.personalizedChallenge/, "Shortlisted deals must preserve V3.3 personalized challenge context.");
   assert.match(app, /learningLoop: analysis\.learningLoop/, "Shortlisted deals must preserve learning signals for comparison.");
   assert.match(app, /analysis\.dimensions/, "Deal results must render separate decision dimensions.");
   assert.match(app, /analysis\.scenarios/, "Deal results must render downside scenarios.");
@@ -113,6 +115,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.analysisMarketCycle[\s\S]*?\.marketCycleCheck/, "The v1.8 report needs a styled market cycle and liquidity pulse.");
   assert.match(styles, /\.analysisHoldExit[\s\S]*?\.holdExitTrigger/, "The v1.9 report needs a styled hold, refinance, and exit plan.");
   assert.match(styles, /\.analysisDecisionSeal[\s\S]*?\.sealCondition/, "The v1.10 report needs a styled decision seal.");
+  assert.match(styles, /\.analysisPersonalChallenge[\s\S]*?\.personalChallengeCheck/, "The v3.3 personalized challenge needs styled report cards.");
   assert.match(styles, /\.analysisV2Workflow[\s\S]*?\.v2WorkflowCheck/, "The v2 workflow report sections need styled checklist cards.");
   assert.match(styles, /\.analysisExecution[\s\S]*?\.executionAction/, "The v1.5 report needs a styled execution calibration pack.");
   assert.match(styles, /\.analysisLearning[\s\S]*?\.learningSignal/, "The v1.2 report needs styled memory and journal learning signals.");

@@ -563,6 +563,17 @@ function normalizeReportAnalysis(analysis = {}) {
         action: reportText(item?.action, 300)
       }))
     },
+    personalizedChallenge: {
+      status: ["inactive", "reminder", "challenge", "hard"].includes(analysis?.personalizedChallenge?.status) ? analysis.personalizedChallenge.status : "inactive",
+      label: reportText(analysis?.personalizedChallenge?.label, 120),
+      message: reportText(analysis?.personalizedChallenge?.message, 900),
+      profileBasis: reportText(analysis?.personalizedChallenge?.profileBasis, 500),
+      checks: objectList(analysis?.personalizedChallenge?.checks, 6, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["clear", "check", "warning", "hard"].includes(item?.status) ? item.status : "check",
+        action: reportText(item?.action, 420)
+      }))
+    },
     hardStops: reportList(analysis.hardStops),
     recommendationBlockers: reportList(analysis.recommendationBlockers),
     watchouts: reportList(analysis.watchouts),
@@ -3788,6 +3799,10 @@ function dealAnalysisText(analysis) {
     }
     lines.push(...analysis.learningLoop.signals.map((item) => `- ${item.label}: ${item.body} ${item.action}`));
   }
+  if (analysis.personalizedChallenge?.message) {
+    lines.push("", `V3.3 personalized challenge: ${analysis.personalizedChallenge.label || "Personalized challenge"}`, `- ${analysis.personalizedChallenge.message}`);
+    lines.push(...(analysis.personalizedChallenge.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+  }
   if (analysis.scenarios?.length) {
     lines.push("", "Downside scenarios", ...analysis.scenarios.map((item) => `- ${item.label}: ${item.value} per month. ${item.assumption}.`));
   }
@@ -4066,12 +4081,111 @@ function buildDealLearningLoop(memories = [], journal = []) {
   };
 }
 
+function containsAnyText(values = [], patterns = []) {
+  const text = Array.isArray(values) ? values.join(" ").toLowerCase() : String(values || "").toLowerCase();
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function buildPersonalizedChallenge(analysis, learningLoop) {
+  const profile = learningLoop?.profile || {};
+  if (!profile.approvedCount) {
+    return {
+      status: "inactive",
+      label: "No personal challenge",
+      message: "",
+      profileBasis: "",
+      checks: []
+    };
+  }
+  const hardStop = analysis.hardStops?.[0] || "";
+  const blocker = analysis.recommendationBlockers?.[0] || "";
+  const watchout = analysis.watchouts?.[0] || "";
+  const missing = analysis.missingEvidence?.[0] || "";
+  const usableCashFlowRule = profile.cashFlowRule && !/^not enough/i.test(profile.cashFlowRule) ? profile.cashFlowRule : "";
+  const usableHoldingPeriod = profile.holdingPeriod && !/^not enough/i.test(profile.holdingPeriod) ? profile.holdingPeriod : "";
+  const profileBasis = profile.personalWarnings?.[0]
+    || profile.investmentRules?.[0]
+    || profile.avoidedRisks?.[0]
+    || profile.preferredAssets?.[0]
+    || profile.lessons?.[0]
+    || usableCashFlowRule
+    || usableHoldingPeriod
+    || "";
+  const missingText = [blocker, watchout, missing, ...(analysis.missingEvidence || []), ...(analysis.recommendationBlockers || [])].join(" ");
+  const preferredAssetMismatch = profile.preferredAssets?.length
+    && !containsAnyText([JSON.stringify(analysis.context?.dealCard || {})], profile.preferredAssets.map((item) => new RegExp(item.split(/\s+/).slice(0, 3).map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "i")));
+  const cashFlowSensitive = containsAnyText([usableCashFlowRule, ...(profile.investmentRules || []), ...(profile.personalWarnings || [])], [/cash.?flow/i, /rent/i, /installment/i, /instalment/i, /yield/i])
+    && containsAnyText([missingText, analysis.counterThesis], [/rent/i, /rental/i, /installment/i, /instalment/i, /cash.?flow/i, /holding/i]);
+  const managementSensitive = containsAnyText([profileBasis, ...(profile.avoidedRisks || []), ...(profile.lessons || [])], [/management/i, /jmb/i, /maintenance/i, /resident/i])
+    && containsAnyText([missingText, JSON.stringify(analysis.context?.dealCard || {})], [/management/i, /site visit/i, /maintenance/i, /resident/i]);
+  const supplySensitive = containsAnyText([profileBasis, ...(profile.marketBeliefs || []), ...(profile.personalWarnings || [])], [/supply/i, /competition/i, /newer/i])
+    && containsAnyText([missingText, analysis.counterThesis], [/supply/i, /competition/i, /newer/i, /substitute/i]);
+  const checks = [];
+  if (profileBasis) {
+    checks.push({
+      label: "Profile memory",
+      status: hardStop ? "hard" : "check",
+      action: `Your approved memory says: ${profileBasis}`
+    });
+  }
+  if (cashFlowSensitive) {
+    checks.push({
+      label: "Cash-flow consistency",
+      status: blocker || hardStop ? "warning" : "check",
+      action: "Do not rationalize the deal if rent, instalment, vacancy, or recurring charges conflict with your own holding rule."
+    });
+  }
+  if (managementSensitive) {
+    checks.push({
+      label: "Management consistency",
+      status: blocker || hardStop ? "warning" : "check",
+      action: "You have made management quality part of your personal filter, so management evidence must be proven before confidence rises."
+    });
+  }
+  if (supplySensitive) {
+    checks.push({
+      label: "Supply consistency",
+      status: blocker || hardStop ? "warning" : "check",
+      action: "Your profile is sensitive to supply risk; compare this unit against newer substitutes before treating the entry price as cheap."
+    });
+  }
+  if (preferredAssetMismatch && profile.preferredAssets?.[0]) {
+    checks.push({
+      label: "Asset-fit consistency",
+      status: "check",
+      action: `This deal may not obviously match your remembered preference: ${profile.preferredAssets[0]}`
+    });
+  }
+  if (!checks.length) {
+    checks.push({
+      label: "Profile consistency",
+      status: "check",
+      action: "Compare this deal against your approved memory profile before letting the current numbers dominate the decision."
+    });
+  }
+  const status = hardStop
+    ? "hard"
+    : blocker || checks.some((item) => item.status === "warning")
+      ? "challenge"
+      : "reminder";
+  const issue = hardStop || blocker || watchout || missing || analysis.counterThesis || "the current deal still needs proof";
+  return {
+    status,
+    label: status === "hard" ? "Personal hard challenge" : status === "challenge" ? "Personalized challenge" : "Personal reminder",
+    profileBasis: profileBasis || `${profile.investorType}; ${profile.riskStyle}`,
+    message: `Your memory profile says ${profileBasis || `${profile.investorType} / ${profile.riskStyle}`}. Current issue: ${issue}. Before proceeding, explain why this deal does not violate your own rule, preference, or past lesson.`,
+    checks: checks.slice(0, 6)
+  };
+}
+
 function applyLearningLoopToAnalysis(analysis, learningLoop) {
   analysis.learningLoop = learningLoop;
+  analysis.personalizedChallenge = buildPersonalizedChallenge(analysis, learningLoop);
   if (!learningLoop.signals.length) return analysis;
   const first = learningLoop.signals[0];
   const existing = analysis.nextActions || [];
   analysis.nextActions = uniqueText([
+    ...(analysis.personalizedChallenge?.message ? [`Answer personalized challenge: ${analysis.personalizedChallenge.message}`] : []),
     `Check remembered lesson: ${first.body}`,
     ...existing
   ], 5);
@@ -4335,6 +4449,14 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
   if (isSupplyQuestion) challenge.push("If a newer project nearby is priced similarly, why would the next tenant or buyer still choose this unit?");
   else if (topBelief?.falsifier) challenge.push(shortSentence(topBelief.falsifier, 150));
   else challenge.push(nextThinkingQuestion(brain).question);
+  if (relevantMemoryProfile.approvedCount) {
+    const basis = relevantMemoryProfile.personalWarnings?.[0]
+      || relevantMemoryProfile.investmentRules?.[0]
+      || relevantMemoryProfile.avoidedRisks?.[0]
+      || relevantMemoryProfile.cashFlowRule
+      || relevantMemoryProfile.preferredAssets?.[0];
+    if (basis) challenge.unshift(`Personal challenge: you previously recorded "${basis}". Does this current view still obey that?`);
+  }
 
   const sections = [
     verdict,

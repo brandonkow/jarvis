@@ -54,6 +54,8 @@ Long-term user memory is consent-first. Apex can store the memory engine, review
 
 Approved memories can be organized into a private investor memory profile: investor type, risk style, preferred assets, avoided risks, cash-flow rule, holding period, personal warnings, investment rules, market beliefs, and lessons. This profile personalizes challenge mode, but it does not become owner knowledge and must not replace evidence.
 
+Personalized challenge mode should make Apex feel more like a second brain: it reminds the user when a current deal appears to violate their own remembered standards. The tone should stay calm and mentor-like. It should challenge inconsistency, not shame the user.
+
 Public users must not be able to add, edit, or delete backend knowledge. Backend write APIs require the `x-estatelab-owner-token` header to match the server's `ESTATELAB_OWNER_TOKEN` environment variable. If no owner token is configured, owner APIs are disabled and public Jarvis session routes remain the only unauthenticated write surface.
 
 The visible frontend should stay simple and conversational. Knowledge-base development happens through owner-controlled backend files, scripts, or authenticated owner API calls.
