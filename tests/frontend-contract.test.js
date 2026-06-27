@@ -56,6 +56,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /dueDiligenceMarkup\(analysis\.dueDiligencePlan\)/, "Deal reports need a due-diligence task pack.");
   assert.match(app, /stressEnvelopeMarkup\(analysis\.stressEnvelope\)/, "Deal reports need v1.6 stress envelope.");
   assert.match(app, /portfolioGateMarkup\(analysis\.portfolioGate\)/, "Deal reports need v1.7 portfolio expansion gate.");
+  assert.match(app, /marketPulseMarkup\(analysis\.marketPulse\)/, "Deal reports need v1.8 market cycle and liquidity pulse.");
+  assert.match(app, /holdExitPlanMarkup\(analysis\.holdExitPlan\)/, "Deal reports need v1.9 hold, refinance, and exit plan.");
+  assert.match(app, /decisionSealMarkup\(analysis\.decisionSeal\)/, "Deal reports need v1.10 decision seal.");
   assert.match(app, /executionPlanMarkup\(analysis\.executionPlan\)/, "Deal reports need v1.5 execution calibration.");
   assert.match(app, /learningLoopMarkup\(analysis\.learningLoop\)/, "Deal reports need visible private learning signals when available.");
   assert.match(app, /function shortlistRankScore/, "The shortlist must rank deals using an adjusted comparison score.");
@@ -81,6 +84,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.analysisDiligence[\s\S]*?\.diligenceTask/, "The v1.4 report needs a styled due-diligence task pack.");
   assert.match(styles, /\.analysisStress[\s\S]*?\.stressAssumptions/, "The v1.6 report needs a styled stress envelope.");
   assert.match(styles, /\.analysisPortfolioGate[\s\S]*?\.portfolioCheck/, "The v1.7 report needs a styled portfolio expansion gate.");
+  assert.match(styles, /\.analysisMarketCycle[\s\S]*?\.marketCycleCheck/, "The v1.8 report needs a styled market cycle and liquidity pulse.");
+  assert.match(styles, /\.analysisHoldExit[\s\S]*?\.holdExitTrigger/, "The v1.9 report needs a styled hold, refinance, and exit plan.");
+  assert.match(styles, /\.analysisDecisionSeal[\s\S]*?\.sealCondition/, "The v1.10 report needs a styled decision seal.");
   assert.match(styles, /\.analysisExecution[\s\S]*?\.executionAction/, "The v1.5 report needs a styled execution calibration pack.");
   assert.match(styles, /\.analysisLearning[\s\S]*?\.learningSignal/, "The v1.2 report needs styled memory and journal learning signals.");
   assert.match(styles, /\.shortlistCompare[\s\S]*?adjusted|\.shortlistCompare[\s\S]*?grid-template-columns:/, "The v1.3 shortlist needs a styled comparison summary.");

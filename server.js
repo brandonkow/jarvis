@@ -337,7 +337,7 @@ function normalizeReportMarketIntelligence(market = {}) {
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v1.0", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v1.10", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -382,6 +382,37 @@ function normalizeReportAnalysis(analysis = {}) {
       checks: objectList(analysis?.portfolioGate?.checks, 10, (item) => ({
         label: reportText(item?.label, 140),
         status: ["clear", "caution", "block"].includes(item?.status) ? item.status : "caution",
+        action: reportText(item?.action, 420)
+      }))
+    },
+    marketPulse: {
+      summary: reportText(analysis?.marketPulse?.summary, 700),
+      status: ["opportunity", "watch", "risk", "unknown"].includes(analysis?.marketPulse?.status) ? analysis.marketPulse.status : "unknown",
+      cycle: reportText(analysis?.marketPulse?.cycle, 120),
+      liquidity: reportText(analysis?.marketPulse?.liquidity, 120),
+      checks: objectList(analysis?.marketPulse?.checks, 10, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["clear", "caution", "risk"].includes(item?.status) ? item.status : "caution",
+        action: reportText(item?.action, 420)
+      }))
+    },
+    holdExitPlan: {
+      summary: reportText(analysis?.holdExitPlan?.summary, 700),
+      action: ["hold", "monitor", "refinance", "sell", "pause"].includes(analysis?.holdExitPlan?.action) ? analysis.holdExitPlan.action : "monitor",
+      reviewCadence: reportText(analysis?.holdExitPlan?.reviewCadence, 240),
+      triggers: objectList(analysis?.holdExitPlan?.triggers, 10, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["normal", "watch", "action"].includes(item?.status) ? item.status : "watch",
+        action: reportText(item?.action, 420)
+      }))
+    },
+    decisionSeal: {
+      status: ["sealed", "conditional", "blocked"].includes(analysis?.decisionSeal?.status) ? analysis.decisionSeal.status : "conditional",
+      label: reportText(analysis?.decisionSeal?.label, 120),
+      summary: reportText(analysis?.decisionSeal?.summary, 700),
+      conditions: objectList(analysis?.decisionSeal?.conditions, 12, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["pass", "review", "fail"].includes(item?.status) ? item.status : "review",
         action: reportText(item?.action, 420)
       }))
     },
@@ -2897,9 +2928,210 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       : "Before adding another property, existing assets must show stable operating evidence, reserve must remain intact, and the combined downside must not require forced refinancing or sale.",
     checks: portfolioChecks
   };
+  const marketWeaknessSignal = hasSignal(dealNarrative, [
+    /market downturn/,
+    /weak sentiment/,
+    /slow sales/,
+    /low absorption/,
+    /developer.*discount/,
+    /clear inventory/,
+    /auction/,
+    /no enquiry/,
+    /no inquiry/,
+    /buyer.*slow/,
+    /economic crisis/
+  ]);
+  const marketHypeSignal = hasSignal(dealNarrative, [
+    /market hype/,
+    /hype/,
+    /sold out/,
+    /crowded sales gallery/,
+    /hot market/,
+    /fomo/,
+    /catalyst.*realized/,
+    /booster.*realized/
+  ]);
+  const rentalDirectionRisk = hasSignal(dealNarrative, [/rent.*drop/, /rental.*drop/, /no tenant/, /vacancy/, /reduce rent/, /weak rent/]);
+  const liquidityRisk = hasSignal(dealNarrative, [/hard to sell/, /weak resale/, /buyer.*unable/, /financing concern/, /low transaction/, /thin liquidity/])
+    || dealCard.exitBuyerPool === "Investor mainly"
+    || dealCard.exitBuyerPool === "Unclear";
+  const auctionRisk = hasSignal(dealNarrative, [/many auction/, /auction case/, /auction volume/, /distress sale/, /pressure sell/]);
+  const marketChecks = [
+    {
+      label: "Cycle position",
+      status: marketHypeSignal && !discountToFairValue ? "risk" : marketWeaknessSignal || discountToFairValue >= 20 ? "clear" : "caution",
+      action: marketHypeSignal
+        ? "Do not pay today for a catalyst that the market has already priced in; require completed resale evidence, not crowd energy."
+        : marketWeaknessSignal || discountToFairValue >= 20
+          ? "Weak sentiment or discount may be useful only if property quality, rent, bankability, and holding power remain intact."
+          : "Cycle signal is not strong enough; verify whether this is mature, early growth, saturation, or temporary weakness."
+    },
+    {
+      label: "Rental direction",
+      status: rentalDirectionRisk ? "risk" : rent && ["Signed tenancy or achieved rent", "Agent-confirmed"].includes(dealCard.rentEvidence || "") ? "clear" : "caution",
+      action: rentalDirectionRisk
+        ? "Check whether weaker rent is temporary seasonality, pricing, furnishing, tenant segment mismatch, or structural oversupply."
+        : "Keep rent evidence current with multiple agents, achieved rent, tenant urgency, and vacancy speed."
+    },
+    {
+      label: "Buyer liquidity",
+      status: liquidityRisk ? "risk" : dealCard.exitBuyerPool === "Own-stay and investor" ? "clear" : "caution",
+      action: liquidityRisk
+        ? "Estimate the liquidity discount needed to sell within the planned timeframe and whether normal buyers can finance the unit."
+        : "Maintain both own-stay and investor exit logic; do not depend on one buyer pool."
+    },
+    {
+      label: "Supply absorption",
+      status: supplyRisk ? "risk" : supplyKnown ? "clear" : "caution",
+      action: supplyRisk
+        ? "Nearby newer similar supply needs absorption, occupancy, rent, and pricing proof before this property can rely on scarcity."
+        : "Continue monitoring VP batches, unsold stock, developer discounting, and whether new supply complements or cannibalizes this product."
+    },
+    {
+      label: "Auction and distress",
+      status: auctionRisk || bulkRisk ? "risk" : "caution",
+      action: auctionRisk || bulkRisk
+        ? "Many auction or bulk-purchase signals may indicate project-level investor concentration, weak holding power, or pressure selling."
+        : "Track auction volume by project, not isolated owner distress alone."
+    }
+  ];
+  const marketRiskCount = marketChecks.filter((item) => item.status === "risk").length;
+  const marketPulse = {
+    status: marketRiskCount >= 2
+      ? "risk"
+      : marketWeaknessSignal || discountToFairValue >= 20
+        ? "opportunity"
+        : "watch",
+    cycle: marketHypeSignal ? "Hype or late-cycle risk" : marketWeaknessSignal ? "Weak sentiment or crisis window" : "Cycle unclear",
+    liquidity: liquidityRisk ? "Liquidity must be proven" : dealCard.exitBuyerPool === "Own-stay and investor" ? "Buyer pool has breadth" : "Buyer pool needs proof",
+    summary: marketRiskCount >= 2
+      ? "Market and liquidity signals are risky; require stronger proof before relying on timing or exit."
+      : marketWeaknessSignal || discountToFairValue >= 20
+        ? "There may be a timing opportunity, but only if the weakness is temporary and the asset remains durable."
+        : "Market timing is not decisive yet; treat the deal as property-led, not hype-led.",
+    checks: marketChecks
+  };
+  const exitSaturationSignal = hasSignal(dealNarrative, [/saturation/, /new project.*struggl/, /below median/, /oversupply/, /too many supply/]);
+  const catalystSignal = hasSignal(dealNarrative, [/catalyst/, /booster/, /infrastructure/, /masterplan/, /growth corridor/]);
+  const refinanceReady = fairValue && price && fairValue > price * 1.12 && stressedTrueHolding !== null && stressedTrueHolding >= 0 && dealCard.managementQuality !== "Weak";
+  const holdAction = rejectStops.length || pauseStops.length
+    ? "pause"
+    : exitSaturationSignal || dealCard.managementQuality === "Weak"
+      ? "sell"
+      : refinanceReady && goal.includes("refinanc")
+        ? "refinance"
+        : catalystSignal || stressEnvelope.status === "resilient"
+          ? "hold"
+          : "monitor";
+  const holdExitTriggers = [
+    {
+      label: "Annual tenancy review",
+      status: rent && installment ? "normal" : "watch",
+      action: "Review rent, vacancy, tenant quality, repair cost, true holding cash flow, and renewal terms every tenancy cycle."
+    },
+    {
+      label: "Rental weakness",
+      status: rentalDirectionRisk ? "action" : "watch",
+      action: rentalDirectionRisk
+        ? "First compare proposed rent against actual market rent, furnishing, tenant segment, and agent enquiry volume."
+        : "If rent weakens for more than three months, decide whether the issue is pricing, product, tenant segment, competition, or structural decline."
+    },
+    {
+      label: "Saleability weakness",
+      status: liquidityRisk ? "action" : "watch",
+      action: "If sale becomes harder, first test proposed selling price against completed transactions, active competition, bank value, and buyer financing."
+    },
+    {
+      label: "Management or JMB change",
+      status: dealCard.managementQuality === "Weak" ? "action" : "normal",
+      action: "Escalate review if JMB response, arrears, lift reliability, cleanliness, security, or facility upkeep deteriorates."
+    },
+    {
+      label: "Refinance review",
+      status: refinanceReady ? "action" : "watch",
+      action: refinanceReady
+        ? "Refinancing can be reviewed, but only if higher debt is still covered by rent and market demand remains strong."
+        : "Do not refinance just because time has passed; require real equity margin, stable rent, and defensible market value."
+    },
+    {
+      label: "Exit trigger",
+      status: exitSaturationSignal ? "action" : "watch",
+      action: exitSaturationSignal
+        ? "Consider exit when the area reaches saturation and new projects struggle to sell at market or below median price."
+        : "Predefine minimum selling price, target buyer, likely objection, and market trigger before the holding period begins."
+    }
+  ];
+  const holdExitPlan = {
+    action: holdAction,
+    reviewCadence: holdingYears ? `Formal review annually during a planned ${money(holdingYears)}-year hold, plus any trigger event.` : "Formal review annually and whenever a trigger event appears.",
+    summary: holdAction === "pause"
+      ? "Do not enter a hold/refinance/exit plan until the purchase itself is safe enough to proceed."
+      : holdAction === "sell"
+        ? "The plan should include an exit review because management, saturation, or liquidity risk can overwhelm holding patience."
+        : holdAction === "refinance"
+          ? "Refinancing may be reviewed only after rent, value, and building competitiveness are proven under stress."
+          : holdAction === "hold"
+            ? "The current thesis supports holding, with annual reviews and trigger-based reassessment."
+            : "Hold versus exit is not proven yet; monitor rent, value, competition, management, and liquidity before relying on the thesis.",
+    triggers: holdExitTriggers
+  };
+  const sealConditions = [
+    {
+      label: "No hard stop",
+      status: hardStops.length ? "fail" : "pass",
+      action: hardStops.length ? "Resolve or walk away from hard stops before committing." : "No hard-stop rule is currently triggered."
+    },
+    {
+      label: "No decision blocker",
+      status: blockers.length ? "review" : "pass",
+      action: blockers.length ? `Clear blocker: ${blockers[0]}.` : "No blocker is preventing shortlist."
+    },
+    {
+      label: "Evidence confidence",
+      status: evidenceScore >= 75 ? "pass" : evidenceScore >= 55 ? "review" : "fail",
+      action: "Completed value proof, achieved-rent proof, site visit, and legal checks must support the recommendation."
+    },
+    {
+      label: "Stress survival",
+      status: stressEnvelope.status === "fragile" ? "fail" : stressEnvelope.status === "pressure" || stressEnvelope.status === "unknown" ? "review" : "pass",
+      action: "Base rent coverage is not enough; true holding cost and stressed shortfall must be survivable."
+    },
+    {
+      label: "Portfolio expansion",
+      status: portfolioGate.status === "block" ? "fail" : portfolioGate.status === "review" ? "review" : "pass",
+      action: "The next property must not weaken reserve, concentration, or existing portfolio stability."
+    },
+    {
+      label: "Execution readiness",
+      status: executionActions.some((item) => item.status === "stop") ? "fail" : executionActions.some((item) => item.status === "caution") ? "review" : "pass",
+      action: "Offer, professional checks, site visit, management, tenant, renovation, and exit actions must be controlled."
+    },
+    {
+      label: "Market and liquidity",
+      status: marketPulse.status === "risk" ? "fail" : marketPulse.status === "watch" ? "review" : "pass",
+      action: "Timing advantage must be backed by buyer liquidity, rental direction, and supply absorption."
+    }
+  ];
+  const sealFailCount = sealConditions.filter((item) => item.status === "fail").length;
+  const sealReviewCount = sealConditions.filter((item) => item.status === "review").length;
+  const decisionSealStatus = sealFailCount
+    ? "blocked"
+    : sealReviewCount
+      ? "conditional"
+      : "sealed";
+  const decisionSeal = {
+    status: decisionSealStatus,
+    label: decisionSealStatus === "sealed" ? "V1 Clear To Negotiate" : decisionSealStatus === "conditional" ? "V1 Conditional Only" : "V1 Blocked",
+    summary: decisionSealStatus === "sealed"
+      ? "The v1 decision path is clean enough for controlled negotiation and final professional verification."
+      : decisionSealStatus === "conditional"
+        ? "The v1 decision path is not rejected, but review items must be cleared before commitment."
+        : "The v1 decision path blocks commitment until failed conditions are fixed or the deal is abandoned.",
+    conditions: sealConditions
+  };
 
   return {
-    engineVersion: "Apex v1.0",
+    engineVersion: "Apex v1.10",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -2921,6 +3153,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     scenarios,
     stressEnvelope,
     portfolioGate,
+    marketPulse,
+    holdExitPlan,
+    decisionSeal,
     challengeMode,
     decisionFocus,
     investorReadiness,
@@ -2982,6 +3217,39 @@ function dealAnalysisText(analysis) {
     );
     if (analysis.portfolioGate.checks?.length) {
       lines.push(...analysis.portfolioGate.checks.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+    }
+  }
+  if (analysis.marketPulse?.summary) {
+    lines.push(
+      "",
+      "Market cycle and liquidity pulse",
+      `- ${analysis.marketPulse.status || "watch"}: ${analysis.marketPulse.summary}`,
+      `- Cycle: ${analysis.marketPulse.cycle || "Cycle unclear"}.`,
+      `- Liquidity: ${analysis.marketPulse.liquidity || "Liquidity must be proven"}.`
+    );
+    if (analysis.marketPulse.checks?.length) {
+      lines.push(...analysis.marketPulse.checks.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+    }
+  }
+  if (analysis.holdExitPlan?.summary) {
+    lines.push(
+      "",
+      "Hold, refinance, exit plan",
+      `- ${analysis.holdExitPlan.action || "monitor"}: ${analysis.holdExitPlan.summary}`,
+      `- Review cadence: ${analysis.holdExitPlan.reviewCadence || "Review annually and on trigger events."}`
+    );
+    if (analysis.holdExitPlan.triggers?.length) {
+      lines.push(...analysis.holdExitPlan.triggers.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+    }
+  }
+  if (analysis.decisionSeal?.summary) {
+    lines.push(
+      "",
+      "V1 decision seal",
+      `- ${analysis.decisionSeal.label || "V1 Conditional Only"}: ${analysis.decisionSeal.summary}`
+    );
+    if (analysis.decisionSeal.conditions?.length) {
+      lines.push(...analysis.decisionSeal.conditions.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
     }
   }
   if (analysis.executionPlan?.actions?.length) {

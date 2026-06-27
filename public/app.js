@@ -905,6 +905,9 @@ function saveAnalysisToShortlist(analysis) {
     scenarios: analysis.scenarios || [],
     stressEnvelope: analysis.stressEnvelope || null,
     portfolioGate: analysis.portfolioGate || null,
+    marketPulse: analysis.marketPulse || null,
+    holdExitPlan: analysis.holdExitPlan || null,
+    decisionSeal: analysis.decisionSeal || null,
     hardStops: analysis.hardStops || [],
     recommendationBlockers: analysis.recommendationBlockers || [],
     decisionFocus: analysis.decisionFocus || null,
@@ -1011,6 +1014,29 @@ function analysisExportText(analysis) {
       `Next-property rule: ${analysis.portfolioGate.nextPropertyRule || "Do not scale until the current property is proven."}`
     );
     for (const item of analysis.portfolioGate.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
+  }
+  if (analysis.marketPulse?.summary) {
+    lines.push(
+      "",
+      "Market cycle and liquidity pulse",
+      `${analysis.marketPulse.status || "watch"}: ${analysis.marketPulse.summary}`,
+      `Cycle: ${analysis.marketPulse.cycle || "Cycle unclear"}`,
+      `Liquidity: ${analysis.marketPulse.liquidity || "Liquidity must be proven"}`
+    );
+    for (const item of analysis.marketPulse.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
+  }
+  if (analysis.holdExitPlan?.summary) {
+    lines.push(
+      "",
+      "Hold, refinance, exit plan",
+      `${analysis.holdExitPlan.action || "monitor"}: ${analysis.holdExitPlan.summary}`,
+      `Review cadence: ${analysis.holdExitPlan.reviewCadence || "Review annually and on trigger events."}`
+    );
+    for (const item of analysis.holdExitPlan.triggers || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
+  }
+  if (analysis.decisionSeal?.summary) {
+    lines.push("", "V1 decision seal", `${analysis.decisionSeal.label || "V1 Conditional Only"}: ${analysis.decisionSeal.summary}`);
+    for (const item of analysis.decisionSeal.conditions || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
   }
   if (analysis.executionPlan?.actions?.length) {
     lines.push(
@@ -1236,6 +1262,69 @@ function portfolioGateMarkup(gate = {}) {
   `;
 }
 
+function marketPulseMarkup(pulse = {}) {
+  if (!pulse.summary) return "";
+  const checks = Array.isArray(pulse.checks) ? pulse.checks : [];
+  return `
+    <section class="analysisMarketCycle ${escapeHtml(pulse.status || "watch")}">
+      <header>
+        <span><small>MARKET CYCLE / LIQUIDITY</small><b>${escapeHtml(pulse.summary)}</b></span>
+        <em>${escapeHtml(pulse.status || "watch")}</em>
+      </header>
+      <div class="marketCycleReadings">
+        <span><small>CYCLE</small><b>${escapeHtml(pulse.cycle || "Cycle unclear")}</b></span>
+        <span><small>LIQUIDITY</small><b>${escapeHtml(pulse.liquidity || "Liquidity must be proven")}</b></span>
+      </div>
+      ${checks.length ? `<div>${checks.map((item) => `
+        <article class="marketCycleCheck ${escapeHtml(item.status)}">
+          <i>${escapeHtml(item.status)}</i>
+          <span><b>${escapeHtml(item.label)}</b><small>${escapeHtml(item.action)}</small></span>
+        </article>
+      `).join("")}</div>` : ""}
+    </section>
+  `;
+}
+
+function holdExitPlanMarkup(plan = {}) {
+  if (!plan.summary) return "";
+  const triggers = Array.isArray(plan.triggers) ? plan.triggers : [];
+  return `
+    <section class="analysisHoldExit ${escapeHtml(plan.action || "monitor")}">
+      <header>
+        <span><small>HOLD / REFINANCE / EXIT</small><b>${escapeHtml(plan.summary)}</b></span>
+        <em>${escapeHtml(plan.action || "monitor")}</em>
+      </header>
+      <p>${escapeHtml(plan.reviewCadence || "Review annually and on trigger events.")}</p>
+      ${triggers.length ? `<div>${triggers.map((item) => `
+        <article class="holdExitTrigger ${escapeHtml(item.status)}">
+          <i>${escapeHtml(item.status)}</i>
+          <span><b>${escapeHtml(item.label)}</b><small>${escapeHtml(item.action)}</small></span>
+        </article>
+      `).join("")}</div>` : ""}
+    </section>
+  `;
+}
+
+function decisionSealMarkup(seal = {}) {
+  if (!seal.summary) return "";
+  const conditions = Array.isArray(seal.conditions) ? seal.conditions : [];
+  return `
+    <section class="analysisDecisionSeal ${escapeHtml(seal.status || "conditional")}">
+      <header>
+        <span><small>V1 DECISION SEAL</small><b>${escapeHtml(seal.label || "V1 Conditional Only")}</b></span>
+        <em>${escapeHtml(seal.status || "conditional")}</em>
+      </header>
+      <p>${escapeHtml(seal.summary)}</p>
+      ${conditions.length ? `<div>${conditions.map((item) => `
+        <article class="sealCondition ${escapeHtml(item.status)}">
+          <i>${escapeHtml(item.status)}</i>
+          <span><b>${escapeHtml(item.label)}</b><small>${escapeHtml(item.action)}</small></span>
+        </article>
+      `).join("")}</div>` : ""}
+    </section>
+  `;
+}
+
 function executionPlanMarkup(plan = {}) {
   const actions = Array.isArray(plan.actions) ? plan.actions : [];
   if (!actions.length) return "";
@@ -1336,7 +1425,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       </section>
     ` : ""}
     <div class="analysisMeta">
-      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v1.0")}</b></span>
+      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v1.10")}</b></span>
       <span>REASONING <b>${escapeHtml(analysis.reasoningMode || (analysis.aiCommentary ? "Framework + AI" : "Framework only"))}</b></span>
       <span>DECISION SCORE <b>${escapeHtml(analysis.averageScore)}/100</b></span>
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
@@ -1350,6 +1439,9 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     ${dueDiligenceMarkup(analysis.dueDiligencePlan)}
     ${stressEnvelopeMarkup(analysis.stressEnvelope)}
     ${portfolioGateMarkup(analysis.portfolioGate)}
+    ${marketPulseMarkup(analysis.marketPulse)}
+    ${holdExitPlanMarkup(analysis.holdExitPlan)}
+    ${decisionSealMarkup(analysis.decisionSeal)}
     ${executionPlanMarkup(analysis.executionPlan)}
     ${learningLoopMarkup(analysis.learningLoop)}
     ${scenarioMarkup ? `<section class="analysisScenarioSection"><h3>DOWNSIDE SCENARIOS</h3><div class="analysisScenarios">${scenarioMarkup}</div><p>Stress assumptions are decision tests, not forecasts.</p></section>` : ""}

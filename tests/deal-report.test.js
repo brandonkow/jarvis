@@ -131,9 +131,18 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.portfolioGate.checks.length, 6);
   assert.ok(result.payload.analysis.portfolioGate.checks.some((item) => item.label === "Portfolio role" && item.status === "clear"));
   assert.ok(result.payload.analysis.portfolioGate.checks.some((item) => item.label === "Combined stress survival" && item.status === "caution"));
+  assert.equal(result.payload.analysis.marketPulse.status, "opportunity");
+  assert.equal(result.payload.analysis.marketPulse.checks.length, 5);
+  assert.ok(result.payload.analysis.marketPulse.checks.some((item) => item.label === "Supply absorption" && item.status === "clear"));
+  assert.equal(result.payload.analysis.holdExitPlan.action, "monitor");
+  assert.equal(result.payload.analysis.holdExitPlan.triggers.length, 6);
+  assert.ok(result.payload.analysis.holdExitPlan.triggers.some((item) => item.label === "Refinance review" && item.status === "watch"));
+  assert.equal(result.payload.analysis.decisionSeal.status, "conditional");
+  assert.equal(result.payload.analysis.decisionSeal.conditions.length, 7);
+  assert.ok(result.payload.analysis.decisionSeal.conditions.some((item) => item.label === "Stress survival" && item.status === "review"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v1.0");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v1.10");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");
@@ -182,6 +191,8 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(boundaryBreach.payload.analysis.executionPlan.posture, "No offer");
   assert.ok(boundaryBreach.payload.analysis.executionPlan.walkAway.includes("clean, legally supportable"));
   assert.equal(boundaryBreach.payload.analysis.portfolioGate.status, "block");
+  assert.equal(boundaryBreach.payload.analysis.holdExitPlan.action, "pause");
+  assert.equal(boundaryBreach.payload.analysis.decisionSeal.status, "blocked");
 
   const forcedFinancing = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,

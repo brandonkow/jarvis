@@ -2792,6 +2792,208 @@ button {
   line-height: 1.35;
 }
 
+.analysisMarketCycle,
+.analysisHoldExit,
+.analysisDecisionSeal {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  border: 1px solid rgba(103, 229, 255, 0.12);
+  border-left: 2px solid #d0ad69;
+  border-radius: 8px;
+  padding: 9px;
+  background: linear-gradient(135deg, rgba(255, 210, 116, 0.055), transparent 48%), rgba(0, 11, 18, 0.34);
+}
+
+.analysisMarketCycle.opportunity,
+.analysisHoldExit.hold,
+.analysisDecisionSeal.sealed {
+  border-left-color: #70e6b3;
+  background: linear-gradient(135deg, rgba(112, 255, 191, 0.055), transparent 48%), rgba(0, 11, 18, 0.34);
+}
+
+.analysisMarketCycle.risk,
+.analysisHoldExit.sell,
+.analysisHoldExit.pause,
+.analysisDecisionSeal.blocked {
+  border-left-color: #e68e8e;
+  background: linear-gradient(135deg, rgba(255, 126, 126, 0.055), transparent 48%), rgba(0, 11, 18, 0.34);
+}
+
+.analysisHoldExit.refinance {
+  border-left-color: #8fdde8;
+}
+
+.analysisMarketCycle header,
+.analysisHoldExit header,
+.analysisDecisionSeal header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.analysisMarketCycle header span,
+.analysisHoldExit header span,
+.analysisDecisionSeal header span {
+  display: grid;
+  gap: 3px;
+}
+
+.analysisMarketCycle small,
+.analysisHoldExit small,
+.analysisDecisionSeal small {
+  color: #67b7c7;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+}
+
+.analysisMarketCycle header b,
+.analysisHoldExit header b,
+.analysisDecisionSeal header b,
+.analysisHoldExit p,
+.analysisDecisionSeal p {
+  color: #a8d0d8;
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.analysisHoldExit p,
+.analysisDecisionSeal p {
+  margin: 0;
+  color: #79a6af;
+}
+
+.analysisMarketCycle header em,
+.analysisHoldExit header em,
+.analysisDecisionSeal header em {
+  border: 1px solid rgba(103, 229, 255, 0.18);
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #d7b970;
+  font-size: 0.48rem;
+  font-style: normal;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analysisMarketCycle.opportunity header em,
+.analysisHoldExit.hold header em,
+.analysisDecisionSeal.sealed header em {
+  color: #7bdca9;
+  border-color: rgba(112, 255, 191, 0.26);
+}
+
+.analysisMarketCycle.risk header em,
+.analysisHoldExit.sell header em,
+.analysisHoldExit.pause header em,
+.analysisDecisionSeal.blocked header em {
+  color: #ef9999;
+  border-color: rgba(255, 126, 126, 0.3);
+}
+
+.marketCycleReadings,
+.analysisMarketCycle > div:last-child,
+.analysisHoldExit > div,
+.analysisDecisionSeal > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.marketCycleReadings span,
+.marketCycleCheck,
+.holdExitTrigger,
+.sealCondition {
+  display: grid;
+  gap: 3px;
+  border: 1px solid rgba(103, 229, 255, 0.08);
+  border-left: 2px solid #d0ad69;
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(0, 10, 17, 0.28);
+}
+
+.marketCycleReadings span {
+  border-left-width: 1px;
+}
+
+.marketCycleCheck,
+.holdExitTrigger,
+.sealCondition {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.marketCycleCheck.clear,
+.holdExitTrigger.normal,
+.sealCondition.pass {
+  border-left-color: #70e6b3;
+}
+
+.marketCycleCheck.risk,
+.holdExitTrigger.action,
+.sealCondition.fail {
+  border-left-color: #e68e8e;
+}
+
+.marketCycleCheck i,
+.holdExitTrigger i,
+.sealCondition i {
+  align-self: start;
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 999px;
+  padding: 3px 6px;
+  color: #d7b970;
+  font-size: 0.42rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.marketCycleCheck.clear i,
+.holdExitTrigger.normal i,
+.sealCondition.pass i {
+  color: #7bdca9;
+  border-color: rgba(112, 255, 191, 0.26);
+}
+
+.marketCycleCheck.risk i,
+.holdExitTrigger.action i,
+.sealCondition.fail i {
+  color: #ef9999;
+  border-color: rgba(255, 126, 126, 0.3);
+}
+
+.marketCycleCheck span,
+.holdExitTrigger span,
+.sealCondition span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.marketCycleReadings b,
+.marketCycleCheck b,
+.holdExitTrigger b,
+.sealCondition b,
+.marketCycleCheck small,
+.holdExitTrigger small,
+.sealCondition small {
+  color: #a8d0d8;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  line-height: 1.35;
+}
+
+.marketCycleCheck small,
+.holdExitTrigger small,
+.sealCondition small {
+  color: #638f99;
+}
+
 .analysisExecution {
   display: grid;
   gap: 8px;
@@ -3805,6 +4007,10 @@ button {
   .stressReadings,
   .stressAssumptions,
   .analysisPortfolioGate > div,
+  .marketCycleReadings,
+  .analysisMarketCycle > div:last-child,
+  .analysisHoldExit > div,
+  .analysisDecisionSeal > div,
   .executionOffer,
   .executionActions,
   .shortlistList {
@@ -3886,6 +4092,18 @@ button {
   .analysisPortfolioGate p,
   .portfolioCheck b,
   .portfolioCheck small,
+  .analysisMarketCycle header b,
+  .analysisHoldExit header b,
+  .analysisHoldExit p,
+  .analysisDecisionSeal header b,
+  .analysisDecisionSeal p,
+  .marketCycleReadings b,
+  .marketCycleCheck b,
+  .marketCycleCheck small,
+  .holdExitTrigger b,
+  .holdExitTrigger small,
+  .sealCondition b,
+  .sealCondition small,
   .analysisExecution header b,
   .executionOffer b,
   .executionAction b,
@@ -4073,6 +4291,18 @@ button {
   body.printMode .analysisPortfolioGate p,
   body.printMode .portfolioCheck b,
   body.printMode .portfolioCheck small,
+  body.printMode .analysisMarketCycle header b,
+  body.printMode .analysisHoldExit header b,
+  body.printMode .analysisHoldExit p,
+  body.printMode .analysisDecisionSeal header b,
+  body.printMode .analysisDecisionSeal p,
+  body.printMode .marketCycleReadings b,
+  body.printMode .marketCycleCheck b,
+  body.printMode .marketCycleCheck small,
+  body.printMode .holdExitTrigger b,
+  body.printMode .holdExitTrigger small,
+  body.printMode .sealCondition b,
+  body.printMode .sealCondition small,
   body.printMode .analysisExecution header b,
   body.printMode .executionOffer b,
   body.printMode .executionAction b,
@@ -4104,6 +4334,13 @@ button {
   body.printMode .stressAssumptions span,
   body.printMode .analysisPortfolioGate,
   body.printMode .portfolioCheck,
+  body.printMode .analysisMarketCycle,
+  body.printMode .analysisHoldExit,
+  body.printMode .analysisDecisionSeal,
+  body.printMode .marketCycleReadings span,
+  body.printMode .marketCycleCheck,
+  body.printMode .holdExitTrigger,
+  body.printMode .sealCondition,
   body.printMode .analysisExecution,
   body.printMode .executionOffer span,
   body.printMode .executionAction,
@@ -4123,6 +4360,9 @@ button {
   body.printMode .analysisDiligence,
   body.printMode .analysisStress,
   body.printMode .analysisPortfolioGate,
+  body.printMode .analysisMarketCycle,
+  body.printMode .analysisHoldExit,
+  body.printMode .analysisDecisionSeal,
   body.printMode .analysisExecution,
   body.printMode .analysisLearning,
   body.printMode .analysisDetails,

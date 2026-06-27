@@ -117,6 +117,39 @@ The v1.7 portfolio gate decides whether a user should add this property to a wid
 - Distinguish a written portfolio role from FOMO, loan availability, or excitement after a prior successful deal.
 - Block expansion when the current deal is rejected or paused, existing assets are weak, reserve is insufficient, stress survival is fragile, or the reason for purchase is emotional rather than strategic.
 
+## v1.8 Market Cycle And Liquidity Pulse
+
+The v1.8 market pulse keeps the deal anchored to current cycle risk instead of looking only at property-level numbers:
+
+- Classify the market reading as opportunity, watch, risk, or unknown based on discount, weak sentiment, hype, rental direction, buyer liquidity, supply absorption, and auction pressure.
+- Treat weak sentiment as opportunity only when the asset quality, evidence, and holding survival are still intact.
+- Treat market hype, realised catalysts, weak resale enquiry, financing concern, or many auction cases as caution even if the headline price looks attractive.
+- Separate rental direction from buyer liquidity because a property can rent well but still be hard to dispose.
+- Keep market pulse subordinate to hard stops and evidence blockers. A crisis price cannot rescue a weak property, unsafe deal structure, or unready investor profile.
+
+## v1.9 Hold, Refinance, And Exit Plan
+
+The v1.9 holding layer converts the report into a post-purchase operating plan:
+
+- State whether the correct posture is hold, monitor, refinance, sell, or pause.
+- Require annual review at tenancy renewal and immediate review when rent, saleability, management quality, or nearby supply changes.
+- Recommend refinancing only when equity margin exists and the revised instalment can still be supported by rent and cash reserve.
+- Recommend selling when the area appears saturated, new projects struggle to sell at market rate, resale liquidity weakens, or the project loses competitiveness.
+- Recommend holding through temporary underperformance only when the catalyst is still credible and the property remains competitive against newer supply.
+- Treat holding period as part of the purchase decision. Users should know the target disposal year before buying.
+
+## v1.10 V1 Decision Seal
+
+The v1.10 seal closes the complete v1 decision path:
+
+- Combine hard stops, blockers, evidence confidence, stress survival, portfolio gate, execution readiness, and market pulse into one final status.
+- Return **sealed** only when the deal has no hard stop, no blocker, strong evidence, survivable stress, acceptable portfolio expansion, clean execution posture, and no market-cycle warning.
+- Return **conditional** when the deal is not blocked but still has review items such as stress pressure, portfolio caution, market-watch status, or missing live proof.
+- Return **blocked** when any hard stop, pause, fragile stress result, portfolio block, execution stop, or market-risk failure appears.
+- Keep the seal as a v1 checkpoint, not an investment guarantee. It tells the user whether the deal may proceed to negotiation, needs more proof, or should stop.
+
+At this point, v1 is the complete foundation loop: select, evidence-check, stress-test, scale-check, market-check, plan holding and exit, then seal the decision. Later v2 work should deepen intelligence and workflow, not replace these boundaries.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.
