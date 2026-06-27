@@ -979,6 +979,10 @@ function analysisExportText(analysis) {
     lines.push("", "Evidence checklist");
     for (const item of analysis.evidenceChecklist) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
   }
+  if (analysis.dueDiligencePlan?.tasks?.length) {
+    lines.push("", "Due diligence pack", analysis.dueDiligencePlan.summary || "");
+    for (const item of analysis.dueDiligencePlan.tasks) lines.push(`- ${item.owner} / ${item.priority} / ${item.status}: ${item.label}. ${item.action}`);
+  }
   if (analysis.learningLoop?.signals?.length) {
     lines.push("", "Learning loop", analysis.learningLoop.summary || "");
     for (const item of analysis.learningLoop.signals) lines.push(`- ${item.label}: ${item.body} ${item.action}`);
@@ -1123,6 +1127,25 @@ function evidenceChecklistMarkup(items = []) {
   `;
 }
 
+function dueDiligenceMarkup(plan = {}) {
+  const tasks = Array.isArray(plan.tasks) ? plan.tasks : [];
+  if (!tasks.length) return "";
+  return `
+    <section class="analysisDiligence">
+      <header><span><small>DUE DILIGENCE PACK</small><b>${escapeHtml(plan.summary || "Clear these tasks before commitment.")}</b></span></header>
+      <div>
+        ${tasks.map((item) => `
+          <article class="diligenceTask ${escapeHtml(item.status)} ${escapeHtml(item.priority)}">
+            <i>${escapeHtml(item.priority)}</i>
+            <span><b>${escapeHtml(item.owner)} / ${escapeHtml(item.label)}</b><small>${escapeHtml(item.action)}</small></span>
+            <em>${escapeHtml(item.status)}</em>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function learningLoopMarkup(loop = {}) {
   const signals = Array.isArray(loop.signals) ? loop.signals : [];
   if (!signals.length) return "";
@@ -1208,6 +1231,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     </div>
     ${metricMarkup ? `<div class="analysisMetrics">${metricMarkup}</div>` : ""}
     ${evidenceChecklistMarkup(analysis.evidenceChecklist || [])}
+    ${dueDiligenceMarkup(analysis.dueDiligencePlan)}
     ${learningLoopMarkup(analysis.learningLoop)}
     ${scenarioMarkup ? `<section class="analysisScenarioSection"><h3>DOWNSIDE SCENARIOS</h3><div class="analysisScenarios">${scenarioMarkup}</div><p>Stress assumptions are decision tests, not forecasts.</p></section>` : ""}
     ${marketIntelligenceMarkup(analysis.marketIntelligence)}

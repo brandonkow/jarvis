@@ -74,6 +74,16 @@ The v1.3 comparison layer turns the device shortlist into a decision aid:
 - Show the cleanest current pick only when a deal has no blockers.
 - Keep the weakest dimension, investor readiness, decision focus, confidence, and learning-signal count visible on each card.
 
+## v1.4 Due Diligence Pack
+
+The v1.4 due-diligence pack converts a report into tasks:
+
+- Assign each task to an owner such as Agent, Rental Agent, Banker, Lawyer, Management Office, Site Visit, Market Check, Buyer Pool, or Investor.
+- Prioritise tasks as high, medium, or low based on legal, financing, holding, evidence, and project-quality risk.
+- Mark completed evidence as done, but still preserve the action so the user knows what proof supported the report.
+- Include the pack in the UI report, copied text report, saved report history, and print view.
+- Treat the pack as a decision workflow, not a substitute for professional legal, valuation, financing, or tax advice.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

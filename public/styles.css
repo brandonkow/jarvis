@@ -2441,6 +2441,106 @@ button {
   line-height: 1.35;
 }
 
+.analysisDiligence {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+  border: 1px solid rgba(103, 229, 255, 0.12);
+  border-radius: 8px;
+  padding: 9px;
+  background: linear-gradient(135deg, rgba(255, 210, 116, 0.055), transparent 46%), rgba(0, 11, 18, 0.34);
+}
+
+.analysisDiligence header span {
+  display: grid;
+  gap: 3px;
+}
+
+.analysisDiligence small {
+  color: #67b7c7;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+}
+
+.analysisDiligence header b {
+  color: #a8d0d8;
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
+.analysisDiligence > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.diligenceTask {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  border: 1px solid rgba(103, 229, 255, 0.08);
+  border-left: 2px solid #6a9ca7;
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(0, 10, 17, 0.28);
+}
+
+.diligenceTask.high {
+  border-left-color: #e68e8e;
+}
+
+.diligenceTask.medium {
+  border-left-color: #d0ad69;
+}
+
+.diligenceTask.done {
+  opacity: 0.76;
+}
+
+.diligenceTask > i,
+.diligenceTask > em {
+  align-self: start;
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 999px;
+  padding: 3px 6px;
+  color: #8fb8c1;
+  font-size: 0.42rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.diligenceTask.high > i {
+  color: #ef9999;
+  border-color: rgba(255, 126, 126, 0.3);
+}
+
+.diligenceTask.medium > i {
+  color: #d7b970;
+  border-color: rgba(255, 210, 116, 0.26);
+}
+
+.diligenceTask span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.diligenceTask b {
+  color: #a8d0d8;
+  font-size: 0.58rem;
+  font-weight: 500;
+}
+
+.diligenceTask small {
+  color: #638f99;
+  font-size: 0.5rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.35;
+}
+
 .analysisLearning {
   display: grid;
   gap: 7px;
@@ -3307,6 +3407,7 @@ button {
 
   .analysisScenarios,
   .analysisEvidence > div,
+  .analysisDiligence > div,
   .shortlistList {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -3375,6 +3476,9 @@ button {
   .analysisReadiness ul,
   .evidenceItem b,
   .evidenceItem small,
+  .analysisDiligence header b,
+  .diligenceTask b,
+  .diligenceTask small,
   .analysisLearning header b,
   .learningSignal b,
   .learningSignal small,
@@ -3547,6 +3651,9 @@ button {
   body.printMode .analysisReadiness li,
   body.printMode .evidenceItem b,
   body.printMode .evidenceItem small,
+  body.printMode .analysisDiligence header b,
+  body.printMode .diligenceTask b,
+  body.printMode .diligenceTask small,
   body.printMode .analysisLearning header b,
   body.printMode .learningSignal b,
   body.printMode .learningSignal small,
@@ -3567,6 +3674,8 @@ button {
   body.printMode .analysisReadiness,
   body.printMode .analysisEvidence,
   body.printMode .evidenceItem,
+  body.printMode .analysisDiligence,
+  body.printMode .diligenceTask,
   body.printMode .analysisLearning,
   body.printMode .learningSignal,
   body.printMode .analysisSection {
@@ -3580,6 +3689,7 @@ button {
   body.printMode .analysisMarketPulse,
   body.printMode .analysisOverview,
   body.printMode .analysisEvidence,
+  body.printMode .analysisDiligence,
   body.printMode .analysisLearning,
   body.printMode .analysisDetails,
   body.printMode .analysisCounter {

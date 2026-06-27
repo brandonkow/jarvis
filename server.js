@@ -389,6 +389,16 @@ function normalizeReportAnalysis(analysis = {}) {
       status: ["done", "warning", "missing", "danger"].includes(item?.status) ? item.status : "missing",
       action: reportText(item?.action, 300)
     })),
+    dueDiligencePlan: {
+      summary: reportText(analysis?.dueDiligencePlan?.summary, 500),
+      tasks: objectList(analysis?.dueDiligencePlan?.tasks, 12, (item) => ({
+        owner: reportText(item?.owner, 80),
+        priority: ["high", "medium", "low"].includes(item?.priority) ? item.priority : "medium",
+        status: ["required", "verify", "optional", "done"].includes(item?.status) ? item.status : "required",
+        label: reportText(item?.label, 140),
+        action: reportText(item?.action, 400)
+      }))
+    },
     learningLoop: {
       summary: reportText(analysis?.learningLoop?.summary, 500),
       memoryCount: Math.max(0, Number(analysis?.learningLoop?.memoryCount || 0)),
@@ -2418,6 +2428,94 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
         : verdict === "SHORTLIST"
           ? { label: "Shortlist, not buy yet", tone: "ready", body: "The deal is strong enough for deeper verification, but final commitment still needs live evidence and professional checks." }
           : { label: "Investigate further", tone: "neutral", body: watchouts[0] || missing[0] || counterThesis };
+  const taskStatus = (condition) => condition ? "done" : "required";
+  const taskPriority = (status, risk = false) => status === "done" ? "low" : risk ? "high" : "medium";
+  const task = (owner, label, status, action, risk = false) => ({
+    owner,
+    label,
+    status,
+    priority: taskPriority(status, risk),
+    action
+  });
+  const dueDiligenceTasks = [
+    task(
+      "Agent",
+      "Completed value proof",
+      taskStatus(fairValue && dealCard.comparableTransactions === "3 or more"),
+      "Send recent completed subsale transactions and successful auction evidence for the same project or closest substitutes.",
+      !fairValue || dealCard.comparableTransactions === "None"
+    ),
+    task(
+      "Rental Agent",
+      "Achieved rent and tenant urgency",
+      taskStatus(dealCard.rentEvidence === "Signed tenancy or achieved rent"),
+      "Confirm achieved rent, enquiry urgency, vacancy period, tenant profile, and whether the rent is seasonal or incentive-supported.",
+      dealCard.rentEvidence === "None" || dealCard.rentEvidence === "Listing only" || !dealCard.rentEvidence
+    ),
+    task(
+      "Banker",
+      "Loan instalment and stress test",
+      taskStatus(installment && postDealDsr !== null),
+      "Provide estimated instalment, margin, DSR after purchase, valuation basis, and stress case if instalment rises by 10%.",
+      !installment || (postDealDsr !== null && postDealDsr >= 80)
+    ),
+    task(
+      "Lawyer",
+      "Title, caveat, consent, seller authority",
+      taskStatus(dealCard.legalCheck === "Clear"),
+      "Check title status, caveat, restrictions, consent timeline, seller authority, arrears, and whether all funds flow through proper stakeholder channels.",
+      dealCard.legalCheck !== "Clear" || documentRisk
+    ),
+    task(
+      "Management Office",
+      "Management quality and arrears",
+      taskStatus(dealCard.managementQuality === "Strong"),
+      "Ask for outstanding maintenance/arrears status, sinking fund health, response time, unresolved defects, lift issues, security, and resident complaints.",
+      dealCard.managementQuality === "Weak" || !dealCard.managementQuality
+    ),
+    task(
+      "Site Visit",
+      "Own-stay vibe and unit defects",
+      taskStatus(dealCard.siteVisit === "Completed"),
+      "Inspect lobby, lift speed, corridor, refuse room, car park, facilities, noise, view, water leakage, ventilation, resident behaviour, and unit placement.",
+      dealCard.siteVisit !== "Completed"
+    ),
+    task(
+      "Market Check",
+      "Future supply and substitute threat",
+      taskStatus(supplyKnown && !supplyRisk),
+      "List nearby newer similar projects within 2.5km; compare layout, pricing, VP timing, occupancy, absorption, and rent pressure.",
+      supplyRisk || !supplyKnown
+    ),
+    task(
+      "Buyer Pool",
+      "Exit buyer proof",
+      taskStatus(dealCard.exitBuyerPool === "Own-stay and investor"),
+      "Identify why own-stay buyers and investor buyers would both consider this unit, and what objection could force a discount later.",
+      !dealCard.exitBuyerPool || dealCard.exitBuyerPool === "Unclear" || dealCard.exitBuyerPool === "Investor mainly"
+    ),
+    task(
+      "Investor",
+      "Personal holding readiness",
+      taskStatus(investorReadiness.label === "Ready" || investorReadiness.label === "Balanced"),
+      "Confirm six-month cash reserve remains after outlay, no major near-term commitment is ignored, and vacancy/repair costs can be carried.",
+      investorReadiness.label === "Not ready" || investorReadiness.label === "Overextended"
+    ),
+    task(
+      "Investor",
+      "Thesis and walk-away rule",
+      taskStatus(dealCard.investmentThesis && dealCard.killCriterion),
+      "Write the purchase thesis, strongest counter-thesis, planned holding period, exit route, and exact discovery that means walk away.",
+      !dealCard.investmentThesis || !dealCard.killCriterion
+    )
+  ];
+  const requiredTasks = dueDiligenceTasks.filter((item) => item.status !== "done");
+  const dueDiligencePlan = {
+    summary: requiredTasks.length
+      ? `${requiredTasks.length} due-diligence tasks must be cleared before this moves beyond ${verdict.toLowerCase()}.`
+      : "Core due-diligence tasks are marked done; preserve evidence before committing.",
+    tasks: dueDiligenceTasks
+  };
   const voiceSummary = `My current verdict is ${verdict.toLowerCase()}. ${verdictSummary} The main issue is ${primaryRisk}`;
 
   const scenarioInputsReady = Boolean(rent && installment);
@@ -2474,6 +2572,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     decisionFocus,
     investorReadiness,
     evidenceChecklist,
+    dueDiligencePlan,
     hardStops: hardStopText,
     recommendationBlockers: blockers,
     watchouts: uniqueText(watchouts, 8),
@@ -2501,6 +2600,10 @@ function dealAnalysisText(analysis) {
   }
   if (analysis.evidenceChecklist?.length) {
     lines.push("", "Evidence checklist", ...analysis.evidenceChecklist.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+  }
+  if (analysis.dueDiligencePlan?.tasks?.length) {
+    lines.push("", "Due diligence pack", `- ${analysis.dueDiligencePlan.summary}`);
+    lines.push(...analysis.dueDiligencePlan.tasks.map((item) => `- ${item.owner} / ${item.priority} / ${item.status}: ${item.label}. ${item.action}`));
   }
   if (analysis.learningLoop?.signals?.length) {
     lines.push("", "Learning loop", `- ${analysis.learningLoop.summary}`);

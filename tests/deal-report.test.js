@@ -123,6 +123,9 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.investorReadiness.score >= 80);
   assert.equal(result.payload.analysis.evidenceChecklist.length, 8);
   assert.ok(result.payload.analysis.evidenceChecklist.some((item) => item.label === "Completed value evidence" && item.status === "done"));
+  assert.equal(result.payload.analysis.dueDiligencePlan.tasks.length, 10);
+  assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Lawyer" && item.status === "done"));
+  assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Agent" && /subsale/i.test(item.action)));
 
   const provisional = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,
@@ -135,6 +138,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(provisional.payload.analysis.challengeMode.label, "Evidence blocker");
   assert.equal(provisional.payload.analysis.decisionFocus.label, "Clear before shortlist");
   assert.ok(provisional.payload.analysis.evidenceChecklist.some((item) => item.label === "Site visit and project feel" && item.status === "missing"));
+  assert.ok(provisional.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Site Visit" && item.priority === "high" && item.status === "required"));
 
   const boundaryBreach = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,
