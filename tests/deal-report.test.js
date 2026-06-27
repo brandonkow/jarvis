@@ -91,6 +91,15 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
     rentEvidence: "Signed tenancy or achieved rent",
     siteVisit: "Completed",
     legalCheck: "Clear",
+    dealSource: "Agency in-house app",
+    agentBehavior: "One-time genuine approach",
+    sellerMotivation: "Urgent cash need and open to negotiation",
+    siteVisitNotes: "Clean lobby, fast lift, family-oriented facilities, bright car park, and good vibe.",
+    targetTenant: "Working professionals",
+    tenantScreening: "Employment proof, identity, and occupant count checked.",
+    furnishingStrategy: "Fully furnished",
+    exitStrategyPlan: "Sell vacant after renovation",
+    resalePreparation: "Bank value, staging, renovation, vacant viewing, and buyer objection list.",
     nearbySupply: "No direct similar supply",
     investmentThesis: "Employment demand supports rent and the unit has broad resale appeal.",
     killCriterion: "Walk away if title or achieved rent cannot be verified."
@@ -140,9 +149,21 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.decisionSeal.status, "conditional");
   assert.equal(result.payload.analysis.decisionSeal.conditions.length, 7);
   assert.ok(result.payload.analysis.decisionSeal.conditions.some((item) => item.label === "Stress survival" && item.status === "review"));
+  assert.equal(result.payload.analysis.siteVisitAssistant.status, "ready");
+  assert.equal(result.payload.analysis.siteVisitAssistant.checks.length, 5);
+  assert.ok(result.payload.analysis.siteVisitAssistant.checks.some((item) => item.label === "Own-stay vibe" && item.status === "clear"));
+  assert.equal(result.payload.analysis.sourcingProfessional.status, "clean");
+  assert.equal(result.payload.analysis.sourcingProfessional.checks.length, 5);
+  assert.ok(result.payload.analysis.sourcingProfessional.checks.some((item) => item.label === "Agent behaviour" && item.status === "clear"));
+  assert.equal(result.payload.analysis.tenantRentalPlan.status, "ready");
+  assert.equal(result.payload.analysis.tenantRentalPlan.checks.length, 5);
+  assert.ok(result.payload.analysis.tenantRentalPlan.checks.some((item) => item.label === "Screening discipline" && item.status === "clear"));
+  assert.equal(result.payload.analysis.exitStrategy.status, "clear");
+  assert.equal(result.payload.analysis.exitStrategy.checks.length, 5);
+  assert.ok(result.payload.analysis.exitStrategy.checks.some((item) => item.label === "Resale emotion" && item.status === "clear"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v1.10");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v2.4");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");

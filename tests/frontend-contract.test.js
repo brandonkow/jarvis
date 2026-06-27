@@ -33,6 +33,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.equal((html.match(/data-context-reset="(?:deal|profile)"/g) || []).length, 2, "Each context card needs its own reset button.");
   assert.match(html, /id="memoryPanel"[\s\S]*?PRIVATE TO YOUR ACCOUNT[\s\S]*?id="memoryList"/, "Signed-in users need a private memory review screen.");
   assert.match(html, /data-deal-field="annualAssessmentQuitRent"[\s\S]*?data-deal-field="vacancyStressMonths"/, "Deal card needs optional v1.6 stress assumption fields.");
+  assert.match(html, /data-deal-field="dealSource"[\s\S]*?data-deal-field="resalePreparation"/, "Deal card needs optional v2 workflow fields.");
   assert.match(html, /data-profile-field="portfolioRole"[\s\S]*?data-profile-field="nextPurchaseReason"/, "Profile card needs optional v1.7 portfolio gate fields.");
   assert.match(html, /id="shortlistPanel"[\s\S]*?DEAL SHORTLIST[\s\S]*?id="shortlistList"/, "Analysed properties need an inline comparison shortlist.");
   assert.match(html, /id="shortlistSummary"[\s\S]*?id="shortlistList"/, "The shortlist needs a comparison summary before the deal cards.");
@@ -62,6 +63,10 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /marketPulseMarkup\(analysis\.marketPulse\)/, "Deal reports need v1.8 market cycle and liquidity pulse.");
   assert.match(app, /holdExitPlanMarkup\(analysis\.holdExitPlan\)/, "Deal reports need v1.9 hold, refinance, and exit plan.");
   assert.match(app, /decisionSealMarkup\(analysis\.decisionSeal\)/, "Deal reports need v1.10 decision seal.");
+  assert.match(app, /v2WorkflowMarkup\("V2\.1 SITE VISIT ASSISTANT", analysis\.siteVisitAssistant/, "Deal reports need v2.1 site visit assistant.");
+  assert.match(app, /v2WorkflowMarkup\("V2\.2 SOURCING \/ PROFESSIONAL FILTER", analysis\.sourcingProfessional/, "Deal reports need v2.2 sourcing and professional filter.");
+  assert.match(app, /v2WorkflowMarkup\("V2\.3 TENANT \/ RENTAL PLAN", analysis\.tenantRentalPlan/, "Deal reports need v2.3 tenant and rental plan.");
+  assert.match(app, /v2WorkflowMarkup\("V2\.4 EXIT STRATEGY", analysis\.exitStrategy/, "Deal reports need v2.4 exit strategy.");
   assert.match(app, /executionPlanMarkup\(analysis\.executionPlan\)/, "Deal reports need v1.5 execution calibration.");
   assert.match(app, /learningLoopMarkup\(analysis\.learningLoop\)/, "Deal reports need visible private learning signals when available.");
   assert.match(app, /function shortlistRankScore/, "The shortlist must rank deals using an adjusted comparison score.");
@@ -97,6 +102,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.analysisMarketCycle[\s\S]*?\.marketCycleCheck/, "The v1.8 report needs a styled market cycle and liquidity pulse.");
   assert.match(styles, /\.analysisHoldExit[\s\S]*?\.holdExitTrigger/, "The v1.9 report needs a styled hold, refinance, and exit plan.");
   assert.match(styles, /\.analysisDecisionSeal[\s\S]*?\.sealCondition/, "The v1.10 report needs a styled decision seal.");
+  assert.match(styles, /\.analysisV2Workflow[\s\S]*?\.v2WorkflowCheck/, "The v2 workflow report sections need styled checklist cards.");
   assert.match(styles, /\.analysisExecution[\s\S]*?\.executionAction/, "The v1.5 report needs a styled execution calibration pack.");
   assert.match(styles, /\.analysisLearning[\s\S]*?\.learningSignal/, "The v1.2 report needs styled memory and journal learning signals.");
   assert.match(styles, /\.shortlistCompare[\s\S]*?adjusted|\.shortlistCompare[\s\S]*?grid-template-columns:/, "The v1.3 shortlist needs a styled comparison summary.");

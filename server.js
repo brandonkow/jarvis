@@ -337,7 +337,7 @@ function normalizeReportMarketIntelligence(market = {}) {
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v1.10", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v2.4", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -413,6 +413,46 @@ function normalizeReportAnalysis(analysis = {}) {
       conditions: objectList(analysis?.decisionSeal?.conditions, 12, (item) => ({
         label: reportText(item?.label, 140),
         status: ["pass", "review", "fail"].includes(item?.status) ? item.status : "review",
+        action: reportText(item?.action, 420)
+      }))
+    },
+    siteVisitAssistant: {
+      summary: reportText(analysis?.siteVisitAssistant?.summary, 700),
+      status: ["ready", "required", "risk", "unknown"].includes(analysis?.siteVisitAssistant?.status) ? analysis.siteVisitAssistant.status : "unknown",
+      focus: reportText(analysis?.siteVisitAssistant?.focus, 200),
+      checks: objectList(analysis?.siteVisitAssistant?.checks, 10, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["clear", "check", "risk"].includes(item?.status) ? item.status : "check",
+        action: reportText(item?.action, 420)
+      }))
+    },
+    sourcingProfessional: {
+      summary: reportText(analysis?.sourcingProfessional?.summary, 700),
+      status: ["clean", "verify", "pressure", "risk", "unknown"].includes(analysis?.sourcingProfessional?.status) ? analysis.sourcingProfessional.status : "unknown",
+      posture: reportText(analysis?.sourcingProfessional?.posture, 200),
+      checks: objectList(analysis?.sourcingProfessional?.checks, 10, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["clear", "verify", "caution", "risk"].includes(item?.status) ? item.status : "verify",
+        action: reportText(item?.action, 420)
+      }))
+    },
+    tenantRentalPlan: {
+      summary: reportText(analysis?.tenantRentalPlan?.summary, 700),
+      status: ["ready", "watch", "risk", "unknown"].includes(analysis?.tenantRentalPlan?.status) ? analysis.tenantRentalPlan.status : "unknown",
+      target: reportText(analysis?.tenantRentalPlan?.target, 160),
+      checks: objectList(analysis?.tenantRentalPlan?.checks, 10, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["clear", "watch", "risk"].includes(item?.status) ? item.status : "watch",
+        action: reportText(item?.action, 420)
+      }))
+    },
+    exitStrategy: {
+      summary: reportText(analysis?.exitStrategy?.summary, 700),
+      status: ["clear", "prepare", "risk", "unknown"].includes(analysis?.exitStrategy?.status) ? analysis.exitStrategy.status : "unknown",
+      buyerPsychology: reportText(analysis?.exitStrategy?.buyerPsychology, 240),
+      checks: objectList(analysis?.exitStrategy?.checks, 10, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["clear", "prepare", "risk"].includes(item?.status) ? item.status : "prepare",
         action: reportText(item?.action, 420)
       }))
     },
@@ -1881,6 +1921,17 @@ const dealContextLabels = {
   rentEvidence: "Rental evidence",
   siteVisit: "Site visit",
   legalCheck: "Title and legal check",
+  dealSource: "Deal source",
+  agentBehavior: "Agent behavior",
+  sellerMotivation: "Seller motivation",
+  professionalConcern: "Professional concern",
+  siteVisitNotes: "Site visit notes",
+  inspectionConcern: "Inspection concern",
+  targetTenant: "Target tenant",
+  tenantScreening: "Tenant screening",
+  furnishingStrategy: "Furnishing strategy",
+  exitStrategyPlan: "Exit strategy plan",
+  resalePreparation: "Resale preparation",
   nearbySupply: "Nearby supply",
   investmentThesis: "Investment thesis",
   mainConcern: "Main concern",
@@ -2049,7 +2100,23 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const concentrationRiskInput = String(financialProfile.concentrationRisk || "").toLowerCase();
   const nextPurchaseReason = String(financialProfile.nextPurchaseReason || "").toLowerCase();
   const tenure = String(dealCard.tenure || "").toLowerCase();
-  const dealNarrative = signalText(dealCard.mainConcern, dealCard.investmentThesis, dealCard.nearbySupply, dealCard.killCriterion);
+  const dealNarrative = signalText(
+    dealCard.mainConcern,
+    dealCard.investmentThesis,
+    dealCard.nearbySupply,
+    dealCard.killCriterion,
+    dealCard.dealSource,
+    dealCard.agentBehavior,
+    dealCard.sellerMotivation,
+    dealCard.professionalConcern,
+    dealCard.siteVisitNotes,
+    dealCard.inspectionConcern,
+    dealCard.targetTenant,
+    dealCard.tenantScreening,
+    dealCard.furnishingStrategy,
+    dealCard.exitStrategyPlan,
+    dealCard.resalePreparation
+  );
   const profileNarrative = signalText(financialProfile.financialConcern, financialProfile.nearTermCommitment);
   const allNarrative = signalText(dealNarrative, profileNarrative, tenure, dealCard.legalCheck);
   const isHighRise = /(condo|apartment|flat|serviced|high.?rise)/.test(propertyType);
@@ -3129,9 +3196,217 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
         : "The v1 decision path blocks commitment until failed conditions are fixed or the deal is abandoned.",
     conditions: sealConditions
   };
+  const siteRiskSignal = hasSignal(dealNarrative, [
+    /leak/,
+    /water mark/,
+    /lift.*slow/,
+    /lift.*wait/,
+    /security.*weak/,
+    /dirty/,
+    /smell/,
+    /refuse/,
+    /noise/,
+    /airbnb/,
+    /short.?stay/,
+    /complaint/,
+    /poor maintenance/,
+    /bad vibe/
+  ]);
+  const sitePositiveSignal = hasSignal(dealNarrative, [
+    /good vibe/,
+    /clean/,
+    /family/,
+    /peaceful/,
+    /comfortable lobby/,
+    /respectful/,
+    /bright car park/,
+    /fast lift/,
+    /well maintained/
+  ]);
+  const siteVisitChecks = [
+    {
+      label: "Physical visit status",
+      status: dealCard.siteVisit === "Completed" ? "clear" : "check",
+      action: dealCard.siteVisit === "Completed"
+        ? "Preserve site photos, lift waiting notes, lobby and car-park observations, and management-office responses."
+        : "Do not give a strong recommendation until the guardhouse, lobby, lift, corridor, refuse room, car park, facilities, and surrounding vibe are physically checked."
+    },
+    {
+      label: "Own-stay vibe",
+      status: dealCard.ownStayAppeal === "Strong" || sitePositiveSignal ? "clear" : dealCard.ownStayAppeal === "Weak" || siteRiskSignal ? "risk" : "check",
+      action: "Look for whether a real owner-occupier can imagine living there, not just whether the rent calculation works."
+    },
+    {
+      label: "Building operations",
+      status: dealCard.managementQuality === "Weak" || siteRiskSignal ? "risk" : dealCard.managementQuality === "Strong" ? "clear" : "check",
+      action: "Test management response speed, lift reliability, security attitude, cleanliness, rain splash, refuse-room ventilation, and common-area upkeep."
+    },
+    {
+      label: "Unit placement",
+      status: dealCard.unitPosition === "Unfavourable" ? "risk" : dealCard.unitPosition === "Good" ? "clear" : "check",
+      action: "Confirm the unit is not punished by refuse room, lift noise, awkward corridor exposure, poor view, bad sunlight, or weak ventilation."
+    },
+    {
+      label: "Evidence capture",
+      status: dealCard.siteVisitNotes ? "clear" : "check",
+      action: "Record the lived impression in words. The vibe test should come after data, but it still matters because data cannot show everything."
+    }
+  ];
+  const siteVisitRiskCount = siteVisitChecks.filter((item) => item.status === "risk").length;
+  const siteVisitAssistant = {
+    status: siteVisitRiskCount ? "risk" : dealCard.siteVisit === "Completed" ? "ready" : "required",
+    focus: dealCard.siteVisitNotes || dealCard.inspectionConcern || "Site visit must test lived quality, not just visible beauty.",
+    summary: siteVisitRiskCount
+      ? "Site-level risk is visible; the numbers should not override physical quality, management, or unit-placement concerns."
+      : dealCard.siteVisit === "Completed"
+        ? "Site visit evidence is present; keep it tied to specific observations so the recommendation is not just a feeling."
+        : "Apex needs physical inspection before moving from desk analysis to a strong recommendation.",
+    checks: siteVisitChecks
+  };
+  const sourceText = String(dealCard.dealSource || "").toLowerCase();
+  const agentText = String(dealCard.agentBehavior || "").toLowerCase();
+  const sellerText = String(dealCard.sellerMotivation || "").toLowerCase();
+  const professionalText = String(dealCard.professionalConcern || "").toLowerCase();
+  const pushedInventorySignal = hasSignal(`${sourceText} ${agentText} ${dealNarrative}`, [/hard sell/, /keep follow/, /repeated follow/, /push inventory/, /heavily advertised/, /social media/, /fake listing/]);
+  const scarceDealSignal = hasSignal(`${sourceText} ${agentText}`, [/auction/, /agency/, /in.?house/, /referral/, /owner direct/, /one.?time/, /first hand/]);
+  const v2MotivatedSellerSignal = hasSignal(`${sellerText} ${dealNarrative}`, [/urgent/, /cash/, /debt/, /divorce/, /family/, /open to negotiation/, /motivated/, /market downturn/]);
+  const professionalRiskSignal = hasSignal(`${professionalText} ${dealNarrative}`, [/late reply/, /hard sell/, /no solution/, /overcharge/, /no comparison/, /desperate/, /too flexible/, /fishy/]);
+  const sourcingChecks = [
+    {
+      label: "Deal source quality",
+      status: pushedInventorySignal ? "caution" : scarceDealSignal ? "clear" : "verify",
+      action: pushedInventorySignal
+        ? "Treat public hype, social-media claims, fake listings, or repeated follow-up as inventory pressure until transaction proof says otherwise."
+        : scarceDealSignal
+          ? "A scarce source is useful, but still verify the price against completed transactions and closest substitutes."
+          : "Record where this deal came from and why it reached you instead of being taken earlier."
+    },
+    {
+      label: "Agent behaviour",
+      status: /hard sell|keep follow|repeated|desperate/.test(agentText) ? "risk" : /one.?time|genuine|first hand/.test(agentText) ? "clear" : "verify",
+      action: "Ask the agent beyond the listing: nearest substitutes, owner motivation, recent subsale, tenant urgency, title path, and why the deal is still available."
+    },
+    {
+      label: "Seller motivation",
+      status: v2MotivatedSellerSignal ? "clear" : sellerText ? "verify" : "verify",
+      action: v2MotivatedSellerSignal
+        ? "Use seller urgency to negotiate, but do not let urgency replace legal, financing, and site evidence."
+        : "Determine whether the seller is truly motivated or simply testing an ambitious price."
+    },
+    {
+      label: "Professional network",
+      status: professionalRiskSignal ? "risk" : professionalText ? "verify" : "verify",
+      action: "Agent, banker, and lawyer advice should be challenged with adjacent questions, not accepted only because they can close a deal."
+    },
+    {
+      label: "Offer discipline",
+      status: executionPlan.posture === "No offer" ? "risk" : executionPlan.posture === "Controlled negotiation" ? "clear" : "verify",
+      action: "Set the minimum and maximum offer before pressure starts. Do not negotiate only for cheapness if the property itself is weak."
+    }
+  ];
+  const sourcingRiskCount = sourcingChecks.filter((item) => item.status === "risk").length;
+  const sourcingCautionCount = sourcingChecks.filter((item) => item.status === "caution").length;
+  const sourcingProfessional = {
+    status: sourcingRiskCount ? "risk" : sourcingCautionCount ? "pressure" : scarceDealSignal || v2MotivatedSellerSignal ? "clean" : "verify",
+    posture: pushedInventorySignal ? "Slow down and verify source quality" : v2MotivatedSellerSignal ? "Negotiate with discipline" : "Evidence-first sourcing",
+    summary: sourcingRiskCount
+      ? "The sourcing or professional layer shows red flags; do not let commission-driven urgency shape the decision."
+      : pushedInventorySignal
+        ? "The deal may be pushed inventory; require independent evidence before treating it as an opportunity."
+        : "The sourcing layer is workable if the agent, seller, banker, and lawyer claims are tested against evidence.",
+    checks: sourcingChecks
+  };
+  const tenantText = String(dealCard.targetTenant || "").toLowerCase();
+  const tenantScreenText = String(dealCard.tenantScreening || "").toLowerCase();
+  const furnishingText = String(dealCard.furnishingStrategy || "").toLowerCase();
+  const tenantRiskSignal = hasSignal(`${tenantText} ${tenantScreenText} ${dealNarrative}`, [/illegal/, /no document/, /late payment/, /destroy/, /damage/, /factory worker/, /fishy/, /sublet/, /short.?stay/]);
+  const tenantStableSignal = hasSignal(`${tenantText} ${tenantScreenText}`, [/student/, /professional/, /white collar/, /family/, /employment proof/, /student proof/]);
+  const furnishingReadySignal = furnishingText.includes("fully") || hasSignal(`${furnishingText} ${dealNarrative}`, [/muji/, /minimal/, /table/, /chair/, /move.?in/]);
+  const tenantChecks = [
+    {
+      label: "Rent coverage",
+      status: holdingCashFlow !== null && holdingCashFlow >= 0 ? "clear" : holdingCashFlow !== null ? "risk" : "watch",
+      action: holdingCashFlow !== null && holdingCashFlow >= 0
+        ? "Rent covers the stated instalment and maintenance before deeper true-cost checks."
+        : "Do not treat the rental plan as safe until rent can cover instalment, maintenance, and recurring cost under conservative assumptions."
+    },
+    {
+      label: "Target tenant",
+      status: tenantRiskSignal ? "risk" : tenantStableSignal || dealCard.targetTenant ? "clear" : "watch",
+      action: "Define the tenant by actual demand drivers such as workplace, university, family use, documentation, payment behaviour, and unit-care risk."
+    },
+    {
+      label: "Furnishing strategy",
+      status: furnishingReadySignal || dealCard.furnishingStrategy ? "clear" : "watch",
+      action: "For rental property, furnish for rentability and durability, not personal taste. Keep the budget disciplined."
+    },
+    {
+      label: "Screening discipline",
+      status: tenantRiskSignal ? "risk" : tenantScreenText ? "clear" : "watch",
+      action: "Check identity, work or study status, payment source, intended occupants, and any request that sounds like illegal use or uncontrolled subletting."
+    },
+    {
+      label: "Rental evidence",
+      status: dealCard.rentEvidence === "Signed tenancy or achieved rent" || dealCard.rentEvidence === "Agent-confirmed" ? "clear" : "watch",
+      action: "Use active rental agents and achieved rent where possible; listings alone do not prove tenant urgency."
+    }
+  ];
+  const tenantRiskCount = tenantChecks.filter((item) => item.status === "risk").length;
+  const tenantRentalPlan = {
+    status: tenantRiskCount ? "risk" : tenantChecks.some((item) => item.status === "watch") ? "watch" : "ready",
+    target: dealCard.targetTenant || "Target tenant not stated",
+    summary: tenantRiskCount
+      ? "Rental execution has risk; a good headline yield can still become a headache if tenant quality and screening are weak."
+      : "Rental execution is workable if rent evidence, furnishing, tenant fit, and screening stay disciplined.",
+    checks: tenantChecks
+  };
+  const exitText = String(dealCard.exitStrategyPlan || "").toLowerCase();
+  const resaleText = String(dealCard.resalePreparation || "").toLowerCase();
+  const exitRiskSignal = liquidityRisk || supplyRisk || dealCard.unitPosition === "Unfavourable" || dealCard.managementQuality === "Weak";
+  const exitPreparationSignal = hasSignal(`${exitText} ${resaleText}`, [/renovat/, /staging/, /vacant/, /bank value/, /owner.?stay/, /photo/, /viewing/]);
+  const exitChecks = [
+    {
+      label: "Buyer pool breadth",
+      status: dealCard.exitBuyerPool === "Own-stay and investor" ? "clear" : dealCard.exitBuyerPool === "Investor mainly" || dealCard.exitBuyerPool === "Unclear" ? "risk" : "prepare",
+      action: "Do not rely on only bargain-hunting investors. Preserve both owner-occupier emotion and investor return logic."
+    },
+    {
+      label: "Resale emotion",
+      status: dealCard.ownStayAppeal === "Strong" || exitPreparationSignal ? "clear" : dealCard.ownStayAppeal === "Weak" ? "risk" : "prepare",
+      action: "Renovation, staging, view, layout, smell, lighting, and vacant viewing condition shape whether an own-stay buyer pays above market."
+    },
+    {
+      label: "Liquidity obstacle",
+      status: exitRiskSignal ? "risk" : exitPreparationSignal ? "clear" : "prepare",
+      action: exitRiskSignal
+        ? "Weak liquidity, substitute supply, management, or unit placement may require a lower exit price or longer selling period."
+        : "Predefine bank value, target buyer, asking strategy, and likely objections before the holding period begins."
+    },
+    {
+      label: "Sale mode",
+      status: exitText || resaleText ? "clear" : "prepare",
+      action: "Decide whether to sell vacant after renovation, sell tenanted to an investor, hold for rent, or refinance before the market forces that choice."
+    },
+    {
+      label: "Objection handling",
+      status: dealCard.unitPosition === "Unfavourable" || dealCard.managementQuality === "Weak" ? "risk" : resaleText ? "clear" : "prepare",
+      action: "Prepare answers for buyer objections around unit placement, maintenance, access, supply, defects, and realistic bank value."
+    }
+  ];
+  const exitRiskCount = exitChecks.filter((item) => item.status === "risk").length;
+  const exitStrategy = {
+    status: exitRiskCount ? "risk" : exitChecks.some((item) => item.status === "prepare") ? "prepare" : "clear",
+    buyerPsychology: dealCard.exitBuyerPool === "Own-stay and investor"
+      ? "Future exit can speak to both emotion and return."
+      : "Future exit psychology needs sharper proof; the buyer pool may be narrow.",
+    summary: exitRiskCount
+      ? "Exit is the weak side of the thesis; saleability must be planned before purchase, not discovered after holding."
+      : "Exit can be planned, but the resale story must be prepared around buyer emotion, evidence, and objections.",
+    checks: exitChecks
+  };
 
   return {
-    engineVersion: "Apex v1.10",
+    engineVersion: "Apex v2.4",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -3156,6 +3431,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     marketPulse,
     holdExitPlan,
     decisionSeal,
+    siteVisitAssistant,
+    sourcingProfessional,
+    tenantRentalPlan,
+    exitStrategy,
     challengeMode,
     decisionFocus,
     investorReadiness,
@@ -3250,6 +3529,50 @@ function dealAnalysisText(analysis) {
     );
     if (analysis.decisionSeal.conditions?.length) {
       lines.push(...analysis.decisionSeal.conditions.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+    }
+  }
+  if (analysis.siteVisitAssistant?.summary) {
+    lines.push(
+      "",
+      "V2.1 site visit assistant",
+      `- ${analysis.siteVisitAssistant.status || "required"}: ${analysis.siteVisitAssistant.summary}`,
+      `- Focus: ${analysis.siteVisitAssistant.focus || "Check lived quality on site."}`
+    );
+    if (analysis.siteVisitAssistant.checks?.length) {
+      lines.push(...analysis.siteVisitAssistant.checks.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+    }
+  }
+  if (analysis.sourcingProfessional?.summary) {
+    lines.push(
+      "",
+      "V2.2 sourcing and professional filter",
+      `- ${analysis.sourcingProfessional.status || "verify"}: ${analysis.sourcingProfessional.summary}`,
+      `- Posture: ${analysis.sourcingProfessional.posture || "Evidence-first sourcing"}`
+    );
+    if (analysis.sourcingProfessional.checks?.length) {
+      lines.push(...analysis.sourcingProfessional.checks.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+    }
+  }
+  if (analysis.tenantRentalPlan?.summary) {
+    lines.push(
+      "",
+      "V2.3 tenant and rental plan",
+      `- ${analysis.tenantRentalPlan.status || "watch"}: ${analysis.tenantRentalPlan.summary}`,
+      `- Target: ${analysis.tenantRentalPlan.target || "Target tenant not stated"}`
+    );
+    if (analysis.tenantRentalPlan.checks?.length) {
+      lines.push(...analysis.tenantRentalPlan.checks.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+    }
+  }
+  if (analysis.exitStrategy?.summary) {
+    lines.push(
+      "",
+      "V2.4 exit strategy and buyer psychology",
+      `- ${analysis.exitStrategy.status || "prepare"}: ${analysis.exitStrategy.summary}`,
+      `- Buyer psychology: ${analysis.exitStrategy.buyerPsychology || "Buyer objections must be prepared."}`
+    );
+    if (analysis.exitStrategy.checks?.length) {
+      lines.push(...analysis.exitStrategy.checks.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
     }
   }
   if (analysis.executionPlan?.actions?.length) {

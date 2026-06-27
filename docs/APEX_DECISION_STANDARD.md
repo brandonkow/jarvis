@@ -161,6 +161,45 @@ The v2.0 layer begins the living second-brain path by making changing market evi
 - Observations are dated and freshness-labelled. Stale observations are not hidden; Apex should surface them and explain that they need re-verification.
 - V2.0 deepens market context only. It must not override v1 hard stops, evidence blockers, stress survival, portfolio gate, execution readiness, or the v1 decision seal.
 
+## v2.1 Site Visit Assistant
+
+The v2.1 layer converts founder site-visit intuition into observable checks:
+
+- Treat the physical visit as mandatory before a strong recommendation on a completed property.
+- Check guardhouse, lobby, lifts, car park, corridor, refuse room, facilities, resident behaviour, and surrounding vibe.
+- Separate positive site feeling from evidence. The visit can confirm or challenge the data, but it should not replace transaction, rent, legal, and financing proof.
+- Flag permanent problems such as poor unit placement, lift waiting, water marks, weak security, poor maintenance, short-stay traffic, noise, and bad management response.
+
+## v2.2 Deal Sourcing And Professional Filter
+
+The v2.2 layer tests whether the deal and advice channel are credible:
+
+- Score deal source quality separately from property quality.
+- Treat heavily advertised, hard-sold, fake-listing, or repeated-follow-up deals as pushed inventory until proven otherwise.
+- Treat scarce sources such as auction pages, agency in-house access, referrals, owner-direct leads, and motivated sellers as useful but still evidence-bound.
+- Challenge agent, banker, and lawyer advice with adjacent questions instead of accepting claims only because they can close the transaction.
+- Set offer discipline before negotiation begins.
+
+## v2.3 Tenant And Rental Management Plan
+
+The v2.3 layer turns rental demand into execution discipline:
+
+- Require rent coverage, target tenant logic, furnishing strategy, tenant screening, and achieved-rent evidence.
+- Treat tenant risk through observable behaviour and documentation, not stereotypes.
+- Prefer durable, rentability-led furnishing over personal taste.
+- Flag suspicious requests, weak documentation, illegal-use risk, uncontrolled subletting, and late-payment patterns.
+- Treat tenant quality as part of investment performance because it affects cash flow, vacancy, repair cost, and owner stress.
+
+## v2.4 Exit Strategy And Buyer Psychology
+
+The v2.4 layer forces saleability planning before purchase:
+
+- Preserve both own-stay emotion and investor return logic where possible.
+- Prepare the exit around bank value, staging, renovation, viewing condition, tenant status, likely objections, and timing.
+- Flag narrow buyer pools, weak own-stay appeal, poor management, bad unit placement, substitute supply, and liquidity risk.
+- Decide the likely sale mode before holding: vacant after renovation, tenanted investor sale, long-term hold, or refinance and hold.
+- Treat profit as insufficient proof of a good decision unless the process, execution, outcome, and luck review also make sense.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

@@ -953,6 +953,10 @@ function saveAnalysisToShortlist(analysis) {
     marketPulse: analysis.marketPulse || null,
     holdExitPlan: analysis.holdExitPlan || null,
     decisionSeal: analysis.decisionSeal || null,
+    siteVisitAssistant: analysis.siteVisitAssistant || null,
+    sourcingProfessional: analysis.sourcingProfessional || null,
+    tenantRentalPlan: analysis.tenantRentalPlan || null,
+    exitStrategy: analysis.exitStrategy || null,
     hardStops: analysis.hardStops || [],
     recommendationBlockers: analysis.recommendationBlockers || [],
     decisionFocus: analysis.decisionFocus || null,
@@ -1082,6 +1086,22 @@ function analysisExportText(analysis) {
   if (analysis.decisionSeal?.summary) {
     lines.push("", "V1 decision seal", `${analysis.decisionSeal.label || "V1 Conditional Only"}: ${analysis.decisionSeal.summary}`);
     for (const item of analysis.decisionSeal.conditions || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
+  }
+  if (analysis.siteVisitAssistant?.summary) {
+    lines.push("", "V2.1 site visit assistant", `${analysis.siteVisitAssistant.status || "required"}: ${analysis.siteVisitAssistant.summary}`, `Focus: ${analysis.siteVisitAssistant.focus || "Check lived quality on site"}`);
+    for (const item of analysis.siteVisitAssistant.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
+  }
+  if (analysis.sourcingProfessional?.summary) {
+    lines.push("", "V2.2 sourcing and professional filter", `${analysis.sourcingProfessional.status || "verify"}: ${analysis.sourcingProfessional.summary}`, `Posture: ${analysis.sourcingProfessional.posture || "Evidence-first sourcing"}`);
+    for (const item of analysis.sourcingProfessional.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
+  }
+  if (analysis.tenantRentalPlan?.summary) {
+    lines.push("", "V2.3 tenant and rental plan", `${analysis.tenantRentalPlan.status || "watch"}: ${analysis.tenantRentalPlan.summary}`, `Target: ${analysis.tenantRentalPlan.target || "Target tenant not stated"}`);
+    for (const item of analysis.tenantRentalPlan.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
+  }
+  if (analysis.exitStrategy?.summary) {
+    lines.push("", "V2.4 exit strategy and buyer psychology", `${analysis.exitStrategy.status || "prepare"}: ${analysis.exitStrategy.summary}`, `Buyer psychology: ${analysis.exitStrategy.buyerPsychology || "Buyer objections must be prepared"}`);
+    for (const item of analysis.exitStrategy.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
   }
   if (analysis.executionPlan?.actions?.length) {
     lines.push(
@@ -1589,6 +1609,27 @@ function decisionSealMarkup(seal = {}) {
   `;
 }
 
+function v2WorkflowMarkup(title, section = {}, detailLabel = "FOCUS", detailValue = "") {
+  if (!section.summary) return "";
+  const checks = Array.isArray(section.checks) ? section.checks : [];
+  const status = section.status || "watch";
+  return `
+    <section class="analysisV2Workflow ${escapeHtml(status)}">
+      <header>
+        <span><small>${escapeHtml(title)}</small><b>${escapeHtml(section.summary)}</b></span>
+        <em>${escapeHtml(status)}</em>
+      </header>
+      ${detailValue ? `<p><b>${escapeHtml(detailLabel)}</b> ${escapeHtml(detailValue)}</p>` : ""}
+      ${checks.length ? `<div>${checks.map((item) => `
+        <article class="v2WorkflowCheck ${escapeHtml(item.status)}">
+          <i>${escapeHtml(item.status)}</i>
+          <span><b>${escapeHtml(item.label)}</b><small>${escapeHtml(item.action)}</small></span>
+        </article>
+      `).join("")}</div>` : ""}
+    </section>
+  `;
+}
+
 function executionPlanMarkup(plan = {}) {
   const actions = Array.isArray(plan.actions) ? plan.actions : [];
   if (!actions.length) return "";
@@ -1689,7 +1730,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       </section>
     ` : ""}
     <div class="analysisMeta">
-      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v1.10")}</b></span>
+      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v2.4")}</b></span>
       <span>REASONING <b>${escapeHtml(analysis.reasoningMode || (analysis.aiCommentary ? "Framework + AI" : "Framework only"))}</b></span>
       <span>DECISION SCORE <b>${escapeHtml(analysis.averageScore)}/100</b></span>
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
@@ -1706,6 +1747,10 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     ${marketPulseMarkup(analysis.marketPulse)}
     ${holdExitPlanMarkup(analysis.holdExitPlan)}
     ${decisionSealMarkup(analysis.decisionSeal)}
+    ${v2WorkflowMarkup("V2.1 SITE VISIT ASSISTANT", analysis.siteVisitAssistant, "FOCUS", analysis.siteVisitAssistant?.focus)}
+    ${v2WorkflowMarkup("V2.2 SOURCING / PROFESSIONAL FILTER", analysis.sourcingProfessional, "POSTURE", analysis.sourcingProfessional?.posture)}
+    ${v2WorkflowMarkup("V2.3 TENANT / RENTAL PLAN", analysis.tenantRentalPlan, "TARGET", analysis.tenantRentalPlan?.target)}
+    ${v2WorkflowMarkup("V2.4 EXIT STRATEGY", analysis.exitStrategy, "BUYER PSYCHOLOGY", analysis.exitStrategy?.buyerPsychology)}
     ${executionPlanMarkup(analysis.executionPlan)}
     ${learningLoopMarkup(analysis.learningLoop)}
     ${scenarioMarkup ? `<section class="analysisScenarioSection"><h3>DOWNSIDE SCENARIOS</h3><div class="analysisScenarios">${scenarioMarkup}</div><p>Stress assumptions are decision tests, not forecasts.</p></section>` : ""}
