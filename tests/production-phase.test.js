@@ -165,10 +165,33 @@ test("production phase keeps evidence owner-only and completes the account lifec
     }
   });
   assert.equal(memoryQuery.response.status, 200);
-  assert.equal(memoryQuery.payload.memoryCandidate.status, "pending");
+  assert.equal(memoryQuery.payload.memoryCandidate, null);
   assert.equal(memoryQuery.payload.sources.some((source) => source.type === "memory"), false);
 
-  const approvedMemory = await request(baseUrl, `/api/memory/${memoryQuery.payload.memoryCandidate.id}`, {
+  const memoryBeforeOptIn = await request(baseUrl, "/api/memory", { cookie: login.cookie });
+  assert.equal(memoryBeforeOptIn.payload.summary.pending, 0);
+  assert.equal(memoryBeforeOptIn.payload.settings.captureEnabled, false);
+  assert.equal(memoryBeforeOptIn.payload.settings.reasoningEnabled, false);
+
+  const enabledMemory = await request(baseUrl, "/api/memory/settings", {
+    method: "PATCH",
+    cookie: login.cookie,
+    body: { captureEnabled: true, reasoningEnabled: true }
+  });
+  assert.equal(enabledMemory.payload.settings.captureEnabled, true);
+  assert.equal(enabledMemory.payload.settings.reasoningEnabled, true);
+
+  const optInMemoryQuery = await request(baseUrl, "/api/jarvis/query", {
+    method: "POST",
+    cookie: login.cookie,
+    body: {
+      sessionId: memberSession.payload.session.id,
+      query: "Remember that I prefer freehold landed property for long-term appreciation."
+    }
+  });
+  assert.equal(optInMemoryQuery.payload.memoryCandidate.status, "pending");
+
+  const approvedMemory = await request(baseUrl, `/api/memory/${optInMemoryQuery.payload.memoryCandidate.id}`, {
     method: "PATCH",
     cookie: login.cookie,
     body: { action: "approve" }

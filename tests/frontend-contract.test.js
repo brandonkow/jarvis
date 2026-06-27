@@ -32,6 +32,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /<form id="chatForm"[\s\S]*?id="analyzeDealBtn"[\s\S]*?<\/form>/, "Deal analysis must remain visible inside the message bar.");
   assert.equal((html.match(/data-context-reset="(?:deal|profile)"/g) || []).length, 2, "Each context card needs its own reset button.");
   assert.match(html, /id="memoryPanel"[\s\S]*?PRIVATE TO YOUR ACCOUNT[\s\S]*?id="memoryList"/, "Signed-in users need a private memory review screen.");
+  assert.match(html, /id="memoryCaptureEnabled"[\s\S]*?id="memoryReasoningEnabled"[\s\S]*?id="memoryModeNotice"/, "V3 memory must expose opt-in capture and reasoning controls.");
   assert.match(html, /data-deal-field="annualAssessmentQuitRent"[\s\S]*?data-deal-field="vacancyStressMonths"/, "Deal card needs optional v1.6 stress assumption fields.");
   assert.match(html, /data-deal-field="dealSource"[\s\S]*?data-deal-field="resalePreparation"/, "Deal card needs optional v2 workflow fields.");
   assert.match(html, /data-profile-field="portfolioRole"[\s\S]*?data-profile-field="nextPurchaseReason"/, "Profile card needs optional v1.7 portfolio gate fields.");
@@ -51,6 +52,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /FRAMEWORK \+ AI/, "External reasoning responses need a model-neutral badge.");
   assert.doesNotMatch(app, /FRAMEWORK \+ DEEPSEEK|modelLabel\(/, "The frontend must not expose a specific reasoning model.");
   assert.match(app, /result\.memoryCandidate/, "The chat must surface memory candidates for review.");
+  assert.match(app, /\/api\/memory\/settings/, "Memory collection and reasoning must be controlled through explicit settings.");
+  assert.match(app, /captureEnabled:\s*memoryCaptureEnabled\.checked/, "Memory capture must be opt-in from the UI.");
+  assert.match(app, /reasoningEnabled:\s*memoryReasoningEnabled\.checked/, "Using approved memory in reasoning must be opt-in from the UI.");
   assert.match(app, /data-memory-action="approve"/, "Memory candidates must require explicit approval.");
   assert.match(app, /data-analysis-action="report"/, "Every structured analysis needs a printable deal report.");
   assert.match(app, /data-analysis-action="copy"/, "Every structured analysis needs a text copy export.");
@@ -88,6 +92,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /data-analysis-action="journal"/, "Saved reports need a direct decision-record action.");
   assert.match(app, /function resetContextCard[\s\S]*?localStorage\.removeItem\(storageKey\)/, "Card reset must clear both visible fields and saved browser context.");
   assert.match(styles, /\.memoryOpen \.transcript[\s\S]*?display:\s*none;/, "The memory screen must replace chat content instead of opening a popup.");
+  assert.match(styles, /\.memorySettings[\s\S]*?grid-template-columns:/, "V3 memory consent controls need a compact settings layout.");
   assert.match(styles, /\.reportsOpen \.transcript[\s\S]*?display:\s*none;/, "The report history must replace chat content instead of opening a popup.");
   assert.match(styles, /\.journalOpen \.transcript[\s\S]*?display:\s*none;/, "The decision journal must replace chat content instead of opening a popup.");
   assert.match(styles, /\.ownerMarketOpen \.transcript[\s\S]*?display:\s*none;/, "The owner market console must replace chat content instead of opening a popup.");

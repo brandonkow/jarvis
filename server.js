@@ -225,6 +225,14 @@ function emptyAuth() {
   return { version: 5, users: [], sessions: [], tokens: [] };
 }
 
+function normalizeMemorySettings(settings) {
+  return {
+    captureEnabled: Boolean(settings?.captureEnabled),
+    reasoningEnabled: Boolean(settings?.reasoningEnabled),
+    updatedAt: String(settings?.updatedAt || "")
+  };
+}
+
 function normalizeUserMemory(memory) {
   const validCategories = new Set(["preference", "goal", "constraint", "experience", "decision", "general"]);
   const validStatuses = new Set(["pending", "approved", "dismissed"]);
@@ -240,7 +248,7 @@ function normalizeUserMemory(memory) {
       reviewedAt: String(item.reviewedAt || "")
     })).filter((item) => item.content).slice(0, 200)
     : [];
-  return { version: 1, items };
+  return { version: 3, settings: normalizeMemorySettings(memory?.settings), items };
 }
 
 function billingPeriod(value = new Date()) {
@@ -1045,11 +1053,22 @@ function publicMemoryItem(item) {
   };
 }
 
+function publicMemorySettings(memory) {
+  const settings = normalizeUserMemory(memory).settings;
+  return {
+    captureEnabled: settings.captureEnabled,
+    reasoningEnabled: settings.reasoningEnabled
+  };
+}
+
 function memorySummary(memory) {
-  const items = normalizeUserMemory(memory).items;
+  const normalized = normalizeUserMemory(memory);
+  const items = normalized.items;
   return {
     pending: items.filter((item) => item.status === "pending").length,
-    approved: items.filter((item) => item.status === "approved").length
+    approved: items.filter((item) => item.status === "approved").length,
+    captureEnabled: normalized.settings.captureEnabled,
+    reasoningEnabled: normalized.settings.reasoningEnabled
   };
 }
 
@@ -1089,7 +1108,9 @@ function proposeLongTermMemory(message, memory, sourceMessageId) {
 }
 
 function approvedUserMemories(user) {
-  return normalizeUserMemory(user?.memory).items.filter((item) => item.status === "approved");
+  const memory = normalizeUserMemory(user?.memory);
+  if (!memory.settings.reasoningEnabled) return [];
+  return memory.items.filter((item) => item.status === "approved");
 }
 
 function normalizeEmail(value) {
@@ -4262,6 +4283,7 @@ function isPublicApiRoute(method, pathname) {
     || (["GET", "POST"].includes(method) && pathname === "/api/journal")
     || (["GET", "PATCH", "DELETE"].includes(method) && pathname.startsWith("/api/journal/"))
     || (["GET", "POST"].includes(method) && pathname === "/api/memory")
+    || (method === "PATCH" && pathname === "/api/memory/settings")
     || (["PATCH", "DELETE"].includes(method) && pathname.startsWith("/api/memory/"))
     || (method === "GET" && pathname === "/api/jarvis/status")
     || (method === "GET" && pathname === "/api/jarvis/sessions")
@@ -4721,7 +4743,7 @@ async function router(req, res) {
     const items = actor.user.memory.items
       .filter((item) => item.status !== "dismissed")
       .map(publicMemoryItem);
-    return send(res, 200, { items, summary: memorySummary(actor.user.memory) });
+    return send(res, 200, { items, settings: publicMemorySettings(actor.user.memory), summary: memorySummary(actor.user.memory) });
   }
 
   if (req.method === "POST" && url.pathname === "/api/memory") {
@@ -4746,7 +4768,22 @@ async function router(req, res) {
     actor.user.memory.items.unshift(item);
     actor.user.memory = normalizeUserMemory(actor.user.memory);
     await writeDb(db);
-    return send(res, 201, { item: publicMemoryItem(item), summary: memorySummary(actor.user.memory) });
+    return send(res, 201, { item: publicMemoryItem(item), settings: publicMemorySettings(actor.user.memory), summary: memorySummary(actor.user.memory) });
+  }
+
+  if (req.method === "PATCH" && url.pathname === "/api/memory/settings") {
+    if (!actor.user) return send(res, 401, { error: "Sign in to configure long-term memory." });
+    const body = await readBody(req);
+    actor.user.memory = normalizeUserMemory(actor.user.memory);
+    const nextSettings = {
+      ...actor.user.memory.settings,
+      ...(typeof body.captureEnabled === "boolean" ? { captureEnabled: body.captureEnabled } : {}),
+      ...(typeof body.reasoningEnabled === "boolean" ? { reasoningEnabled: body.reasoningEnabled } : {}),
+      updatedAt: new Date().toISOString()
+    };
+    actor.user.memory.settings = normalizeMemorySettings(nextSettings);
+    await writeDb(db);
+    return send(res, 200, { settings: publicMemorySettings(actor.user.memory), summary: memorySummary(actor.user.memory) });
   }
 
   if (req.method === "PATCH" && url.pathname.startsWith("/api/memory/")) {
@@ -4762,7 +4799,7 @@ async function router(req, res) {
     item.updatedAt = now;
     item.reviewedAt = now;
     await writeDb(db);
-    return send(res, 200, { item: publicMemoryItem(item), summary: memorySummary(actor.user.memory) });
+    return send(res, 200, { item: publicMemoryItem(item), settings: publicMemorySettings(actor.user.memory), summary: memorySummary(actor.user.memory) });
   }
 
   if (req.method === "DELETE" && url.pathname.startsWith("/api/memory/")) {
@@ -5444,10 +5481,12 @@ async function router(req, res) {
     let memoryCandidate = null;
     if (actor.user) {
       actor.user.memory = normalizeUserMemory(actor.user.memory);
-      memoryCandidate = proposeLongTermMemory(query, actor.user.memory, userMessage.id);
-      if (memoryCandidate) {
-        actor.user.memory.items.unshift(memoryCandidate);
-        actor.user.memory = normalizeUserMemory(actor.user.memory);
+      if (actor.user.memory.settings.captureEnabled) {
+        memoryCandidate = proposeLongTermMemory(query, actor.user.memory, userMessage.id);
+        if (memoryCandidate) {
+          actor.user.memory.items.unshift(memoryCandidate);
+          actor.user.memory = normalizeUserMemory(actor.user.memory);
+        }
       }
     }
 

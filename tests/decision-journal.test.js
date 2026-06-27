@@ -175,6 +175,12 @@ test("decision journal locks pre-purchase reasoning and recalls reviewed lessons
     body: { action: "approve" }
   });
   assert.equal(approvedMemory.payload.item.status, "approved");
+  const memorySettings = await request(baseUrl, "/api/memory/settings", {
+    method: "PATCH",
+    cookie,
+    body: { reasoningEnabled: true }
+  });
+  assert.equal(memorySettings.payload.settings.reasoningEnabled, true);
 
   const learnedReport = await request(baseUrl, "/api/jarvis/analyze-deal", {
     method: "POST",

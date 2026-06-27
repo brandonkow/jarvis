@@ -48,6 +48,9 @@ const memoryInput = document.querySelector("#memoryInput");
 const memoryList = document.querySelector("#memoryList");
 const memoryApprovedCount = document.querySelector("#memoryApprovedCount");
 const memoryPendingCount = document.querySelector("#memoryPendingCount");
+const memoryCaptureEnabled = document.querySelector("#memoryCaptureEnabled");
+const memoryReasoningEnabled = document.querySelector("#memoryReasoningEnabled");
+const memoryModeNotice = document.querySelector("#memoryModeNotice");
 const billingSummary = document.querySelector("#billingSummary");
 const billingPlanName = document.querySelector("#billingPlanName");
 const billingUsage = document.querySelector("#billingUsage");
@@ -172,6 +175,7 @@ let billingState = null;
 let billingPlans = [];
 let ownerMarketEnabled = false;
 let ownerMarketProjects = [];
+let memorySettingsLoading = false;
 
 function clientId() {
   const existing = window.localStorage.getItem(clientKey);
@@ -385,8 +389,22 @@ function memoryItemMarkup(item) {
   `;
 }
 
+function renderMemorySettings(settings = {}) {
+  const captureEnabled = Boolean(settings.captureEnabled);
+  const reasoningEnabled = Boolean(settings.reasoningEnabled);
+  memorySettingsLoading = true;
+  memoryCaptureEnabled.checked = captureEnabled;
+  memoryReasoningEnabled.checked = reasoningEnabled;
+  memorySettingsLoading = false;
+  memoryModeNotice.textContent = captureEnabled || reasoningEnabled
+    ? `Memory ${captureEnabled ? "can suggest items from chat" : "will not suggest from chat"}; approved memory ${reasoningEnabled ? "can guide replies and reports" : "will not guide reasoning"}.`
+    : "Memory engine ready. Collection is off.";
+  memoryModeNotice.classList.toggle("active", captureEnabled || reasoningEnabled);
+}
+
 function renderMemory(payload = {}) {
   const items = Array.isArray(payload.items) ? payload.items : [];
+  renderMemorySettings(payload.settings || payload.summary || {});
   memoryApprovedCount.textContent = String(payload.summary?.approved || 0);
   memoryPendingCount.textContent = String(payload.summary?.pending || 0);
   memoryList.innerHTML = items.length
@@ -395,7 +413,7 @@ function renderMemory(payload = {}) {
       return statusOrder[a.status] - statusOrder[b.status]
         || String(b.updatedAt).localeCompare(String(a.updatedAt));
     }).map(memoryItemMarkup).join("")
-    : '<p class="memoryEmpty">No long-term memories yet. Tell Apex “Remember that...” or add one above.</p>';
+    : '<p class="memoryEmpty">No long-term memories yet. Auto-capture is off until you enable it, or you can add one manually above.</p>';
 }
 
 async function loadMemory() {
@@ -438,6 +456,29 @@ async function reviewMemory(id, action) {
     method: "PATCH",
     body: JSON.stringify({ action })
   });
+}
+
+async function saveMemorySettings() {
+  if (memorySettingsLoading) return;
+  memoryCaptureEnabled.disabled = true;
+  memoryReasoningEnabled.disabled = true;
+  try {
+    const payload = await requestJson("/api/memory/settings", {
+      method: "PATCH",
+      body: JSON.stringify({
+        captureEnabled: memoryCaptureEnabled.checked,
+        reasoningEnabled: memoryReasoningEnabled.checked
+      })
+    });
+    renderMemorySettings(payload.settings || {});
+    setSystemState("System ready", "Memory settings updated.");
+  } catch (error) {
+    setSystemState("Connection issue", error.message || "Memory settings could not be updated.");
+    if (!memoryPanel.hidden) await loadMemory().catch(() => {});
+  } finally {
+    memoryCaptureEnabled.disabled = false;
+    memoryReasoningEnabled.disabled = false;
+  }
 }
 
 async function handleMemoryAction(button) {
@@ -2407,6 +2448,8 @@ memoryToggle.addEventListener("click", () => {
   else closeMemoryPanel();
 });
 memoryClose.addEventListener("click", closeMemoryPanel);
+memoryCaptureEnabled.addEventListener("change", () => void saveMemorySettings());
+memoryReasoningEnabled.addEventListener("change", () => void saveMemorySettings());
 reportsToggle.addEventListener("click", () => {
   if (reportsPanel.hidden) void openReportsPanel();
   else closeReportsPanel();

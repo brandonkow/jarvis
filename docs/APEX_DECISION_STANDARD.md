@@ -58,11 +58,24 @@ These sections explain the engine. They do not soften hard stops or replace live
 
 The v1.2 learning loop lets Apex use private user learning without pretending the model trains itself automatically:
 
-- **Approved memory** may appear in a report when it matches the current deal. Pending or dismissed memory is ignored.
+- **Memory is built before it collects**. New accounts start with memory capture off and memory reasoning off.
+- **Capture suggestions** must be explicitly enabled before Apex can propose pending memories from chat.
+- **Approved memory** may appear in a report only when the user has also enabled memory reasoning. Pending or dismissed memory is ignored.
 - **Locked decision-journal entries** may appear when the thesis, counter-thesis, kill rule, result, or lesson matches the current deal.
 - **Reviewed journal lessons** are treated as stronger learning signals than unreviewed locked theses.
 - **Learning signals** may add a next action or sharpen the challenge mode, but they do not change deterministic scores, hard stops, legal boundaries, or required evidence.
 - **Owner knowledge base** remains separate from user memory. Normal users cannot write to the shared Apex framework or owner evidence store.
+
+## v3.0 Passive Memory Foundation
+
+V3 starts as a consent-first memory engine, not automatic training:
+
+- The data model stores memory settings separately from memory items.
+- Manual memory entry remains possible because it is a deliberate user action.
+- Chat-based memory suggestions are disabled until the user enables capture.
+- Approved memory is not sent into chat or deal-report reasoning until the user enables memory reasoning.
+- Turning memory reasoning off does not delete memories; it only stops them from influencing answers and reports.
+- The shared Apex framework and owner evidence store remain unaffected by user memory.
 
 ## v1.3 Deal Comparison
 

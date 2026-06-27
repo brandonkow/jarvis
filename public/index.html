@@ -122,6 +122,17 @@
             <button id="memoryClose" type="button" aria-label="Close memory panel">CLOSE</button>
           </header>
           <p class="memoryIntro">Only memories you approve can influence future conversations and be sent as context to the configured AI provider. They never change the shared Apex knowledge base.</p>
+          <div class="memorySettings" aria-label="Memory controls">
+            <label>
+              <input id="memoryCaptureEnabled" type="checkbox" />
+              <span><b>Capture suggestions</b><small>Off by default. Apex will not suggest memories from chat unless enabled.</small></span>
+            </label>
+            <label>
+              <input id="memoryReasoningEnabled" type="checkbox" />
+              <span><b>Use approved memory</b><small>Off by default. Approved memories affect replies and reports only when enabled.</small></span>
+            </label>
+          </div>
+          <p id="memoryModeNotice" class="memoryModeNotice">Memory engine ready. Collection is off.</p>
           <div class="memorySummary" aria-label="Memory summary">
             <span><b id="memoryApprovedCount">0</b> APPROVED</span>
             <span><b id="memoryPendingCount">0</b> TO REVIEW</span>

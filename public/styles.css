@@ -887,16 +887,71 @@ button {
   display: grid;
   min-height: 0;
   max-height: min(72dvh, 620px);
-  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
   gap: 10px;
 }
 
 .memoryIntro,
+.memoryModeNotice,
 .memoryEmpty {
   margin: 0;
   color: #729ca6;
   font-size: 0.64rem;
   line-height: 1.5;
+}
+
+.memorySettings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.memorySettings label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  border: 1px solid rgba(103, 229, 255, 0.13);
+  border-radius: 11px;
+  padding: 9px;
+  background: rgba(1, 12, 19, 0.5);
+}
+
+.memorySettings input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--cyan);
+  margin-top: 1px;
+}
+
+.memorySettings span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.memorySettings b {
+  color: #b9dce3;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.memorySettings small {
+  color: #658f99;
+  font-size: 0.56rem;
+  line-height: 1.35;
+}
+
+.memoryModeNotice {
+  border-left: 2px solid rgba(103, 229, 255, 0.28);
+  padding-left: 8px;
+}
+
+.memoryModeNotice.active {
+  color: #9bc6cf;
+  border-left-color: rgba(103, 229, 255, 0.72);
 }
 
 .memorySummary {
@@ -4252,6 +4307,10 @@ button {
 
   .memoryPanel {
     max-height: calc(100dvh - 104px);
+  }
+
+  .memorySettings {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .reportsPanel {
