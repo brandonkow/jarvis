@@ -38,6 +38,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /id="reportsPanel"[\s\S]*?DEAL REPORTS[\s\S]*?id="reportsList"/, "Signed-in accounts need private report history.");
   assert.match(html, /id="journalPanel"[\s\S]*?DECISION JOURNAL[\s\S]*?id="journalEditor"/, "Signed-in accounts need an inline decision journal.");
   assert.doesNotMatch(html, /ESTATELAB \/ JARVIS|<b>J<\/b>/, "Legacy visible branding must not return.");
+  assert.doesNotMatch(html, />[^<]*(EstateLab|Jarvis)[^<]*</i, "Visible HTML copy must use Apex branding only.");
+  assert.match(app, /function brandVisibleText[\s\S]*?EstateLab[\s\S]*?Jarvis/, "Rendered text must scrub legacy branding from retrieved knowledge.");
+  assert.match(app, /return brandVisibleText\(lines\.join\("\\n"\)\)/, "Copied deal reports must scrub legacy branding too.");
   assert.match(app, /FRAMEWORK ONLY/, "Framework fallback responses need an explicit badge.");
   assert.match(app, /FRAMEWORK \+ AI/, "External reasoning responses need a model-neutral badge.");
   assert.doesNotMatch(app, /FRAMEWORK \+ DEEPSEEK|modelLabel\(/, "The frontend must not expose a specific reasoning model.");

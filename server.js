@@ -685,11 +685,12 @@ function normalizeJarvisSession(session) {
   const messages = Array.isArray(session.messages)
     ? session.messages.map(normalizeJarvisMessage).filter(Boolean).slice(-80)
     : [];
+  const title = String(session.title || DEFAULT_SESSION_TITLE).trim();
   return {
     id: String(session.id),
     createdAt: String(session.createdAt || new Date().toISOString()),
     updatedAt: String(session.updatedAt || session.createdAt || new Date().toISOString()),
-    title: String(session.title || DEFAULT_SESSION_TITLE).trim(),
+    title: defaultSessionTitle(title) ? DEFAULT_SESSION_TITLE : title,
     clientId: String(session.clientId || "browser").trim(),
     userId: String(session.userId || "").trim(),
     messages

@@ -142,8 +142,14 @@ function clientId() {
   return next;
 }
 
+function brandVisibleText(value) {
+  return String(value ?? "")
+    .replace(/EstateLab/gi, "Apex Analytic")
+    .replace(/Jarvis/gi, "Apex");
+}
+
 function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+  return brandVisibleText(value).replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -992,7 +998,7 @@ function analysisExportText(analysis) {
   if (analysis.watchouts?.length) lines.push("", "Watch-outs", ...analysis.watchouts.map((item) => `- ${item}`));
   if (analysis.nextActions?.length) lines.push("", "Check next", ...analysis.nextActions.map((item) => `- ${item}`));
   if (analysis.counterThesis) lines.push("", `Strongest counter-thesis: ${analysis.counterThesis}`);
-  return lines.join("\n");
+  return brandVisibleText(lines.join("\n"));
 }
 
 async function copyAnalysisReport(button, analysis) {
@@ -1756,7 +1762,7 @@ async function submitQuestion(question) {
     const result = await askJarvis(cleanQuestion);
     addMessage("jarvis", result.answer, result.sources, result);
     addMemorySuggestion(result.memoryCandidate);
-    speak(result.answer);
+    speak(brandVisibleText(result.answer));
     if (!voiceResponsesEnabled) setSystemState("System ready", "Ready when you are.");
   } catch (error) {
     const message = error.message || "The Apex Analytic backend is unavailable.";
@@ -1810,7 +1816,7 @@ async function runDealAnalysis() {
     if (result.billing) renderBillingStatus(result.billing);
     if (result.savedReport) result.analysis.savedReportId = result.savedReport.id;
     addDealAnalysis(result.analysis, result.sources, result);
-    speak(result.analysis.voiceSummary);
+    speak(brandVisibleText(result.analysis.voiceSummary));
     if (!voiceResponsesEnabled) setSystemState("System ready", "Analysis complete.");
   } catch (error) {
     const message = error.message || "The deal analysis is unavailable.";
