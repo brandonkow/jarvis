@@ -1412,6 +1412,284 @@ button {
   color: var(--cyan);
 }
 
+.ownerMarketPanel {
+  display: grid;
+  min-height: 0;
+  max-height: min(82dvh, 780px);
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+  gap: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(103, 229, 255, 0.24);
+  border-radius: 12px;
+  padding: 13px;
+  background: linear-gradient(135deg, rgba(90, 231, 255, 0.09), transparent 28%), rgba(2, 13, 21, 0.93);
+  box-shadow: 0 0 38px rgba(28, 190, 221, 0.09), inset 0 0 28px rgba(28, 190, 221, 0.04);
+  backdrop-filter: blur(18px);
+}
+
+.ownerMarketPanel[hidden] {
+  display: none;
+}
+
+.ownerMarketOpen .transcript,
+.ownerMarketOpen .contextDeck,
+.ownerMarketOpen .aiDisclosure,
+.ownerMarketOpen .commandBar,
+.ownerMarketOpen .utilityBar {
+  display: none;
+}
+
+.ownerMarketHeader,
+.ownerMarketForm header,
+.ownerMarketLists > section > header,
+.ownerMarketItem header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ownerMarketHeader > span,
+.ownerMarketItem header > span {
+  display: grid;
+  gap: 3px;
+}
+
+.ownerMarketHeader small,
+.ownerMarketForm small,
+.ownerMarketLists small,
+.ownerMarketItem small {
+  color: #5d8c97;
+  font-size: 0.47rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ownerMarketHeader b,
+.ownerMarketForm header b,
+.ownerMarketLists header b,
+.ownerMarketItem header b {
+  color: var(--cyan-bright);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+}
+
+.ownerMarketHeader button,
+.ownerMarketAccess button,
+.ownerMarketForm button,
+.ownerMarketFilters button,
+.ownerMarketItem button {
+  border: 1px solid rgba(103, 229, 255, 0.18);
+  border-radius: 999px;
+  padding: 7px 10px;
+  cursor: pointer;
+  color: #85bec9;
+  background: rgba(0, 10, 17, 0.48);
+  font-size: 0.49rem;
+  letter-spacing: 0.11em;
+}
+
+.ownerMarketPrimary,
+.ownerMarketAccess button[type="submit"] {
+  border-color: rgba(103, 229, 255, 0.36) !important;
+  color: var(--cyan) !important;
+}
+
+.ownerMarketHeader button:hover,
+.ownerMarketAccess button:hover,
+.ownerMarketForm button:hover,
+.ownerMarketFilters button:hover,
+.ownerMarketItem button:hover {
+  border-color: rgba(103, 229, 255, 0.42);
+  color: var(--cyan);
+}
+
+.ownerMarketIntro,
+.ownerMarketMessage,
+.ownerMarketEmpty,
+.ownerMarketItem p {
+  margin: 0;
+  color: #729ca6;
+  font-size: 0.61rem;
+  line-height: 1.45;
+}
+
+.ownerMarketMessage[data-tone="danger"] {
+  color: #ef9999;
+}
+
+.ownerMarketMessage[data-tone="warning"] {
+  color: #d7b970;
+}
+
+.ownerMarketAccess,
+.ownerMarketFilters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.ownerMarketAccess label {
+  display: grid;
+  gap: 4px;
+  color: #6e9fab;
+  font-size: 0.54rem;
+  letter-spacing: 0.08em;
+}
+
+.ownerMarketAccess input,
+.ownerMarketFilters input,
+.ownerMarketFilters select,
+.ownerMarketGrid input,
+.ownerMarketGrid select,
+.ownerMarketGrid textarea {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgba(103, 229, 255, 0.15);
+  border-radius: 9px;
+  outline: 0;
+  padding: 8px 10px;
+  color: var(--text);
+  background: rgba(0, 10, 17, 0.58);
+  font-size: 0.72rem;
+}
+
+.ownerMarketGrid textarea {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.ownerMarketAccess input:focus,
+.ownerMarketFilters input:focus,
+.ownerMarketFilters select:focus,
+.ownerMarketGrid input:focus,
+.ownerMarketGrid select:focus,
+.ownerMarketGrid textarea:focus {
+  border-color: rgba(103, 229, 255, 0.48);
+}
+
+.ownerMarketSummary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ownerMarketSummary span,
+.ownerMarketMeta span {
+  border: 1px solid rgba(103, 229, 255, 0.13);
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #638d97;
+  font-size: 0.48rem;
+  letter-spacing: 0.1em;
+}
+
+.ownerMarketSummary b {
+  color: var(--cyan);
+  font-weight: 500;
+}
+
+.ownerMarketWorkspace {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ownerMarketForm {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  border: 1px solid rgba(103, 229, 255, 0.12);
+  border-radius: 10px;
+  padding: 11px;
+  background: rgba(1, 12, 19, 0.54);
+}
+
+.ownerMarketGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ownerMarketGrid label {
+  display: grid;
+  gap: 4px;
+  color: #6e9fab;
+  font-size: 0.54rem;
+  letter-spacing: 0.08em;
+}
+
+.ownerMarketWide {
+  grid-column: 1 / -1;
+}
+
+.ownerMarketLists {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.25fr);
+  gap: 10px;
+}
+
+.ownerMarketLists > section {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+}
+
+.ownerProjectList,
+.ownerObservationList {
+  display: grid;
+  align-content: start;
+  min-height: 0;
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ownerMarketItem {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(103, 229, 255, 0.14);
+  border-left: 2px solid #d0ad69;
+  border-radius: 10px;
+  padding: 11px;
+  background: rgba(1, 12, 19, 0.66);
+}
+
+.ownerMarketItem.fresh {
+  border-left-color: #70e6b3;
+}
+
+.ownerMarketItem.stale {
+  border-left-color: #e68e8e;
+}
+
+.ownerMarketItem header em {
+  color: var(--cyan);
+  font-size: 0.54rem;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ownerMarketMeta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ownerMarketItem button {
+  justify-self: start;
+}
+
 .shortlistPanel {
   display: grid;
   min-height: 0;
@@ -3697,7 +3975,8 @@ button {
   .accountOpen .assistantStage,
   .memoryOpen .assistantStage,
   .reportsOpen .assistantStage,
-  .journalOpen .assistantStage {
+  .journalOpen .assistantStage,
+  .ownerMarketOpen .assistantStage {
     transform: translateY(-28dvh) scale(0.5);
   }
 
@@ -3705,7 +3984,8 @@ button {
   .accountOpen .identity,
   .memoryOpen .identity,
   .reportsOpen .identity,
-  .journalOpen .identity {
+  .journalOpen .identity,
+  .ownerMarketOpen .identity {
     opacity: 0;
   }
 
@@ -3731,7 +4011,8 @@ button {
   .authPanel,
   .memoryPanel,
   .reportsPanel,
-  .journalPanel {
+  .journalPanel,
+  .ownerMarketPanel {
     padding: 12px;
   }
 
@@ -3821,6 +4102,45 @@ button {
 
   .journalPanel {
     max-height: calc(100dvh - 104px);
+  }
+
+  .ownerMarketPanel {
+    max-height: calc(100dvh - 104px);
+  }
+
+  .ownerMarketAccess,
+  .ownerMarketFilters,
+  .ownerMarketWorkspace,
+  .ownerMarketGrid,
+  .ownerMarketLists {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ownerMarketAccess button,
+  .ownerMarketFilters button,
+  .ownerMarketForm button,
+  .ownerMarketItem button {
+    min-height: 40px;
+  }
+
+  .ownerMarketLists {
+    overflow-y: auto;
+  }
+
+  .ownerProjectList,
+  .ownerObservationList {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .ownerMarketGrid input,
+  .ownerMarketGrid select,
+  .ownerMarketGrid textarea,
+  .ownerMarketAccess input,
+  .ownerMarketFilters input,
+  .ownerMarketFilters select {
+    min-height: 44px;
+    font-size: 0.9rem;
   }
 
   .reportsList {

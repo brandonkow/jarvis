@@ -74,6 +74,19 @@ Project deletion is blocked while observations remain. Add `?cascade=true` only 
 
 Observation listing supports `projectId`, `metricType`, `area`, `freshness`, and `limit` query parameters.
 
+## V2.0 Frontend Console
+
+The production site includes an owner Market Console:
+
+1. Open the account panel.
+2. Press **MARKET**.
+3. Paste the owner token once on your device.
+4. Add a tracked project or area.
+5. Add dated observations against the project or area.
+6. Use the area, metric, and freshness filters to review current evidence.
+
+The token is stored only in that browser's local storage. If Render does not have `ESTATELAB_OWNER_TOKEN` configured, the console will remain unable to write owner evidence even if a token is entered.
+
 ## Batch Import
 
 The batch endpoint accepts up to 200 combined records. A temporary project `id` can be used to link observations inside the same payload:

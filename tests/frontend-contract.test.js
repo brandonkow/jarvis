@@ -39,6 +39,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /id="billingSummary"[\s\S]*?id="billingPlanName"[\s\S]*?id="billingActions"/, "Signed-in accounts need one compact plan and usage surface.");
   assert.match(html, /id="reportsPanel"[\s\S]*?DEAL REPORTS[\s\S]*?id="reportsList"/, "Signed-in accounts need private report history.");
   assert.match(html, /id="journalPanel"[\s\S]*?DECISION JOURNAL[\s\S]*?id="journalEditor"/, "Signed-in accounts need an inline decision journal.");
+  assert.match(html, /id="ownerMarketToggle"[\s\S]*?MARKET/, "The owner market console must be reachable from the account surface.");
+  assert.match(html, /id="ownerMarketPanel"[\s\S]*?MARKET CONSOLE[\s\S]*?id="ownerMarketToken"/, "V2 needs an owner-token-gated market console.");
+  assert.match(html, /id="ownerProjectForm"[\s\S]*?id="ownerObservationForm"[\s\S]*?id="ownerObservationList"/, "The market console needs project and observation entry surfaces.");
   assert.doesNotMatch(html, /ESTATELAB \/ JARVIS|<b>J<\/b>/, "Legacy visible branding must not return.");
   assert.doesNotMatch(html, />[^<]*(EstateLab|Jarvis)[^<]*</i, "Visible HTML copy must use Apex branding only.");
   assert.match(app, /function brandVisibleText[\s\S]*?EstateLab[\s\S]*?Jarvis/, "Rendered text must scrub legacy branding from retrieved knowledge.");
@@ -73,11 +76,18 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /\/api\/billing\/status/, "The account surface must load report entitlements.");
   assert.match(app, /\/api\/reports/, "The report-history surface must use private account storage.");
   assert.match(app, /\/api\/journal/, "The decision journal must use private account storage.");
+  assert.match(app, /\/api\/owner\/market\/projects/, "The v2 market console must load and create owner market projects.");
+  assert.match(app, /\/api\/owner\/market\/observations/, "The v2 market console must load and create owner market observations.");
+  assert.match(app, /x-estatelab-owner-token/, "Owner market writes must require the owner token header.");
+  assert.match(app, /ownerMarketEnabled\s*=\s*Boolean\(status\.ownerMarket\?\.enabled\)/, "The frontend must detect whether the owner market API is enabled.");
   assert.match(app, /data-analysis-action="journal"/, "Saved reports need a direct decision-record action.");
   assert.match(app, /function resetContextCard[\s\S]*?localStorage\.removeItem\(storageKey\)/, "Card reset must clear both visible fields and saved browser context.");
   assert.match(styles, /\.memoryOpen \.transcript[\s\S]*?display:\s*none;/, "The memory screen must replace chat content instead of opening a popup.");
   assert.match(styles, /\.reportsOpen \.transcript[\s\S]*?display:\s*none;/, "The report history must replace chat content instead of opening a popup.");
   assert.match(styles, /\.journalOpen \.transcript[\s\S]*?display:\s*none;/, "The decision journal must replace chat content instead of opening a popup.");
+  assert.match(styles, /\.ownerMarketOpen \.transcript[\s\S]*?display:\s*none;/, "The owner market console must replace chat content instead of opening a popup.");
+  assert.match(styles, /\.ownerMarketPanel[\s\S]*?\.ownerMarketWorkspace[\s\S]*?grid-template-columns:/, "The v2 market console needs a styled owner workspace.");
+  assert.match(styles, /\.ownerMarketLists[\s\S]*?\.ownerObservationList[\s\S]*?overflow-y:\s*auto;/, "Market observation lists must stay scrollable.");
   assert.match(styles, /\.analysisMarketPulse[\s\S]*?overflow-wrap:\s*anywhere;/, "Market observations must remain readable without overflowing the report.");
   assert.match(styles, /\.analysisOverview[\s\S]*?grid-template-columns:/, "The v1.1 report needs an organized readiness and scorecard overview.");
   assert.match(styles, /\.analysisEvidence[\s\S]*?\.evidenceItem/, "The v1.1 report needs a styled evidence checklist.");

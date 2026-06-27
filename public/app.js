@@ -93,6 +93,42 @@ const journalResult = document.querySelector("#journalResult");
 const journalLesson = document.querySelector("#journalLesson");
 const journalSaveReview = document.querySelector("#journalSaveReview");
 const journalMessage = document.querySelector("#journalMessage");
+const ownerMarketToggle = document.querySelector("#ownerMarketToggle");
+const ownerMarketPanel = document.querySelector("#ownerMarketPanel");
+const ownerMarketClose = document.querySelector("#ownerMarketClose");
+const ownerMarketAccess = document.querySelector("#ownerMarketAccess");
+const ownerMarketToken = document.querySelector("#ownerMarketToken");
+const ownerMarketClearToken = document.querySelector("#ownerMarketClearToken");
+const ownerMarketSummary = document.querySelector("#ownerMarketSummary");
+const ownerProjectForm = document.querySelector("#ownerProjectForm");
+const ownerProjectName = document.querySelector("#ownerProjectName");
+const ownerProjectArea = document.querySelector("#ownerProjectArea");
+const ownerProjectState = document.querySelector("#ownerProjectState");
+const ownerProjectType = document.querySelector("#ownerProjectType");
+const ownerProjectDeveloper = document.querySelector("#ownerProjectDeveloper");
+const ownerProjectTenure = document.querySelector("#ownerProjectTenure");
+const ownerProjectCompletionYear = document.querySelector("#ownerProjectCompletionYear");
+const ownerProjectStatus = document.querySelector("#ownerProjectStatus");
+const ownerProjectAliases = document.querySelector("#ownerProjectAliases");
+const ownerObservationForm = document.querySelector("#ownerObservationForm");
+const ownerObservationProject = document.querySelector("#ownerObservationProject");
+const ownerObservationMetric = document.querySelector("#ownerObservationMetric");
+const ownerObservationArea = document.querySelector("#ownerObservationArea");
+const ownerObservationValue = document.querySelector("#ownerObservationValue");
+const ownerObservationUnit = document.querySelector("#ownerObservationUnit");
+const ownerObservationDate = document.querySelector("#ownerObservationDate");
+const ownerObservationSourceType = document.querySelector("#ownerObservationSourceType");
+const ownerObservationConfidence = document.querySelector("#ownerObservationConfidence");
+const ownerObservationNotes = document.querySelector("#ownerObservationNotes");
+const ownerMarketAreaFilter = document.querySelector("#ownerMarketAreaFilter");
+const ownerMarketMetricFilter = document.querySelector("#ownerMarketMetricFilter");
+const ownerMarketFreshnessFilter = document.querySelector("#ownerMarketFreshnessFilter");
+const ownerMarketRefresh = document.querySelector("#ownerMarketRefresh");
+const ownerProjectCount = document.querySelector("#ownerProjectCount");
+const ownerObservationCount = document.querySelector("#ownerObservationCount");
+const ownerProjectList = document.querySelector("#ownerProjectList");
+const ownerObservationList = document.querySelector("#ownerObservationList");
+const ownerMarketMessage = document.querySelector("#ownerMarketMessage");
 const shortlistToggle = document.querySelector("#shortlistToggle");
 const shortlistPanel = document.querySelector("#shortlistPanel");
 const shortlistClose = document.querySelector("#shortlistClose");
@@ -112,6 +148,7 @@ const dealContextKey = "estatelab.jarvis.dealCard";
 const profileContextKey = "estatelab.jarvis.financialProfile";
 const contextPanelKey = "estatelab.jarvis.contextPanels";
 const shortlistKey = "apex.shortlist.v1";
+const ownerMarketTokenKey = "apex.ownerMarket.token";
 const analysisRegistry = new Map();
 let voiceResponsesEnabled = true;
 let listening = false;
@@ -133,6 +170,8 @@ let activeAudioUrl = "";
 let printTarget = null;
 let billingState = null;
 let billingPlans = [];
+let ownerMarketEnabled = false;
+let ownerMarketProjects = [];
 
 function clientId() {
   const existing = window.localStorage.getItem(clientKey);
@@ -214,6 +253,7 @@ function renderAuthState(user) {
     closeMemoryPanel();
     closeReportsPanel();
     closeJournalPanel();
+    closeOwnerMarketPanel();
     billingState = null;
   }
   if (signedIn) {
@@ -233,6 +273,7 @@ function openAuthPanel() {
   closeMemoryPanel();
   closeReportsPanel();
   closeJournalPanel();
+  closeOwnerMarketPanel();
   closeShortlistPanel();
   collapseContextPanels();
   authPanel.hidden = false;
@@ -374,6 +415,7 @@ async function openMemoryPanel() {
   closeAuthPanel();
   closeReportsPanel();
   closeJournalPanel();
+  closeOwnerMarketPanel();
   closeShortlistPanel();
   collapseContextPanels();
   memoryPanel.hidden = false;
@@ -510,6 +552,7 @@ async function openReportsPanel() {
   closeAuthPanel();
   closeMemoryPanel();
   closeJournalPanel();
+  closeOwnerMarketPanel();
   closeShortlistPanel();
   collapseContextPanels();
   reportsPanel.hidden = false;
@@ -589,6 +632,7 @@ async function openJournalPanel(decisionId = "") {
   closeAuthPanel();
   closeMemoryPanel();
   closeReportsPanel();
+  closeOwnerMarketPanel();
   closeShortlistPanel();
   collapseContextPanels();
   journalPanel.hidden = false;
@@ -881,6 +925,7 @@ function openShortlistPanel() {
   closeMemoryPanel();
   closeReportsPanel();
   closeJournalPanel();
+  closeOwnerMarketPanel();
   collapseContextPanels();
   renderShortlist();
   shortlistPanel.hidden = false;
@@ -1107,6 +1152,225 @@ function handleAnalysisAction(button) {
     return;
   }
   if (action === "journal") void createJournalDecision(analysis);
+}
+
+function ownerMarketTokenValue() {
+  return ownerMarketToken.value.trim() || window.localStorage.getItem(ownerMarketTokenKey) || "";
+}
+
+function setOwnerMarketMessage(message, tone = "") {
+  ownerMarketMessage.textContent = message || "";
+  ownerMarketMessage.dataset.tone = tone;
+}
+
+async function ownerMarketRequest(pathname, options = {}) {
+  const token = ownerMarketTokenValue();
+  if (!token) throw new Error("Paste and save the owner token first.");
+  return requestJson(pathname, {
+    ...options,
+    headers: {
+      "x-estatelab-owner-token": token,
+      ...(options.headers || {})
+    }
+  });
+}
+
+function marketMetricText(metricType) {
+  return String(metricType || "other").replaceAll("_", " ");
+}
+
+function marketDateText(value) {
+  if (!value) return "No date";
+  try {
+    return new Intl.DateTimeFormat("en-MY", { dateStyle: "medium" }).format(new Date(value));
+  } catch {
+    return String(value).slice(0, 10);
+  }
+}
+
+function renderOwnerProjectOptions(projects = []) {
+  ownerObservationProject.innerHTML = '<option value="">Area-only observation</option>'
+    + projects.map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.name)}${project.area ? ` / ${escapeHtml(project.area)}` : ""}</option>`).join("");
+}
+
+function ownerProjectMarkup(project) {
+  const detail = [project.area, project.state, project.propertyType, project.tenure].filter(Boolean).join(" / ") || "No project detail";
+  return `
+    <article class="ownerMarketItem">
+      <header><span><small>${escapeHtml(detail)}</small><b>${escapeHtml(project.name)}</b></span><em>${escapeHtml(project.observationCount || 0)} obs</em></header>
+      <p>${escapeHtml(project.developer || project.status || "Add observations to make this project useful.")}</p>
+    </article>
+  `;
+}
+
+function ownerObservationMarkup(observation) {
+  const project = observation.project?.name || observation.projectName || observation.area || "Area observation";
+  const freshness = observation.freshness?.status || "unknown";
+  const age = Number.isFinite(Number(observation.freshness?.ageDays)) ? `${observation.freshness.ageDays}d` : "age n/a";
+  const trend = observation.trend
+    ? `${observation.trend.direction}${observation.trend.percentChange === null || observation.trend.percentChange === undefined ? "" : ` ${observation.trend.percentChange > 0 ? "+" : ""}${observation.trend.percentChange}%`}`
+    : "no trend";
+  const value = observation.value === null || observation.value === undefined ? "Qualitative" : `${observation.value}${observation.unit ? ` ${observation.unit}` : ""}`;
+  return `
+    <article class="ownerMarketItem ${escapeHtml(freshness)}" data-owner-observation="${escapeHtml(observation.id)}">
+      <header>
+        <span><small>${escapeHtml(marketMetricText(observation.metricType))} / ${escapeHtml(marketDateText(observation.observedAt))}</small><b>${escapeHtml(project)}</b></span>
+        <em>${escapeHtml(freshness)} / ${escapeHtml(age)}</em>
+      </header>
+      <p>${escapeHtml(value)}. ${escapeHtml(observation.notes || "No notes recorded.")}</p>
+      <div class="ownerMarketMeta">
+        <span>${escapeHtml(observation.confidence || "medium")} confidence</span>
+        <span>${escapeHtml(observation.sourceType || "owner observation")}</span>
+        <span>${escapeHtml(trend)}</span>
+      </div>
+      <button type="button" data-owner-market-action="delete-observation" data-owner-market-id="${escapeHtml(observation.id)}">DELETE</button>
+    </article>
+  `;
+}
+
+function renderOwnerMarket(projectPayload = {}, observationPayload = {}) {
+  const projects = Array.isArray(projectPayload.projects) ? projectPayload.projects : [];
+  const observations = Array.isArray(observationPayload.observations) ? observationPayload.observations : [];
+  ownerMarketProjects = projects;
+  renderOwnerProjectOptions(projects);
+  ownerProjectCount.textContent = String(projects.length);
+  ownerObservationCount.textContent = String(observationPayload.summary?.matched || observations.length);
+  ownerMarketSummary.innerHTML = `
+    <span><b>${escapeHtml(projects.length)}</b> PROJECTS</span>
+    <span><b>${escapeHtml(projectPayload.summary?.observations ?? observations.length)}</b> OBSERVATIONS</span>
+    <span><b>${escapeHtml(observationPayload.summary?.fresh || 0)}</b> FRESH</span>
+    <span><b>${escapeHtml(observationPayload.summary?.stale || 0)}</b> STALE</span>
+  `;
+  ownerProjectList.innerHTML = projects.length
+    ? projects.map(ownerProjectMarkup).join("")
+    : '<p class="ownerMarketEmpty">No market projects yet. Add one above, then attach observations.</p>';
+  ownerObservationList.innerHTML = observations.length
+    ? observations.map(ownerObservationMarkup).join("")
+    : '<p class="ownerMarketEmpty">No observations match this filter yet.</p>';
+}
+
+function ownerObservationQuery() {
+  const params = new URLSearchParams();
+  if (ownerMarketAreaFilter.value.trim()) params.set("area", ownerMarketAreaFilter.value.trim());
+  if (ownerMarketMetricFilter.value) params.set("metricType", ownerMarketMetricFilter.value);
+  if (ownerMarketFreshnessFilter.value) params.set("freshness", ownerMarketFreshnessFilter.value);
+  params.set("limit", "120");
+  return params.toString();
+}
+
+async function loadOwnerMarket() {
+  if (!ownerMarketTokenValue()) {
+    ownerProjectList.innerHTML = '<p class="ownerMarketEmpty">Owner token required before loading market evidence.</p>';
+    ownerObservationList.innerHTML = '<p class="ownerMarketEmpty">Paste your owner token above, then press SAVE.</p>';
+    setOwnerMarketMessage(ownerMarketEnabled ? "Owner API is enabled. Token required." : "Owner API may be disabled. Set ESTATELAB_OWNER_TOKEN on Render if this fails.", "warning");
+    return null;
+  }
+  setOwnerMarketMessage("Loading owner market intelligence...");
+  const query = ownerObservationQuery();
+  const [projects, observations] = await Promise.all([
+    ownerMarketRequest("/api/owner/market/projects"),
+    ownerMarketRequest(`/api/owner/market/observations?${query}`)
+  ]);
+  renderOwnerMarket(projects, observations);
+  setOwnerMarketMessage("Market intelligence loaded.");
+  return { projects, observations };
+}
+
+function closeOwnerMarketPanel() {
+  ownerMarketPanel.hidden = true;
+  ownerMarketToggle.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("ownerMarketOpen");
+}
+
+async function openOwnerMarketPanel() {
+  closeAuthPanel();
+  closeMemoryPanel();
+  closeReportsPanel();
+  closeJournalPanel();
+  closeShortlistPanel();
+  collapseContextPanels();
+  ownerMarketPanel.hidden = false;
+  ownerMarketToggle.setAttribute("aria-expanded", "true");
+  document.body.classList.add("ownerMarketOpen");
+  ownerMarketToken.value = window.localStorage.getItem(ownerMarketTokenKey) || "";
+  ownerObservationDate.value ||= new Date().toISOString().slice(0, 10);
+  try {
+    await loadOwnerMarket();
+  } catch (error) {
+    setOwnerMarketMessage(error.message || "Owner market console is unavailable.", "danger");
+  }
+}
+
+async function createOwnerProject() {
+  setOwnerMarketMessage("Adding project...");
+  const payload = {
+    name: ownerProjectName.value.trim(),
+    area: ownerProjectArea.value.trim(),
+    state: ownerProjectState.value.trim(),
+    propertyType: ownerProjectType.value.trim(),
+    developer: ownerProjectDeveloper.value.trim(),
+    tenure: ownerProjectTenure.value.trim(),
+    completionYear: ownerProjectCompletionYear.value.trim(),
+    status: ownerProjectStatus.value,
+    aliases: ownerProjectAliases.value.split(",").map((item) => item.trim()).filter(Boolean)
+  };
+  await ownerMarketRequest("/api/owner/market/projects", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+  ownerProjectForm.reset();
+  await loadOwnerMarket();
+  setOwnerMarketMessage("Project added.");
+}
+
+async function createOwnerObservation() {
+  const selectedProject = ownerMarketProjects.find((project) => project.id === ownerObservationProject.value);
+  if (!selectedProject && !ownerObservationArea.value.trim()) {
+    ownerObservationArea.focus();
+    throw new Error("Add an area or link the observation to a project.");
+  }
+  setOwnerMarketMessage("Adding observation...");
+  const payload = {
+    projectId: ownerObservationProject.value,
+    area: ownerObservationArea.value.trim() || selectedProject?.area || "",
+    state: selectedProject?.state || "",
+    projectName: selectedProject?.name || "",
+    metricType: ownerObservationMetric.value,
+    value: ownerObservationValue.value.trim(),
+    unit: ownerObservationUnit.value.trim(),
+    observedAt: ownerObservationDate.value,
+    sourceType: ownerObservationSourceType.value.trim() || "owner observation",
+    confidence: ownerObservationConfidence.value,
+    notes: ownerObservationNotes.value.trim()
+  };
+  await ownerMarketRequest("/api/owner/market/observations", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+  ownerObservationForm.reset();
+  ownerObservationDate.value = new Date().toISOString().slice(0, 10);
+  await loadOwnerMarket();
+  setOwnerMarketMessage("Observation added. Apex can now match it in chat and deal reports.");
+}
+
+async function deleteOwnerObservation(button) {
+  const id = button.getAttribute("data-owner-market-id");
+  if (!id) return;
+  if (button.dataset.confirming !== "true") {
+    button.dataset.confirming = "true";
+    button.textContent = "CONFIRM";
+    setOwnerMarketMessage("Press CONFIRM to delete this observation.");
+    return;
+  }
+  button.disabled = true;
+  try {
+    await ownerMarketRequest(`/api/owner/market/observations/${encodeURIComponent(id)}`, { method: "DELETE" });
+    await loadOwnerMarket();
+    setOwnerMarketMessage("Observation deleted.");
+  } catch (error) {
+    button.disabled = false;
+    setOwnerMarketMessage(error.message || "Observation could not be deleted.", "danger");
+  }
 }
 
 function analysisSection(title, items = [], className = "") {
@@ -1863,6 +2127,7 @@ async function logout() {
     closeMemoryPanel();
     closeReportsPanel();
     closeJournalPanel();
+    closeOwnerMarketPanel();
     await requestJson("/api/auth/logout", { method: "POST", body: "{}" });
     renderAuthState(null);
     setAuthMode("login");
@@ -2120,6 +2385,52 @@ journalSaveDraft.addEventListener("click", () => void saveJournalDraft());
 journalLock.addEventListener("click", requestJournalLock);
 journalDelete.addEventListener("click", () => void deleteJournalDraft());
 journalSaveReview.addEventListener("click", () => void saveJournalReview());
+ownerMarketToggle.addEventListener("click", () => {
+  if (ownerMarketPanel.hidden) void openOwnerMarketPanel();
+  else closeOwnerMarketPanel();
+});
+ownerMarketClose.addEventListener("click", closeOwnerMarketPanel);
+ownerMarketAccess.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const token = ownerMarketToken.value.trim();
+  if (!token) return ownerMarketToken.focus();
+  window.localStorage.setItem(ownerMarketTokenKey, token);
+  void loadOwnerMarket();
+});
+ownerMarketClearToken.addEventListener("click", () => {
+  window.localStorage.removeItem(ownerMarketTokenKey);
+  ownerMarketToken.value = "";
+  renderOwnerMarket({}, {});
+  setOwnerMarketMessage("Owner token cleared from this device.");
+});
+ownerProjectForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const button = ownerProjectForm.querySelector("button[type='submit']");
+  button.disabled = true;
+  createOwnerProject().catch((error) => setOwnerMarketMessage(error.message || "Project could not be added.", "danger")).finally(() => {
+    button.disabled = false;
+  });
+});
+ownerObservationForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const button = ownerObservationForm.querySelector("button[type='submit']");
+  button.disabled = true;
+  createOwnerObservation().catch((error) => setOwnerMarketMessage(error.message || "Observation could not be added.", "danger")).finally(() => {
+    button.disabled = false;
+  });
+});
+ownerObservationProject.addEventListener("change", () => {
+  const project = ownerMarketProjects.find((item) => item.id === ownerObservationProject.value);
+  if (project && !ownerObservationArea.value) ownerObservationArea.value = project.area || "";
+});
+ownerMarketRefresh.addEventListener("click", () => void loadOwnerMarket().catch((error) => setOwnerMarketMessage(error.message || "Market evidence could not be loaded.", "danger")));
+ownerMarketAreaFilter.addEventListener("input", () => void loadOwnerMarket().catch(() => {}));
+ownerMarketMetricFilter.addEventListener("change", () => void loadOwnerMarket().catch((error) => setOwnerMarketMessage(error.message || "Market evidence could not be loaded.", "danger")));
+ownerMarketFreshnessFilter.addEventListener("change", () => void loadOwnerMarket().catch((error) => setOwnerMarketMessage(error.message || "Market evidence could not be loaded.", "danger")));
+ownerObservationList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-owner-market-action='delete-observation']");
+  if (button) void deleteOwnerObservation(button);
+});
 billingActions.addEventListener("click", (event) => {
   const button = event.target.closest("[data-checkout-plan]");
   if (button) void startCheckout(button.getAttribute("data-checkout-plan"));
@@ -2187,6 +2498,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !memoryPanel.hidden) closeMemoryPanel();
   if (event.key === "Escape" && !reportsPanel.hidden) closeReportsPanel();
   if (event.key === "Escape" && !journalPanel.hidden) closeJournalPanel();
+  if (event.key === "Escape" && !ownerMarketPanel.hidden) closeOwnerMarketPanel();
   if (event.key === "Escape" && !shortlistPanel.hidden) closeShortlistPanel();
 });
 window.addEventListener("afterprint", finishPrinting);
@@ -2219,6 +2531,7 @@ async function bootJarvis() {
     serverTtsEnabled = Boolean(status.audio?.serverTts);
     emailDeliveryEnabled = Boolean(status.accounts?.emailDelivery);
     emailVerificationRequired = Boolean(status.accounts?.verificationRequired);
+    ownerMarketEnabled = Boolean(status.ownerMarket?.enabled);
     setAuthMode(authMode);
     aiDisclosure.hidden = !status.llm?.enabled;
     await loadAuthState();

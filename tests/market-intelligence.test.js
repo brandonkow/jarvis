@@ -76,6 +76,10 @@ test("owner market observations add dated trends and freshness warnings to Apex 
   });
 
   await waitForHealth(baseUrl, child);
+  const status = await request(baseUrl, "/api/jarvis/status");
+  assert.equal(status.response.status, 200);
+  assert.equal(status.payload.ownerMarket.enabled, true);
+  assert.equal(status.payload.ownerMarket.marketObservations, 0);
 
   const denied = await request(baseUrl, "/api/owner/market/projects", {
     method: "POST",

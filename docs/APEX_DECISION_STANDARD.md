@@ -150,6 +150,17 @@ The v1.10 seal closes the complete v1 decision path:
 
 At this point, v1 is the complete foundation loop: select, evidence-check, stress-test, scale-check, market-check, plan holding and exit, then seal the decision. Later v2 work should deepen intelligence and workflow, not replace these boundaries.
 
+## v2.0 Owner Market Intelligence Console
+
+The v2.0 layer begins the living second-brain path by making changing market evidence owner-operable from the frontend:
+
+- Owner market projects define tracked subjects such as a project, township, area, or substitute set.
+- Owner observations record dated evidence such as rent, transaction, occupancy, rental enquiry, supply, auction, unsold stock, launch sales, management, catalyst, financing, or buyer sentiment.
+- The frontend console is gated by the owner token and sends `x-estatelab-owner-token` on market-write requests.
+- Normal users can benefit from matched observations in chat and Deal Reports, but they cannot create, edit, import, or delete owner market evidence.
+- Observations are dated and freshness-labelled. Stale observations are not hidden; Apex should surface them and explain that they need re-verification.
+- V2.0 deepens market context only. It must not override v1 hard stops, evidence blockers, stress survival, portfolio gate, execution readiness, or the v1 decision seal.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

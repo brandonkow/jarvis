@@ -4484,6 +4484,11 @@ async function router(req, res) {
         verificationRequired: REQUIRE_EMAIL_VERIFICATION,
         reviewedLongTermMemory: true
       },
+      ownerMarket: {
+        enabled: Boolean(OWNER_TOKEN),
+        trackedProjects: db.knowledge.projects.length,
+        marketObservations: db.knowledge.observations.length
+      },
       boundary: "Public chats are stored as conversation sessions only. They do not update the owner knowledge base."
     });
   }

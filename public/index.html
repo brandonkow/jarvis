@@ -112,6 +112,7 @@
             <button id="memoryToggle" type="button" aria-expanded="false" aria-controls="memoryPanel" hidden>MEMORY</button>
             <button id="reportsToggle" type="button" aria-expanded="false" aria-controls="reportsPanel" hidden>REPORTS</button>
             <button id="journalToggle" type="button" aria-expanded="false" aria-controls="journalPanel" hidden>JOURNAL</button>
+            <button id="ownerMarketToggle" type="button" aria-expanded="false" aria-controls="ownerMarketPanel">MARKET</button>
           </div>
         </section>
 
@@ -209,6 +210,131 @@
             </fieldset>
             <p id="journalMessage" class="journalMessage" role="status"></p>
           </form>
+        </section>
+
+        <section id="ownerMarketPanel" class="ownerMarketPanel" aria-label="Owner market intelligence console" hidden>
+          <header class="ownerMarketHeader">
+            <span><small>OWNER-CONTROLLED EVIDENCE</small><b>MARKET CONSOLE</b></span>
+            <button id="ownerMarketClose" type="button" aria-label="Close market console">CLOSE</button>
+          </header>
+          <p class="ownerMarketIntro">Add dated market observations here. Public users can benefit from matched evidence in answers and reports, but only the owner token can create or delete records.</p>
+          <form id="ownerMarketAccess" class="ownerMarketAccess" autocomplete="off">
+            <label>Owner Token<input id="ownerMarketToken" type="password" placeholder="Paste owner token once on this device" autocomplete="off" /></label>
+            <button id="ownerMarketSaveToken" type="submit">SAVE</button>
+            <button id="ownerMarketClearToken" type="button">CLEAR</button>
+          </form>
+          <div id="ownerMarketSummary" class="ownerMarketSummary" aria-live="polite">
+            <span><b>0</b> PROJECTS</span>
+            <span><b>0</b> OBSERVATIONS</span>
+            <span>OWNER TOKEN REQUIRED</span>
+          </div>
+
+          <div class="ownerMarketWorkspace">
+            <form id="ownerProjectForm" class="ownerMarketForm" autocomplete="off">
+              <header><small>PROJECT</small><b>Track A Market Subject</b></header>
+              <div class="ownerMarketGrid">
+                <label>Name<input id="ownerProjectName" required maxlength="160" placeholder="Evidence Residence" /></label>
+                <label>Area<input id="ownerProjectArea" maxlength="120" placeholder="Bayan Lepas" /></label>
+                <label>State<input id="ownerProjectState" maxlength="80" placeholder="Penang" /></label>
+                <label>Type<input id="ownerProjectType" maxlength="80" placeholder="Condo" /></label>
+                <label>Developer<input id="ownerProjectDeveloper" maxlength="160" placeholder="Developer name" /></label>
+                <label>Tenure<input id="ownerProjectTenure" maxlength="80" placeholder="Freehold / leasehold" /></label>
+                <label>Completion Year<input id="ownerProjectCompletionYear" inputmode="numeric" placeholder="2026" /></label>
+                <label>Status
+                  <select id="ownerProjectStatus">
+                    <option value="">Select</option>
+                    <option value="planned">Planned</option>
+                    <option value="launched">Launched</option>
+                    <option value="under_construction">Under construction</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </label>
+                <label class="ownerMarketWide">Aliases<input id="ownerProjectAliases" maxlength="300" placeholder="Comma separated alternate names" /></label>
+              </div>
+              <button class="ownerMarketPrimary" type="submit">ADD PROJECT</button>
+            </form>
+
+            <form id="ownerObservationForm" class="ownerMarketForm" autocomplete="off">
+              <header><small>OBSERVATION</small><b>Add Dated Market Evidence</b></header>
+              <div class="ownerMarketGrid">
+                <label>Linked Project
+                  <select id="ownerObservationProject">
+                    <option value="">Area-only observation</option>
+                  </select>
+                </label>
+                <label>Metric
+                  <select id="ownerObservationMetric" required>
+                    <option value="rent">Rent</option>
+                    <option value="transaction">Transaction</option>
+                    <option value="occupancy">Occupancy</option>
+                    <option value="rental_enquiry">Rental enquiry</option>
+                    <option value="supply">Supply</option>
+                    <option value="auction">Auction</option>
+                    <option value="unsold_stock">Unsold stock</option>
+                    <option value="launch_sales">Launch sales</option>
+                    <option value="management">Management</option>
+                    <option value="catalyst">Catalyst</option>
+                    <option value="financing">Financing</option>
+                    <option value="buyer_sentiment">Buyer sentiment</option>
+                    <option value="other">Other</option>
+                  </select>
+                </label>
+                <label>Area<input id="ownerObservationArea" maxlength="120" placeholder="Required if no linked project" /></label>
+                <label>Value<input id="ownerObservationValue" inputmode="decimal" placeholder="2800" /></label>
+                <label>Unit<input id="ownerObservationUnit" maxlength="40" placeholder="RM/month, %, units" /></label>
+                <label>Observed Date<input id="ownerObservationDate" type="date" required /></label>
+                <label>Source Type<input id="ownerObservationSourceType" maxlength="80" placeholder="rental agent, auction page..." /></label>
+                <label>Confidence
+                  <select id="ownerObservationConfidence">
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="low">Low</option>
+                  </select>
+                </label>
+                <label class="ownerMarketWide">Notes<textarea id="ownerObservationNotes" maxlength="1200" placeholder="What exactly did you observe?"></textarea></label>
+              </div>
+              <button class="ownerMarketPrimary" type="submit">ADD OBSERVATION</button>
+            </form>
+          </div>
+
+          <div class="ownerMarketFilters">
+            <input id="ownerMarketAreaFilter" placeholder="Filter area..." />
+            <select id="ownerMarketMetricFilter">
+              <option value="">All metrics</option>
+              <option value="rent">Rent</option>
+              <option value="transaction">Transaction</option>
+              <option value="occupancy">Occupancy</option>
+              <option value="rental_enquiry">Rental enquiry</option>
+              <option value="supply">Supply</option>
+              <option value="auction">Auction</option>
+              <option value="unsold_stock">Unsold stock</option>
+              <option value="launch_sales">Launch sales</option>
+              <option value="management">Management</option>
+              <option value="catalyst">Catalyst</option>
+              <option value="financing">Financing</option>
+              <option value="buyer_sentiment">Buyer sentiment</option>
+              <option value="other">Other</option>
+            </select>
+            <select id="ownerMarketFreshnessFilter">
+              <option value="">All freshness</option>
+              <option value="fresh">Fresh</option>
+              <option value="aging">Aging</option>
+              <option value="stale">Stale</option>
+            </select>
+            <button id="ownerMarketRefresh" type="button">REFRESH</button>
+          </div>
+          <div class="ownerMarketLists">
+            <section>
+              <header><small>PROJECTS</small><b id="ownerProjectCount">0</b></header>
+              <div id="ownerProjectList" class="ownerProjectList"></div>
+            </section>
+            <section>
+              <header><small>OBSERVATIONS</small><b id="ownerObservationCount">0</b></header>
+              <div id="ownerObservationList" class="ownerObservationList"></div>
+            </section>
+          </div>
+          <p id="ownerMarketMessage" class="ownerMarketMessage" role="status"></p>
         </section>
 
         <section id="shortlistPanel" class="shortlistPanel" aria-label="Deal shortlist" hidden>
