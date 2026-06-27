@@ -51,6 +51,10 @@ const memoryPendingCount = document.querySelector("#memoryPendingCount");
 const memoryCaptureEnabled = document.querySelector("#memoryCaptureEnabled");
 const memoryReasoningEnabled = document.querySelector("#memoryReasoningEnabled");
 const memoryModeNotice = document.querySelector("#memoryModeNotice");
+const memoryProfileTitle = document.querySelector("#memoryProfileTitle");
+const memoryProfileCompleteness = document.querySelector("#memoryProfileCompleteness");
+const memoryProfileSummary = document.querySelector("#memoryProfileSummary");
+const memoryProfileDetails = document.querySelector("#memoryProfileDetails");
 const billingSummary = document.querySelector("#billingSummary");
 const billingPlanName = document.querySelector("#billingPlanName");
 const billingUsage = document.querySelector("#billingUsage");
@@ -373,12 +377,37 @@ function addMessage(role, text, sources = [], intelligence = {}) {
   transcript.scrollTop = transcript.scrollHeight;
 }
 
+function memoryProfileValue(label, value) {
+  if (!value) return "";
+  const display = Array.isArray(value) ? value.filter(Boolean).slice(0, 2).join("; ") : value;
+  if (!display) return "";
+  return `<span><small>${escapeHtml(label)}</small><b>${escapeHtml(display)}</b></span>`;
+}
+
+function renderMemoryProfile(profile = {}) {
+  const approvedCount = Number(profile.approvedCount || 0);
+  memoryProfileTitle.textContent = approvedCount
+    ? `${profile.investorType || "Profile building"} / ${profile.riskStyle || "Needs more memory"}`
+    : "No approved memory yet";
+  memoryProfileCompleteness.textContent = `${Math.max(0, Math.min(100, Number(profile.completeness || 0)))}%`;
+  memoryProfileSummary.textContent = profile.summary || "Approve memories to build a private investor profile.";
+  memoryProfileDetails.innerHTML = approvedCount ? [
+    memoryProfileValue("Preferred", profile.preferredAssets),
+    memoryProfileValue("Avoid", profile.avoidedRisks),
+    memoryProfileValue("Cash flow", profile.cashFlowRule),
+    memoryProfileValue("Holding", profile.holdingPeriod),
+    memoryProfileValue("Rules", profile.investmentRules),
+    memoryProfileValue("Warnings", profile.personalWarnings)
+  ].filter(Boolean).join("") : "";
+}
+
 function memoryItemMarkup(item) {
   const pending = item.status === "pending";
   return `
-    <article class="memoryItem ${pending ? "pending" : "approved"}" data-memory-item="${escapeHtml(item.id)}">
-      <span><small>${escapeHtml(item.category)}</small><i>${pending ? "REVIEW" : "APPROVED"}</i></span>
+    <article class="memoryItem ${pending ? "pending" : "approved"} priority-${escapeHtml(item.reviewPriority || "normal")}" data-memory-item="${escapeHtml(item.id)}">
+      <span><small>${escapeHtml(item.categoryLabel || item.category)}</small><i>${pending ? "REVIEW" : "APPROVED"}</i></span>
       <p>${escapeHtml(item.content)}</p>
+      <em>${escapeHtml(item.profileImpact || "Useful context, but review before using it.")}</em>
       <div class="memoryActions">
         ${pending ? `
           <button type="button" data-memory-action="approve" data-memory-id="${escapeHtml(item.id)}">KEEP</button>
@@ -405,6 +434,7 @@ function renderMemorySettings(settings = {}) {
 function renderMemory(payload = {}) {
   const items = Array.isArray(payload.items) ? payload.items : [];
   renderMemorySettings(payload.settings || payload.summary || {});
+  renderMemoryProfile(payload.profile || {});
   memoryApprovedCount.textContent = String(payload.summary?.approved || 0);
   memoryPendingCount.textContent = String(payload.summary?.pending || 0);
   memoryList.innerHTML = items.length
@@ -503,8 +533,9 @@ function addMemorySuggestion(item) {
   suggestion.className = "memorySuggestion";
   suggestion.setAttribute("data-memory-item", item.id);
   suggestion.innerHTML = `
-    <span><small>LONG-TERM MEMORY</small><b>Remember this?</b></span>
+    <span><small>${escapeHtml(item.categoryLabel || "LONG-TERM MEMORY")}</small><b>Remember this?</b></span>
     <p>${escapeHtml(item.content)}</p>
+    <em>${escapeHtml(item.profileImpact || "Review this before it becomes part of your private profile.")}</em>
     <div class="memoryActions">
       <button type="button" data-memory-action="approve" data-memory-id="${escapeHtml(item.id)}">KEEP</button>
       <button type="button" data-memory-action="dismiss" data-memory-id="${escapeHtml(item.id)}">SKIP</button>
@@ -1158,6 +1189,12 @@ function analysisExportText(analysis) {
   }
   if (analysis.learningLoop?.signals?.length) {
     lines.push("", "Learning loop", analysis.learningLoop.summary || "");
+    if (analysis.learningLoop.profile?.approvedCount) {
+      lines.push(
+        `Memory profile: ${analysis.learningLoop.profile.investorType || "Profile building"}; ${analysis.learningLoop.profile.riskStyle || "Needs more approved memory"}.`,
+        `Profile completeness: ${analysis.learningLoop.profile.completeness || 0}%.`
+      );
+    }
     for (const item of analysis.learningLoop.signals) lines.push(`- ${item.label}: ${item.body} ${item.action}`);
   }
   if (analysis.hardStops?.length) lines.push("", "Hard stops", ...analysis.hardStops.map((item) => `- ${item}`));
@@ -1700,9 +1737,16 @@ function executionPlanMarkup(plan = {}) {
 function learningLoopMarkup(loop = {}) {
   const signals = Array.isArray(loop.signals) ? loop.signals : [];
   if (!signals.length) return "";
+  const profile = loop.profile || {};
   return `
     <section class="analysisLearning">
       <header><span><small>LEARNING LOOP</small><b>${escapeHtml(loop.summary || "Matched private learning for this report.")}</b></span></header>
+      ${profile.approvedCount ? `
+        <div class="learningProfile">
+          <span><small>MEMORY PROFILE</small><b>${escapeHtml(profile.investorType || "Profile building")} / ${escapeHtml(profile.riskStyle || "Needs more memory")}</b></span>
+          <span><small>COMPLETENESS</small><b>${escapeHtml(profile.completeness || 0)}%</b></span>
+        </div>
+      ` : ""}
       <div>
         ${signals.map((item) => `
           <article class="learningSignal ${escapeHtml(item.type)}">

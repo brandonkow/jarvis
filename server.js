@@ -233,13 +233,32 @@ function normalizeMemorySettings(settings) {
   };
 }
 
+const MEMORY_CATEGORY_LABELS = {
+  preference: "Preference",
+  constraint: "Constraint",
+  lesson: "Lesson",
+  mistake: "Mistake",
+  investment_rule: "Investment rule",
+  market_belief: "Market belief",
+  personal_warning: "Personal warning",
+  goal: "Goal",
+  experience: "Experience",
+  decision: "Decision",
+  general: "General"
+};
+
+function normalizeMemoryCategory(category, content = "") {
+  const normalized = String(category || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (MEMORY_CATEGORY_LABELS[normalized]) return normalized;
+  return memoryCategory(content);
+}
+
 function normalizeUserMemory(memory) {
-  const validCategories = new Set(["preference", "goal", "constraint", "experience", "decision", "general"]);
   const validStatuses = new Set(["pending", "approved", "dismissed"]);
   const items = Array.isArray(memory?.items)
     ? memory.items.map((item) => ({
       id: String(item.id || randomUUID()),
-      category: validCategories.has(item.category) ? item.category : "general",
+      category: normalizeMemoryCategory(item.category, item.content),
       content: String(item.content || "").replace(/\s+/g, " ").trim().slice(0, 500),
       status: validStatuses.has(item.status) ? item.status : "pending",
       sourceMessageId: String(item.sourceMessageId || "").slice(0, 80),
@@ -520,6 +539,22 @@ function normalizeReportAnalysis(analysis = {}) {
       summary: reportText(analysis?.learningLoop?.summary, 500),
       memoryCount: Math.max(0, Number(analysis?.learningLoop?.memoryCount || 0)),
       journalCount: Math.max(0, Number(analysis?.learningLoop?.journalCount || 0)),
+      profile: {
+        status: ["empty", "building"].includes(analysis?.learningLoop?.profile?.status) ? analysis.learningLoop.profile.status : "empty",
+        approvedCount: Math.max(0, Number(analysis?.learningLoop?.profile?.approvedCount || 0)),
+        investorType: reportText(analysis?.learningLoop?.profile?.investorType, 120),
+        riskStyle: reportText(analysis?.learningLoop?.profile?.riskStyle, 120),
+        preferredAssets: reportList(analysis?.learningLoop?.profile?.preferredAssets, 4),
+        avoidedRisks: reportList(analysis?.learningLoop?.profile?.avoidedRisks, 5),
+        cashFlowRule: reportText(analysis?.learningLoop?.profile?.cashFlowRule, 220),
+        holdingPeriod: reportText(analysis?.learningLoop?.profile?.holdingPeriod, 120),
+        personalWarnings: reportList(analysis?.learningLoop?.profile?.personalWarnings, 4),
+        investmentRules: reportList(analysis?.learningLoop?.profile?.investmentRules, 5),
+        marketBeliefs: reportList(analysis?.learningLoop?.profile?.marketBeliefs, 4),
+        lessons: reportList(analysis?.learningLoop?.profile?.lessons, 4),
+        completeness: Math.max(0, Math.min(100, Number(analysis?.learningLoop?.profile?.completeness || 0))),
+        summary: reportText(analysis?.learningLoop?.profile?.summary, 500)
+      },
       signals: objectList(analysis?.learningLoop?.signals, 8, (item) => ({
         type: ["memory", "journal"].includes(item?.type) ? item.type : "memory",
         id: reportText(item?.id, 100),
@@ -1041,10 +1076,39 @@ function billingWebhookAuthorized(req) {
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
+function memoryCategoryLabel(category) {
+  return MEMORY_CATEGORY_LABELS[category] || "General";
+}
+
+function memoryReviewPriority(item) {
+  const text = String(item?.content || "").toLowerCase();
+  if (["personal_warning", "mistake", "constraint"].includes(item?.category)) return "high";
+  if (/\b(?:must|never|avoid|reject|risk|warning|mistake|trap|cash flow|installment|loan|caveat|title)\b/.test(text)) return "high";
+  if (["investment_rule", "market_belief", "lesson"].includes(item?.category)) return "medium";
+  return "normal";
+}
+
+function memoryProfileImpact(item) {
+  const category = item?.category || "general";
+  if (category === "preference") return "Shapes asset fit and future recommendations.";
+  if (category === "constraint") return "Limits what Apex should treat as suitable.";
+  if (category === "lesson") return "Improves future checks and challenge mode.";
+  if (category === "mistake") return "Becomes a warning against repeat errors.";
+  if (category === "investment_rule") return "Can become a personal operating rule.";
+  if (category === "market_belief") return "Should be tested against future evidence.";
+  if (category === "personal_warning") return "Triggers stronger challenge mode when similar risk appears.";
+  if (category === "goal") return "Aligns recommendations with the user's investment mandate.";
+  if (category === "decision") return "Preserves a chosen direction for future comparison.";
+  return "Useful context, but may need a clearer category.";
+}
+
 function publicMemoryItem(item) {
   return {
     id: item.id,
     category: item.category,
+    categoryLabel: memoryCategoryLabel(item.category),
+    reviewPriority: memoryReviewPriority(item),
+    profileImpact: memoryProfileImpact(item),
     content: item.content,
     status: item.status,
     createdAt: item.createdAt,
@@ -1061,12 +1125,114 @@ function publicMemorySettings(memory) {
   };
 }
 
+function uniqueProfileValues(values = [], limit = 5) {
+  const seen = new Set();
+  const clean = [];
+  for (const value of values) {
+    const text = reportText(value, 180);
+    const key = text.toLowerCase();
+    if (!text || seen.has(key)) continue;
+    seen.add(key);
+    clean.push(text);
+    if (clean.length >= limit) break;
+  }
+  return clean;
+}
+
+function firstMatchingMemory(memories, pattern) {
+  return memories.find((item) => pattern.test(item.content))?.content || "";
+}
+
+function memorySnippets(memories, categories = [], pattern = null, limit = 4) {
+  return uniqueProfileValues(memories
+    .filter((item) => (!categories.length || categories.includes(item.category)) && (!pattern || pattern.test(item.content)))
+    .map((item) => item.content), limit);
+}
+
+function extractHoldingPeriod(memories) {
+  const match = memories.map((item) => item.content).join(" ").match(/\b(?:hold|holding period|exit|dispose|sell)[^.\n]{0,80}?\b(\d{1,2}(?:\s*(?:-|to)\s*\d{1,2})?)\s*(?:year|years|yr|yrs)\b/i);
+  return match ? `${match[1].replace(/\s+/g, " ")} years` : "";
+}
+
+function inferInvestorType(memories) {
+  const text = memories.map((item) => item.content).join(" ").toLowerCase();
+  if (!text) return "Unknown";
+  if (/\b(?:seasoned|experienced|multiple properties|portfolio|scale|refinance|cash out)\b/.test(text)) return "Scaling investor";
+  if (/\b(?:retail|beginner|normal investor|first property|limited cash)\b/.test(text)) return "Retail investor";
+  if (/\b(?:cash rich|cash reserve|high cash|negative cash flow|landed appreciation)\b/.test(text)) return "Capital-backed investor";
+  return "Profile building";
+}
+
+function inferRiskStyle(memories) {
+  const text = memories.map((item) => item.content).join(" ").toLowerCase();
+  if (!text) return "Unknown";
+  if (/\b(?:avoid|reject|must|cash reserve|cover installment|site visit|legal|caveat|management)\b/.test(text)) return "Evidence-led cautious";
+  if (/\b(?:aggressive|leverage|cash out|refinance|scale|fast|same day)\b/.test(text)) return "Opportunistic but needs guardrails";
+  if (/\b(?:balanced|both|own stay and investor|cash flow and appreciation)\b/.test(text)) return "Balanced";
+  return "Needs more approved memory";
+}
+
+function buildInvestorMemoryProfile(memory) {
+  const normalized = normalizeUserMemory(memory);
+  const approved = normalized.items
+    .filter((item) => item.status === "approved")
+    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  const preferredAssets = uniqueProfileValues([
+    ...memorySnippets(approved, ["preference"], /\b(?:prefer|like|target|go for|freehold|condo|serviced|landed|high-rise|residential)\b/i, 4),
+    firstMatchingMemory(approved, /\b(?:freehold|condo|serviced apartment|landed|residential|high-rise)\b/i)
+  ], 4);
+  const avoidedRisks = uniqueProfileValues([
+    ...memorySnippets(approved, ["constraint", "personal_warning", "mistake"], /\b(?:avoid|reject|refuse|risk|warning|mistake|trap|poor|bad|weak|caveat|title|management|cash flow|supply)\b/i, 5),
+    firstMatchingMemory(approved, /\b(?:avoid|reject|refuse|poor management|low income|factory worker|caveat|bulk purchase|overleverage)\b/i)
+  ], 5);
+  const cashFlowRule = firstMatchingMemory(approved, /\b(?:rent|rental|cash flow|installment|instalment|maintenance|negative cash flow|yield)\b/i);
+  const holdingPeriod = extractHoldingPeriod(approved);
+  const personalWarnings = memorySnippets(approved, ["personal_warning", "mistake"], null, 4);
+  const investmentRules = memorySnippets(approved, ["investment_rule", "constraint"], null, 5);
+  const marketBeliefs = memorySnippets(approved, ["market_belief"], null, 4);
+  const lessons = memorySnippets(approved, ["lesson", "experience", "mistake"], null, 4);
+  const fields = [
+    preferredAssets.length,
+    avoidedRisks.length,
+    cashFlowRule,
+    holdingPeriod,
+    personalWarnings.length,
+    investmentRules.length,
+    marketBeliefs.length || lessons.length
+  ].filter(Boolean).length;
+  return {
+    version: 1,
+    status: approved.length ? "building" : "empty",
+    approvedCount: approved.length,
+    investorType: inferInvestorType(approved),
+    riskStyle: inferRiskStyle(approved),
+    preferredAssets,
+    avoidedRisks,
+    cashFlowRule: reportText(cashFlowRule || "Not enough approved memory yet.", 220),
+    holdingPeriod: holdingPeriod || "Not enough approved memory yet.",
+    personalWarnings,
+    investmentRules,
+    marketBeliefs,
+    lessons,
+    completeness: Math.round((fields / 7) * 100),
+    summary: approved.length
+      ? `Built from ${approved.length} approved memor${approved.length === 1 ? "y" : "ies"}. Treat this as personal context, not market evidence.`
+      : "No approved memories yet. The profile will build only after the user approves memory.",
+    updatedAt: approved[0]?.updatedAt || ""
+  };
+}
+
 function memorySummary(memory) {
   const normalized = normalizeUserMemory(memory);
   const items = normalized.items;
+  const byCategory = items.filter((item) => item.status !== "dismissed").reduce((summary, item) => {
+    summary[item.category] = (summary[item.category] || 0) + 1;
+    return summary;
+  }, {});
   return {
     pending: items.filter((item) => item.status === "pending").length,
     approved: items.filter((item) => item.status === "approved").length,
+    byCategory,
     captureEnabled: normalized.settings.captureEnabled,
     reasoningEnabled: normalized.settings.reasoningEnabled
   };
@@ -1074,10 +1240,15 @@ function memorySummary(memory) {
 
 function memoryCategory(content) {
   const text = String(content || "").toLowerCase();
-  if (/\b(?:prefer|avoid|refuse|favourite|favorite)\b/.test(text)) return "preference";
+  if (/\b(?:warning|warn me|remind me|fomo|greedy|emotionally chasing|chasing emotionally|overexcited|manipulated)\b/.test(text)) return "personal_warning";
+  if (/\b(?:mistake|regret|overlooked|overlook|wrong|trap|trapped|failed|lesson from my mistake)\b/.test(text)) return "mistake";
+  if (/\b(?:rule|always|never|must|should reject|walk away|hard stop|do not buy|don't buy|cannot proceed)\b/.test(text)) return "investment_rule";
+  if (/\b(?:learned|lesson|noticed|observed|found|from my experience)\b/.test(text)) return "lesson";
+  if (/\b(?:prefer|avoid|refuse|favourite|favorite|like|target)\b/.test(text)) return "preference";
+  if (/\b(?:i believe|market belief|buyer|tenant|demand|supply|penang|kuala lumpur|kl|selangor|leasehold|freehold|area|market)\b/.test(text)) return "market_belief";
   if (/\b(?:goal|target|aim|plan|priority)\b/.test(text)) return "goal";
   if (/\b(?:budget|cannot|can't|must|need|limit|constraint|reserve)\b/.test(text)) return "constraint";
-  if (/\b(?:experience|learned|lesson|noticed|observed|found)\b/.test(text)) return "experience";
+  if (/\b(?:experience)\b/.test(text)) return "experience";
   if (/\b(?:decided|decision|will buy|will not buy|won't buy)\b/.test(text)) return "decision";
   return "general";
 }
@@ -3609,6 +3780,12 @@ function dealAnalysisText(analysis) {
   }
   if (analysis.learningLoop?.signals?.length) {
     lines.push("", "Learning loop", `- ${analysis.learningLoop.summary}`);
+    if (analysis.learningLoop.profile?.approvedCount) {
+      lines.push(
+        `- Memory profile: ${analysis.learningLoop.profile.investorType}; ${analysis.learningLoop.profile.riskStyle}.`,
+        `- Profile completeness: ${analysis.learningLoop.profile.completeness || 0}%.`
+      );
+    }
     lines.push(...analysis.learningLoop.signals.map((item) => `- ${item.label}: ${item.body} ${item.action}`));
   }
   if (analysis.scenarios?.length) {
@@ -3796,13 +3973,13 @@ function selectRelevantUserMemories(memories = [], query = "", limit = 6) {
   const terms = tokenize(query);
   const scored = memories.map((memory) => ({
     ...memory,
-    score: termScore(terms, `${memory.category} ${memory.content}`)
+    score: termScore(terms, `${memory.category} ${memoryCategoryLabel(memory.category)} ${memory.content}`)
   }));
   const relevant = scored
     .filter((memory) => memory.score > 0)
     .sort((a, b) => b.score - a.score || String(b.updatedAt).localeCompare(String(a.updatedAt)));
   const anchors = scored
-    .filter((memory) => ["preference", "goal", "constraint"].includes(memory.category) && !relevant.some((item) => item.id === memory.id))
+    .filter((memory) => ["preference", "goal", "constraint", "investment_rule", "personal_warning"].includes(memory.category) && !relevant.some((item) => item.id === memory.id))
     .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
     .slice(0, 2);
   return [...relevant, ...anchors].slice(0, limit);
@@ -3810,7 +3987,20 @@ function selectRelevantUserMemories(memories = [], query = "", limit = 6) {
 
 function memoriesForPrompt(memories = []) {
   if (!memories.length) return "No approved long-term user memory is relevant.";
-  return memories.map((memory) => `- ${memory.category}: ${memory.content}`).join("\n");
+  return memories.map((memory) => `- ${memoryCategoryLabel(memory.category)}: ${memory.content}`).join("\n");
+}
+
+function memoryProfileForPrompt(profile = {}) {
+  if (!profile?.approvedCount) return "No approved user memory profile is available.";
+  return [
+    `Investor type: ${profile.investorType}`,
+    `Risk style: ${profile.riskStyle}`,
+    `Preferred assets: ${profile.preferredAssets?.length ? profile.preferredAssets.join("; ") : "Not enough approved memory yet."}`,
+    `Avoided risks: ${profile.avoidedRisks?.length ? profile.avoidedRisks.join("; ") : "Not enough approved memory yet."}`,
+    `Cash-flow rule: ${profile.cashFlowRule}`,
+    `Holding period: ${profile.holdingPeriod}`,
+    `Personal warnings: ${profile.personalWarnings?.length ? profile.personalWarnings.join("; ") : "Not enough approved memory yet."}`
+  ].map((line) => `- ${line}`).join("\n");
 }
 
 function selectRelevantUserJournal(journal = [], query = "", limit = 3) {
@@ -3843,12 +4033,13 @@ function journalForPrompt(journal = []) {
 }
 
 function buildDealLearningLoop(memories = [], journal = []) {
+  const profile = buildInvestorMemoryProfile({ items: memories });
   const memorySignals = memories.slice(0, 4).map((memory) => ({
     type: "memory",
     id: memory.id,
-    label: `Memory: ${memory.category}`,
+    label: `Memory: ${memoryCategoryLabel(memory.category)}`,
     body: memory.content,
-    action: "Use this as a personal constraint or preference, not as market proof."
+    action: memoryProfileImpact(memory)
   }));
   const journalSignals = journal.slice(0, 4).map((decision) => {
     const reviewed = Boolean(decision.outcome?.reviewedAt);
@@ -3870,6 +4061,7 @@ function buildDealLearningLoop(memories = [], journal = []) {
       : "No approved memory or locked decision-journal lesson matched this report.",
     memoryCount: memorySignals.length,
     journalCount: journalSignals.length,
+    profile,
     signals
   };
 }
@@ -3901,6 +4093,7 @@ async function generateJarvisLlmAnswer({
   beliefs,
   decisions,
   memories,
+  memoryProfile,
   journal,
   marketIntelligence = null,
   fallbackAnswer
@@ -3933,6 +4126,9 @@ ${decisionContext}
 APPROVED PRIVATE USER MEMORY
 ${memoriesForPrompt(memories)}
 
+PRIVATE USER MEMORY PROFILE
+${memoryProfileForPrompt(memoryProfile)}
+
 LOCKED PRIVATE DECISION JOURNAL
 ${journalForPrompt(journal)}
 
@@ -3947,6 +4143,7 @@ Respond to the current user message. Use the deterministic analysis as a safety 
 }
 
 async function generateDealLlmCommentary(analysis, dealCard, financialProfile, memories = []) {
+  const memoryProfile = buildInvestorMemoryProfile({ items: memories });
   const input = `A deterministic seven-stage Apex Analytic engine produced this result:
 ${dealAnalysisText(analysis)}
 
@@ -3958,6 +4155,9 @@ ${contextText(financialProfile, profileContextLabels, "Financial profile") || "N
 
 Approved private user memory:
 ${memoriesForPrompt(memories)}
+
+Private user memory profile:
+${memoryProfileForPrompt(memoryProfile)}
 
 Give a natural Apex Analytic commentary in 60 to 110 words. Start with the verdict, explain the single most important reason, state the strongest challenge, and end with the next evidence to obtain. Do not alter any score, metric, hard stop, or verdict.`;
   return requestLlmText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 220 });
@@ -4024,6 +4224,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     contextText(financialProfile, profileContextLabels, "Financial profile")
   ].filter(Boolean).join(" ");
   const relevantMemories = selectRelevantUserMemories(userMemories, `${query} ${contextForSearch}`);
+  const relevantMemoryProfile = buildInvestorMemoryProfile({ items: relevantMemories });
   const relevantJournal = selectRelevantUserJournal(userJournal, `${query} ${contextForSearch}`);
   const companionIntent = detectCompanionIntent(query);
   if (companionIntent && (companionIntent !== "need_context" || !hasStructuredContext)) {
@@ -4039,6 +4240,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
           beliefs: [],
           decisions: [],
           memories: relevantMemories,
+          memoryProfile: relevantMemoryProfile,
           journal: [],
           fallbackAnswer
         });
@@ -4140,6 +4342,11 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     bulletSection("Market intelligence", marketIntelligence.observations.slice(0, 3).map((observation) => observation.body), 3),
     marketIntelligence.observations.length ? bulletSection("Market freshness", [marketIntelligence.summary.warning], 1) : "",
     bulletSection("Deal read", dealRead, 3),
+    bulletSection("Memory profile", relevantMemoryProfile.approvedCount ? [
+      `${relevantMemoryProfile.investorType}; ${relevantMemoryProfile.riskStyle}.`,
+      relevantMemoryProfile.preferredAssets.length ? `Preferred: ${relevantMemoryProfile.preferredAssets.join("; ")}` : "",
+      relevantMemoryProfile.avoidedRisks.length ? `Watch: ${relevantMemoryProfile.avoidedRisks.join("; ")}` : ""
+    ].filter(Boolean) : [], 3),
     bulletSection("Your memory", relevantMemories.map((memory) => memory.content), 3),
     bulletSection("Your decision journal", relevantJournal.map((decision) => {
       const lesson = decision.outcome.reviewedAt ? ` Lesson: ${decision.outcome.lesson}` : "";
@@ -4219,6 +4426,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         beliefs: topBeliefs,
         decisions: topDecisions,
         memories: relevantMemories,
+        memoryProfile: relevantMemoryProfile,
         journal: relevantJournal,
         marketIntelligence,
         fallbackAnswer
@@ -4743,7 +4951,12 @@ async function router(req, res) {
     const items = actor.user.memory.items
       .filter((item) => item.status !== "dismissed")
       .map(publicMemoryItem);
-    return send(res, 200, { items, settings: publicMemorySettings(actor.user.memory), summary: memorySummary(actor.user.memory) });
+    return send(res, 200, {
+      items,
+      profile: buildInvestorMemoryProfile(actor.user.memory),
+      settings: publicMemorySettings(actor.user.memory),
+      summary: memorySummary(actor.user.memory)
+    });
   }
 
   if (req.method === "POST" && url.pathname === "/api/memory") {
@@ -4757,7 +4970,7 @@ async function router(req, res) {
     const now = new Date().toISOString();
     const item = {
       id: randomUUID(),
-      category: memoryCategory(body.category || content),
+      category: normalizeMemoryCategory(body.category, content),
       content,
       status: "pending",
       sourceMessageId: "manual",
@@ -4768,7 +4981,12 @@ async function router(req, res) {
     actor.user.memory.items.unshift(item);
     actor.user.memory = normalizeUserMemory(actor.user.memory);
     await writeDb(db);
-    return send(res, 201, { item: publicMemoryItem(item), settings: publicMemorySettings(actor.user.memory), summary: memorySummary(actor.user.memory) });
+    return send(res, 201, {
+      item: publicMemoryItem(item),
+      profile: buildInvestorMemoryProfile(actor.user.memory),
+      settings: publicMemorySettings(actor.user.memory),
+      summary: memorySummary(actor.user.memory)
+    });
   }
 
   if (req.method === "PATCH" && url.pathname === "/api/memory/settings") {
@@ -4783,7 +5001,11 @@ async function router(req, res) {
     };
     actor.user.memory.settings = normalizeMemorySettings(nextSettings);
     await writeDb(db);
-    return send(res, 200, { settings: publicMemorySettings(actor.user.memory), summary: memorySummary(actor.user.memory) });
+    return send(res, 200, {
+      profile: buildInvestorMemoryProfile(actor.user.memory),
+      settings: publicMemorySettings(actor.user.memory),
+      summary: memorySummary(actor.user.memory)
+    });
   }
 
   if (req.method === "PATCH" && url.pathname.startsWith("/api/memory/")) {
@@ -4799,7 +5021,12 @@ async function router(req, res) {
     item.updatedAt = now;
     item.reviewedAt = now;
     await writeDb(db);
-    return send(res, 200, { item: publicMemoryItem(item), settings: publicMemorySettings(actor.user.memory), summary: memorySummary(actor.user.memory) });
+    return send(res, 200, {
+      item: publicMemoryItem(item),
+      profile: buildInvestorMemoryProfile(actor.user.memory),
+      settings: publicMemorySettings(actor.user.memory),
+      summary: memorySummary(actor.user.memory)
+    });
   }
 
   if (req.method === "DELETE" && url.pathname.startsWith("/api/memory/")) {

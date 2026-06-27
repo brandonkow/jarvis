@@ -77,6 +77,30 @@ V3 starts as a consent-first memory engine, not automatic training:
 - Turning memory reasoning off does not delete memories; it only stops them from influencing answers and reports.
 - The shared Apex framework and owner evidence store remain unaffected by user memory.
 
+## v3.1 Memory Profile Builder
+
+The memory profile is a derived private profile built from approved user memory. It is not a separate public knowledge source and it is not market proof.
+
+- Apex summarizes approved memories into investor type, risk style, preferred assets, avoided risks, cash-flow rule, holding period, personal warnings, investment rules, market beliefs, and lessons.
+- The profile is visible in the memory panel so the user can inspect how Apex currently understands them.
+- The profile may enter chat or report reasoning only when memory reasoning is enabled.
+- The profile should improve personalization and challenge mode, but it must not override hard stops, missing evidence, legal/title risk, or poor deal quality.
+
+## v3.2 Memory Review Queue Upgrade
+
+Pending and approved memories are classified into clearer review types:
+
+- Preference
+- Constraint
+- Lesson
+- Mistake
+- Investment rule
+- Market belief
+- Personal warning
+- Goal, decision, experience, or general context when the memory does not fit the stronger buckets
+
+Each memory item should show its review priority and profile impact before approval. High-priority memories include warnings, mistakes, constraints, and hard rules because they may later affect challenge mode.
+
 ## v1.3 Deal Comparison
 
 The v1.3 comparison layer turns the device shortlist into a decision aid:

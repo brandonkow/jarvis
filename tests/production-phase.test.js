@@ -190,6 +190,8 @@ test("production phase keeps evidence owner-only and completes the account lifec
     }
   });
   assert.equal(optInMemoryQuery.payload.memoryCandidate.status, "pending");
+  assert.equal(optInMemoryQuery.payload.memoryCandidate.categoryLabel, "Preference");
+  assert.ok(optInMemoryQuery.payload.memoryCandidate.profileImpact);
 
   const approvedMemory = await request(baseUrl, `/api/memory/${optInMemoryQuery.payload.memoryCandidate.id}`, {
     method: "PATCH",
@@ -220,6 +222,11 @@ test("production phase keeps evidence owner-only and completes the account lifec
   });
   const memoryAfterNewChat = await request(baseUrl, "/api/memory", { cookie: login.cookie });
   assert.equal(memoryAfterNewChat.payload.summary.approved, 1);
+  assert.equal(memoryAfterNewChat.payload.profile.investorType, "Profile building");
+  assert.equal(memoryAfterNewChat.payload.profile.riskStyle, "Needs more approved memory");
+  assert.ok(memoryAfterNewChat.payload.profile.preferredAssets.some((item) => /freehold landed/i.test(item)));
+  assert.equal(memoryAfterNewChat.payload.items[0].reviewPriority, "normal");
+  assert.equal(memoryAfterNewChat.payload.items[0].categoryLabel, "Preference");
 
   const users = await request(baseUrl, "/api/admin/users", { owner: true });
   const member = users.payload.users.find((user) => user.email === "production@example.com");
