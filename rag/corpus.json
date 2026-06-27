@@ -708,6 +708,54 @@
     "body": "The founder identifies safety and natural disaster, especially flood risk, as difficult-to-reverse area stigmas. Apex should treat these as serious marketability risks and check whether the stigma is historical but resolved, recurring, specific to one road or phase, worsening, or still remembered by agents, buyers, tenants, and lenders. Cheap price is not enough if stigma permanently narrows the buyer pool or forces a liquidity discount."
   },
   {
+    "id": "execution-ground-sentiment-absorption",
+    "title": "Ground sentiment and real absorption",
+    "tags": ["market sentiment", "absorption", "sales gallery", "buyer inquiry", "rental inquiry"],
+    "body": "Genuine buyers returning should be judged by absorption quality: signed SPAs, loan approvals, low cancellations, released units versus sold units, completed subsale transactions, and faster viewing-to-booking-to-SPA conversion. Sales-gallery crowd alone can show curiosity rather than buying power. Rental demand may weaken when tenant inquiries fall; resale liquidity may weaken when buyer inquiries fall. Verify with multiple agents, listing duration, viewing-to-offer conversion, asking-price reductions, and days vacant."
+  },
+  {
+    "id": "execution-investor-ownstay-layout-signals",
+    "title": "Investor versus own-stay dominance from layout",
+    "tags": ["layout", "investor", "own stay", "small units", "family layout"],
+    "body": "The founder reads investor or own-stay dominance mainly from layout. Investor-dominated signals include studio or one-bedroom concentration, small layouts, dual-key or short-stay fit, yield-focused marketing, furnished packages, rental projections, and bulk purchase promotion. Own-stay signals include larger family layouts, practical kitchen, yard, storage, parking, privacy, family facilities, and liveability-focused marketing. Layout is an early clue and should be verified by buyer profile, ownership mix, tenancy mix, and transactions."
+  },
+  {
+    "id": "execution-agent-developer-desperation",
+    "title": "Agent and developer desperation signals",
+    "tags": ["fake listings", "developer discount", "inventory", "property portal", "desperation"],
+    "body": "Agents may be desperate when many fake listings appear on property portals showing different prices for the same property. Developers may be desperate when public discounts are used to clear inventory. Public discounts can also be ordinary campaign pricing, unit-specific clearance, or end-of-phase pricing, so Apex should check net effective price, unsold stock, absorption, cancellation, and future competition before deciding whether the discount is opportunity or weak demand."
+  },
+  {
+    "id": "execution-compliance-markup-bulk-boundary",
+    "title": "Marked-up price and bulk purchase boundaries",
+    "tags": ["marked up price", "bulk purchase", "cash back", "lender", "compliance"],
+    "body": "Apex should warn against marked-up transacted prices and refuse to validate structures relying on artificial consideration, undisclosed side arrangements, cash-back, misleading valuation, or hiding the true bargain from the lender. Founder default is to refuse bulk purchase deals, especially opaque packages with artificial pricing support, rebates, investor concentration, inflated rental projections, weak unit selection, or financing that depends on the package rather than the asset's true demand."
+  },
+  {
+    "id": "execution-document-stop-title-risk",
+    "title": "Document and title issues that pause a transaction",
+    "tags": ["title", "caveat", "land search", "consent", "seller authority", "legal risk"],
+    "body": "Pause until lawyer clearance when land search or title shows caveat, court order, prohibitory order, unresolved charge, restriction, or encumbrance; seller is not registered proprietor or lacks authority; identity, company authority, power of attorney, probate, grant, or board resolution is missing; title, parcel, car park, or built-up details conflict; state consent, developer consent, strata transfer, perfection, arrears, redemption, or fund-flow details are unclear; or documents appear altered, forged, incomplete, or inconsistent."
+  },
+  {
+    "id": "execution-seller-agent-buyer-risk-signals",
+    "title": "Seller, agent, and buyer risk signals",
+    "tags": ["seller risk", "agent risk", "buyer forcing", "loan rejection", "unsafe deal"],
+    "body": "Seller legal-risk signals include refusing documents, pressuring payment before lawyer review, avoiding caveat or consent questions, inconsistent ownership answers, unusual side agreements, direct payment requests, and excessive flexibility with risky terms. Agent risk signals include desperation, entertaining any request, bypassing lawyer or valuation, fake listings, inconsistent pricing, and unclear structure. Buyer forcing signals include many bank rejections, weak documents, dependence on maximum financing, assumption-tweaking, and ignoring legal or valuation warnings."
+  },
+  {
+    "id": "execution-challenge-mode-hard-warning",
+    "title": "Apex challenge mode hard warnings",
+    "tags": ["challenge mode", "hard warning", "emotional buying", "user override", "mentor tone"],
+    "body": "Apex should challenge emotional chasing when data cannot justify the return. It should say a user can afford but should not buy when asset risk is unattractive, such as nearby similar new launches. Hard warnings apply to unresolved legal or title issues, marked-up or lender-misleading structures, opaque bulk purchases, many bank rejections, rent failing the mandate, no reserve, failed stress tests, poor JMB, failed site visit, severe stigma, or direct supply threat. Serious-risk deals should be refused as Apex-approved decisions and recorded as user override if the user insists."
+  },
+  {
+    "id": "execution-challenge-mode-missing-info-memory",
+    "title": "Blocking gaps, soft cautions, and user mistake memory",
+    "tags": ["missing information", "soft caution", "memory", "FOMO", "mentor tone"],
+    "body": "Apex should block strong recommendations when missing information could change the verdict: exact unit, price, all-in cost, completed comps, rent proof, installment, maintenance, user income and reserve, DSR, title and caveat, site visit, nearby supply, exit buyer, and source incentives. Soft cautions apply to incomplete evidence, crowd without conversion, asking rent only, single agent source, minor handled maintenance, moderate supply, mixed school or traffic effects, priced-in layout trade-offs, or thin margin. Apex should remember repeated mistakes such as FOMO, overtrusting agents, ignoring site visits, overestimating resale, underestimating cost, forcing financing, and rejecting contrary evidence."
+  },
+  {
     "id": "framework-seven-stage-canonical-map",
     "title": "Canonical EstateLab seven-stage framework",
     "tags": ["framework", "seven stages", "property selection", "investor suitability", "financing", "holding", "portfolio", "market timing", "decision journal"],
