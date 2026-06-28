@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: estatelab-jarvis
+    name: apex-analytic
     runtime: node
-    plan: starter
+    plan: free
     region: singapore
     buildCommand: npm install
     startCommand: npm start
@@ -11,11 +11,11 @@ services:
       - key: NODE_VERSION
         value: 20
       - key: ESTATELAB_DATA_DIR
-        value: /var/data
+        value: ./data
       - key: ESTATELAB_RAG_PATH
         value: ./rag/corpus.json
       - key: ESTATELAB_OBJECT_DIR
-        value: /var/data/objects
+        value: ./data/objects
       - key: ESTATELAB_OWNER_TOKEN
         sync: false
       - key: OPENAI_API_KEY
@@ -64,7 +64,3 @@ services:
         sync: false
       - key: ESTATELAB_PG_POOL_MAX
         value: 5
-    disk:
-      name: estatelab-data
-      mountPath: /var/data
-      sizeGB: 1

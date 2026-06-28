@@ -95,23 +95,23 @@ When `DATABASE_URL` is set, Apex Analytic creates its PostgreSQL schema automati
 
 ## Deploy On Render
 
-Render is the recommended first deployment target because it can run the Node service, attach PostgreSQL, and retain the existing persistent disk during migration.
+Render is the recommended first deployment target because it can run the Node service on the free web tier first, then attach PostgreSQL or a persistent disk later when account history needs durable storage.
 
 1. Create a new Web Service from this repository.
 2. Use `npm install` as the build command.
 3. Use `npm start` as the start command.
 4. Set `ESTATELAB_OWNER_TOKEN` as a secret environment variable.
 5. Set either `OPENROUTER_API_KEY` or `OPENAI_API_KEY` as a secret environment variable to enable conversational AI.
-6. Create or attach a PostgreSQL database and set `DATABASE_URL` to its internal connection URL.
-7. Keep the persistent disk and `ESTATELAB_DATA_DIR=/var/data` during the first migration so PostgreSQL can import the existing JSON state.
-8. Keep `ESTATELAB_OBJECT_DIR=/var/data/objects` on the disk for uploaded source originals.
+6. For a free first launch, leave `ESTATELAB_DATA_DIR=./data` and `ESTATELAB_OBJECT_DIR=./data/objects`.
+7. For durable member accounts, create or attach PostgreSQL and set `DATABASE_URL` to its internal connection URL.
+8. If you later add a paid persistent disk, move `ESTATELAB_DATA_DIR` and `ESTATELAB_OBJECT_DIR` onto that disk before relying on JSON/object persistence.
 9. Optionally configure `ESTATELAB_EMAIL_WEBHOOK_URL`, test delivery, and then set `ESTATELAB_REQUIRE_EMAIL_VERIFICATION=true`.
 
-A starter `render.yaml` blueprint is included. It defines a Node web service in Singapore, `/api/health` health check, and a 1 GB persistent disk mounted at `/var/data`.
+A free-safe `render.yaml` blueprint is included. It defines a Node web service in Singapore and a `/api/health` health check without requiring a paid persistent disk.
 
-Note: Render persistent disks require a paid web service plan. The blueprint keeps the existing disk as a migration source and JSON fallback. Once PostgreSQL has been verified, runtime account and chat persistence no longer depends on that disk.
+Note: Free Render filesystems are ephemeral. The app will deploy and run, but account memory, reports, uploaded evidence originals, and JSON fallback changes may reset after restarts unless PostgreSQL or a persistent disk is configured.
 
-The bundled Apex Analytic knowledge base ships with the repo. On first start, if the Render disk is empty, the app seeds the runtime database from `data/db.json`.
+The bundled Apex Analytic knowledge base ships with the repo. On first start, if runtime storage is empty, the app seeds the runtime database from `data/db.json`.
 
 ## API Boundary
 
