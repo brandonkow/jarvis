@@ -364,7 +364,7 @@ function normalizeReportMarketIntelligence(market = {}) {
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v4.0", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v4.1", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -524,6 +524,19 @@ function normalizeReportAnalysis(analysis = {}) {
         score: Math.max(0, Math.min(100, Number(item?.score || 0))),
         proof: reportText(item?.proof, 420),
         gap: reportText(item?.gap, 420),
+        action: reportText(item?.action, 420)
+      }))
+    },
+    transactionComparableEvidence: {
+      status: ["strong", "usable", "thin", "unsafe", "missing", "unknown"].includes(analysis?.transactionComparableEvidence?.status) ? analysis.transactionComparableEvidence.status : "unknown",
+      score: Math.max(0, Math.min(100, Number(analysis?.transactionComparableEvidence?.score || 0))),
+      summary: reportText(analysis?.transactionComparableEvidence?.summary, 800),
+      valuePosition: reportText(analysis?.transactionComparableEvidence?.valuePosition, 240),
+      checks: objectList(analysis?.transactionComparableEvidence?.checks, 8, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
+        proof: reportText(item?.proof, 360),
+        gap: reportText(item?.gap, 360),
         action: reportText(item?.action, 420)
       }))
     },
@@ -2191,6 +2204,11 @@ const dealContextLabels = {
   exitBuyerPool: "Exit buyer pool",
   evidenceConfidence: "Evidence confidence",
   comparableTransactions: "Completed comparable transactions",
+  comparableSource: "Comparable source",
+  comparableRecency: "Comparable recency",
+  comparableMatchQuality: "Comparable match quality",
+  comparablePriceRange: "Comparable price range",
+  comparableAdjustmentNotes: "Comparable adjustment notes",
   rentEvidence: "Rental evidence",
   siteVisit: "Site visit",
   legalCheck: "Title and legal check",
@@ -2373,6 +2391,11 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const concentrationRiskInput = String(financialProfile.concentrationRisk || "").toLowerCase();
   const nextPurchaseReason = String(financialProfile.nextPurchaseReason || "").toLowerCase();
   const tenure = String(dealCard.tenure || "").toLowerCase();
+  const comparableSource = String(dealCard.comparableSource || "").toLowerCase();
+  const comparableRecency = String(dealCard.comparableRecency || "").toLowerCase();
+  const comparableMatchQuality = String(dealCard.comparableMatchQuality || "").toLowerCase();
+  const comparablePriceRangeText = String(dealCard.comparablePriceRange || "");
+  const comparableAdjustmentNotes = String(dealCard.comparableAdjustmentNotes || "");
   const dealNarrative = signalText(
     dealCard.mainConcern,
     dealCard.investmentThesis,
@@ -2420,6 +2443,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   if (!dealCard.managementQuality) missingEvidence.push("Management, maintenance, and build-quality checks");
   if (!dealCard.nearbySupply) missingEvidence.push("Direct competing supply within roughly 2.5km");
   if (!dealCard.comparableTransactions || dealCard.comparableTransactions === "None") missingEvidence.push("Recent completed comparable transactions");
+  if (dealCard.comparableTransactions && dealCard.comparableTransactions !== "None" && (!dealCard.comparableSource || !dealCard.comparableRecency || !dealCard.comparableMatchQuality || !dealCard.comparablePriceRange)) {
+    missingEvidence.push("V4.1 comparable source, recency, match quality, and completed price range");
+  }
   if (!dealCard.rentEvidence || dealCard.rentEvidence === "None" || dealCard.rentEvidence === "Listing only") missingEvidence.push("Achieved-rent proof beyond advertised listings");
   if (dealCard.siteVisit !== "Completed") missingEvidence.push("A completed site visit");
   if (dealCard.legalCheck !== "Clear") missingEvidence.push("Clear title, caveat, restriction, and legal checks");
@@ -2559,6 +2585,163 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   if (!installment) financingScore -= 20;
   financingScore = clampScore(financingScore);
 
+  const parseComparableRange = (value) => {
+    const matches = String(value || "").match(/(?:rm\s*)?\d+(?:[.,]\d+)?\s*(?:k|m|mil|million)?/gi) || [];
+    const amounts = matches.map((item) => {
+      const clean = String(item || "").toLowerCase().replace(/,/g, "").replace(/rm/g, "").trim();
+      const match = clean.match(/(\d+(\.\d+)?)\s*(k|m|mil|million)?/);
+      if (!match) return 0;
+      const base = Number(match[1]);
+      if (!Number.isFinite(base)) return 0;
+      if (["m", "mil", "million"].includes(match[3])) return base * 1_000_000;
+      if (match[3] === "k") return base * 1_000;
+      return base;
+    }).filter((amount) => Number.isFinite(amount) && amount > 0);
+    if (!amounts.length) return { low: 0, high: 0 };
+    return { low: Math.min(...amounts), high: Math.max(...amounts) };
+  };
+  const compStatusScore = { strong: 100, usable: 72, thin: 42, unsafe: 8, missing: 0 };
+  const compCheck = (label, status, proof, gap, action) => ({
+    label,
+    status,
+    proof,
+    gap,
+    action
+  });
+  const comparableRange = parseComparableRange(comparablePriceRangeText);
+  const comparableCountStatus = dealCard.comparableTransactions === "3 or more"
+    ? "strong"
+    : dealCard.comparableTransactions === "1 to 2"
+      ? "usable"
+      : "missing";
+  const comparableSourceStatus = /brickz|official|transaction|auction|valuation/.test(comparableSource)
+    ? "strong"
+    : /agent/.test(comparableSource)
+      ? "usable"
+      : /listing|portal|social|unknown/.test(comparableSource)
+        ? "unsafe"
+        : "missing";
+  const comparableRecencyStatus = /0-6|6-12/.test(comparableRecency)
+    ? "strong"
+    : /12-24/.test(comparableRecency)
+      ? "usable"
+      : /older/.test(comparableRecency)
+        ? "thin"
+        : "missing";
+  const comparableMatchStatus = /same project/.test(comparableMatchQuality)
+    ? "strong"
+    : /closest substitute/.test(comparableMatchQuality)
+      ? "usable"
+      : /same township/.test(comparableMatchQuality)
+        ? "thin"
+        : /weak substitute|unknown/.test(comparableMatchQuality)
+          ? "unsafe"
+          : "missing";
+  const comparableRangeStatus = comparableRange.low && comparableRange.high && price
+    ? price <= comparableRange.high ? "strong" : price <= comparableRange.high * 1.1 ? "thin" : "unsafe"
+    : fairValue && price
+      ? price <= fairValue ? "usable" : "thin"
+      : "missing";
+  const comparableAdjustmentStatus = comparableAdjustmentNotes
+    ? "strong"
+    : fairValue && comparableCountStatus !== "missing"
+      ? "usable"
+      : "missing";
+  const comparableValuePosition = comparableRange.low && comparableRange.high && price
+    ? price < comparableRange.low
+      ? `Asking price is below the stated comparable range (${formatRinggit(comparableRange.low)} - ${formatRinggit(comparableRange.high)}).`
+      : price <= comparableRange.high
+        ? `Asking price sits inside the stated comparable range (${formatRinggit(comparableRange.low)} - ${formatRinggit(comparableRange.high)}).`
+        : `Asking price is above the stated comparable range (${formatRinggit(comparableRange.low)} - ${formatRinggit(comparableRange.high)}).`
+    : fairValue && price && discountToFairValue !== null
+      ? discountToFairValue >= 0
+        ? `Asking price is ${money(discountToFairValue)}% below conservative value.`
+        : `Asking price is ${money(Math.abs(discountToFairValue))}% above conservative value.`
+      : "Comparable range or conservative value is not enough to judge price position.";
+  const comparableChecks = [
+    compCheck(
+      "Comparable count",
+      comparableCountStatus,
+      comparableCountStatus === "strong" ? "Three or more completed comparables are stated." : comparableCountStatus === "usable" ? "Only one to two completed comparables are stated." : "",
+      comparableCountStatus === "missing" ? "Comparable transaction count is missing." : "",
+      "Collect enough completed subsale or successful auction records to avoid relying on one isolated datapoint."
+    ),
+    compCheck(
+      "Source quality",
+      comparableSourceStatus,
+      comparableSourceStatus === "strong" ? "Source is official transaction data, successful auction evidence, or bank valuation support." : comparableSourceStatus === "usable" ? "Agent-supplied completed comps can help, but need cross-checking." : "",
+      comparableSourceStatus === "unsafe" ? "Listing-only or unknown source is not completed transaction proof." : comparableSourceStatus === "missing" ? "Comparable source is not recorded." : "",
+      "Prefer Brickz, official transaction evidence, successful auction results, or banker-supported valuation references over listing prices."
+    ),
+    compCheck(
+      "Recency",
+      comparableRecencyStatus,
+      comparableRecencyStatus === "strong" ? "Comparable evidence is within the recent 12-month window." : comparableRecencyStatus === "usable" ? "Comparable evidence is within 12 to 24 months." : "",
+      comparableRecencyStatus === "thin" ? "Older comparables may not reflect current stagnant or shifting market liquidity." : comparableRecencyStatus === "missing" ? "Comparable recency is not recorded." : "",
+      "Use the freshest completed evidence available, especially in projects affected by new supply, rate changes, or weak buyer liquidity."
+    ),
+    compCheck(
+      "Match quality",
+      comparableMatchStatus,
+      comparableMatchStatus === "strong" ? "Comparable evidence comes from the same project." : comparableMatchStatus === "usable" ? "Closest substitute projects are used." : "",
+      comparableMatchStatus === "thin" ? "Same township only is not enough unless the substitute package is genuinely similar." : comparableMatchStatus === "unsafe" ? "Weak substitutes can produce a false market value." : comparableMatchStatus === "missing" ? "Comparable match quality is not recorded." : "",
+      "Compare against the same project first, then closest substitutes with similar location package, layout, age, tenure, facilities, and buyer pool."
+    ),
+    compCheck(
+      "Price range fit",
+      comparableRangeStatus,
+      comparableRangeStatus === "strong" || comparableRangeStatus === "usable" ? comparableValuePosition : "",
+      comparableRangeStatus === "unsafe" ? comparableValuePosition : comparableRangeStatus === "missing" ? "Comparable range or conservative value is not recorded." : "",
+      "State the comparable range and explain whether the subject price is below, inside, or above the completed evidence band."
+    ),
+    compCheck(
+      "Adjustment discipline",
+      comparableAdjustmentStatus,
+      comparableAdjustmentStatus === "strong" ? "Adjustments are recorded for physical and market differences." : comparableAdjustmentStatus === "usable" ? "Conservative value is supplied, but adjustment notes are still light." : "",
+      comparableAdjustmentStatus === "missing" ? "No adjustment notes are recorded for floor, view, size, layout, renovation, parking, facing, or project reputation." : "",
+      "Record the adjustment logic so the user does not mistake a different unit or weaker substitute for true value proof."
+    )
+  ];
+  const transactionComparableScore = clampScore(
+    compStatusScore[comparableCountStatus] * 0.2 +
+    compStatusScore[comparableSourceStatus] * 0.25 +
+    compStatusScore[comparableRecencyStatus] * 0.15 +
+    compStatusScore[comparableMatchStatus] * 0.2 +
+    compStatusScore[comparableRangeStatus] * 0.1 +
+    compStatusScore[comparableAdjustmentStatus] * 0.1
+  );
+  const comparableUnsafe = [comparableSourceStatus, comparableMatchStatus, comparableRangeStatus].includes("unsafe");
+  const comparableHasAnyProof = comparableCountStatus !== "missing" || comparableSourceStatus !== "missing" || fairValue || comparableRange.low;
+  const transactionComparableStatus = comparableUnsafe
+    ? "unsafe"
+    : transactionComparableScore >= 85
+      ? "strong"
+      : transactionComparableScore >= 65
+        ? "usable"
+        : transactionComparableScore >= 40 || comparableHasAnyProof
+          ? "thin"
+          : "missing";
+  const transactionComparableEvidence = {
+    status: transactionComparableStatus,
+    score: transactionComparableScore,
+    summary: transactionComparableStatus === "strong"
+      ? "Completed value proof is strong: source, recency, match quality, range, and adjustment discipline support the value."
+      : transactionComparableStatus === "usable"
+        ? "Completed value proof is usable, but Apex still wants one or two gaps tightened before full confidence."
+        : transactionComparableStatus === "thin"
+          ? "Completed value proof is thin. The price may be interesting, but the comparable basis is not yet dependable."
+          : transactionComparableStatus === "unsafe"
+            ? "Completed value proof is unsafe because the source, substitute match, or price range can mislead the decision."
+            : "Completed value proof is missing.",
+    valuePosition: comparableValuePosition,
+    checks: comparableChecks
+  };
+  if (["unsafe", "missing"].includes(transactionComparableStatus)) {
+    addBlocker("V4.1 transaction comparable evidence is not reliable enough to validate conservative value.");
+  } else if (transactionComparableStatus === "thin") {
+    addBlocker("V4.1 transaction comparable evidence is still thin; clear source, recency, match, range, and adjustment gaps before shortlist.");
+  }
+
   let holdingScore = 50;
   if (holdingCashFlow !== null) {
     if (holdingCashFlow >= 0) holdingScore += 30;
@@ -2599,13 +2782,16 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       addBlocker("Nearby similar new supply needs absorption proof before shortlist.");
     }
   }
-  if (dealCard.comparableTransactions === "3 or more") marketScore += 10;
+  if (transactionComparableStatus === "strong") marketScore += 10;
+  else if (transactionComparableStatus === "usable") marketScore += 5;
   if (dealCard.rentEvidence === "Signed tenancy or achieved rent" || dealCard.rentEvidence === "Agent-confirmed") marketScore += 10;
   marketScore = clampScore(marketScore);
 
   let evidenceScore = 10;
-  if (dealCard.comparableTransactions === "3 or more") evidenceScore += 25;
-  else if (dealCard.comparableTransactions === "1 to 2") evidenceScore += 14;
+  if (transactionComparableStatus === "strong") evidenceScore += 25;
+  else if (transactionComparableStatus === "usable") evidenceScore += 19;
+  else if (transactionComparableStatus === "thin") evidenceScore += 9;
+  else if (transactionComparableStatus === "unsafe") evidenceScore -= 5;
   if (dealCard.rentEvidence === "Signed tenancy or achieved rent") evidenceScore += 25;
   else if (dealCard.rentEvidence === "Agent-confirmed") evidenceScore += 18;
   else if (dealCard.rentEvidence === "Listing only") evidenceScore += 5;
@@ -2623,11 +2809,13 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     gap,
     action
   });
-  const valueGateStatus = fairValue && dealCard.comparableTransactions === "3 or more"
+  const valueGateStatus = transactionComparableStatus === "strong"
     ? "proven"
-    : fairValue || dealCard.comparableTransactions === "1 to 2"
+    : transactionComparableStatus === "usable" || transactionComparableStatus === "thin"
       ? "partial"
-      : "missing";
+      : transactionComparableStatus === "unsafe"
+        ? "blocked"
+        : "missing";
   const rentGateStatus = dealCard.rentEvidence === "Signed tenancy or achieved rent"
     ? "proven"
     : dealCard.rentEvidence === "Agent-confirmed"
@@ -2668,10 +2856,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       "Completed value proof",
       valueGateStatus,
       20,
-      gateScore(valueGateStatus, 60),
-      valueGateStatus === "proven" ? "Conservative value is backed by three or more completed comparable transactions." : fairValue ? "A conservative value is supplied, but comparable depth is still thin." : "",
-      valueGateStatus === "missing" ? "No completed subsale or successful auction proof supports the value." : valueGateStatus === "partial" ? "Comparable count or quality is not yet strong enough." : "",
-      "Use completed subsale and successful auction evidence, not listing price, to defend fair value."
+      transactionComparableScore,
+      valueGateStatus === "proven" ? transactionComparableEvidence.summary : valueGateStatus === "partial" ? transactionComparableEvidence.summary : "",
+      valueGateStatus === "blocked" || valueGateStatus === "missing" ? transactionComparableEvidence.summary : valueGateStatus === "partial" ? "Comparable source, recency, match, range, or adjustment detail is not yet strong enough." : "",
+      "Use V4.1 comparable detail: source, recency, match quality, completed price range, and adjustment logic."
     ),
     evidenceGate(
       "Achieved rent proof",
@@ -2944,10 +3132,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const evidenceChecklist = [
     {
       label: "Completed value evidence",
-      status: fairValue && dealCard.comparableTransactions === "3 or more" ? "done" : fairValue ? "warning" : "missing",
-      action: fairValue && dealCard.comparableTransactions === "3 or more"
-        ? "Conservative value is supported by the supplied completed comparables."
-        : "Verify conservative value with recent completed subsale or successful auction evidence."
+      status: transactionComparableStatus === "strong" ? "done" : transactionComparableStatus === "unsafe" ? "danger" : transactionComparableStatus === "missing" ? "missing" : "warning",
+      action: transactionComparableStatus === "strong"
+        ? "Conservative value is supported by V4.1 comparable source, recency, match, range, and adjustment detail."
+        : "Verify conservative value with V4.1 comparable detail: source, recency, match quality, completed price range, and adjustment notes."
     },
     {
       label: "Rental demand proof",
@@ -3018,9 +3206,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     task(
       "Agent",
       "Completed value proof",
-      taskStatus(fairValue && dealCard.comparableTransactions === "3 or more"),
-      "Send recent completed subsale transactions and successful auction evidence for the same project or closest substitutes.",
-      !fairValue || dealCard.comparableTransactions === "None"
+      taskStatus(transactionComparableStatus === "strong"),
+      "Send recent completed subsale or successful auction evidence, with source, recency, match quality, completed price range, and adjustment notes.",
+      transactionComparableStatus === "unsafe" || transactionComparableStatus === "missing" || transactionComparableStatus === "thin"
     ),
     task(
       "Rental Agent",
@@ -3111,7 +3299,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const publicDealSignal = hasSignal(dealNarrative, [/heavily advertised/, /advertis(ed|ement)/, /property portal/, /social media/, /fake listing/]);
   const agentPressureSignal = hasSignal(dealNarrative, [/hard sell/, /keep follow/, /keeps follow/, /desperate/, /push(ing)? inventory/, /urgent booking/]);
   const motivatedSellerSignal = hasSignal(dealNarrative, [/motivated seller/, /urgent sale/, /need cash/, /cash urgent/, /debt/, /family issue/, /open to negotiation/]);
-  const demandProofStrong = dealCard.comparableTransactions === "3 or more"
+  const demandProofStrong = transactionComparableStatus === "strong"
     && ["Signed tenancy or achieved rent", "Agent-confirmed"].includes(dealCard.rentEvidence || "");
   const executionStatus = (stop, caution, clear) => stop ? "stop" : caution ? "caution" : clear ? "clear" : "verify";
   const executionAction = (lane, label, status, action) => ({ lane, label, status, action });
@@ -3828,7 +4016,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   };
 
   return {
-    engineVersion: "Apex v4.0",
+    engineVersion: "Apex v4.1",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -3862,6 +4050,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     investorReadiness,
     evidenceChecklist,
     evidenceEngine,
+    transactionComparableEvidence,
     dueDiligencePlan,
     executionPlan,
     hardStops: hardStopText,
@@ -3901,6 +4090,15 @@ function dealAnalysisText(analysis) {
     );
     if (analysis.evidenceEngine.criticalGaps?.length) lines.push(...analysis.evidenceEngine.criticalGaps.map((item) => `- Critical gap: ${item}`));
     lines.push(...(analysis.evidenceEngine.gates || []).map((item) => `- ${item.label}: ${item.status}, ${item.score}/100. ${item.action}`));
+  }
+  if (analysis.transactionComparableEvidence?.summary) {
+    lines.push(
+      "",
+      "V4.1 transaction comparable evidence",
+      `- ${analysis.transactionComparableEvidence.status || "unknown"} (${analysis.transactionComparableEvidence.score || 0}/100): ${analysis.transactionComparableEvidence.summary}`,
+      `- Value position: ${analysis.transactionComparableEvidence.valuePosition || "Not calculated."}`
+    );
+    lines.push(...(analysis.transactionComparableEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
   }
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", `- ${analysis.dueDiligencePlan.summary}`);

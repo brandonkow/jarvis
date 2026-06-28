@@ -180,6 +180,18 @@ V4.0 should block shortlist-level confidence unless:
 
 The evidence engine does not replace due diligence. It decides whether Apex is allowed to speak with strong confidence before due diligence is completed.
 
+## v4.1 Transaction Comparable Evidence
+
+V4.1 deepens the completed value proof gate. Apex should not treat "three or more comparables" as automatically strong. The comparable evidence must also show:
+
+- **Source quality**: Brickz, official transaction data, successful auction result, bank valuation support, or clearly cross-checked agent-supplied completed comps.
+- **Recency**: preferably within 12 months; older than 24 months is thin unless the market is very stable.
+- **Match quality**: same project first, then closest substitutes with similar location package, layout, age, tenure, facilities, and buyer pool.
+- **Completed price range**: the subject asking price must be positioned against a stated completed evidence band.
+- **Adjustment discipline**: floor, view, size, layout, renovation, parking, facing, and project reputation differences must be explained.
+
+If source, match, or range is unsafe, Apex should block shortlist-level confidence even when the headline asking price appears below market.
+
 ## v1.3 Deal Comparison
 
 The v1.3 comparison layer turns the device shortlist into a decision aid:

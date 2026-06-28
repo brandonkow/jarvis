@@ -88,6 +88,11 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
     managementQuality: "Strong",
     exitBuyerPool: "Own-stay and investor",
     comparableTransactions: "3 or more",
+    comparableSource: "Brickz / official transaction data",
+    comparableRecency: "0-6 months",
+    comparableMatchQuality: "Same project",
+    comparablePriceRange: "RM480k - RM520k",
+    comparableAdjustmentNotes: "Adjusted for floor, view, renovation, and parking.",
     rentEvidence: "Signed tenancy or achieved rent",
     siteVisit: "Completed",
     legalCheck: "Clear",
@@ -163,7 +168,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.exitStrategy.checks.some((item) => item.label === "Resale emotion" && item.status === "clear"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v4.0");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v4.1");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");
@@ -176,6 +181,10 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.evidenceEngine.score, 100);
   assert.equal(result.payload.analysis.evidenceEngine.gates.length, 7);
   assert.match(result.payload.analysis.evidenceEngine.recommendationGate, /Shortlist-level confidence allowed/i);
+  assert.equal(result.payload.analysis.transactionComparableEvidence.status, "strong");
+  assert.equal(result.payload.analysis.transactionComparableEvidence.score, 100);
+  assert.equal(result.payload.analysis.transactionComparableEvidence.checks.length, 6);
+  assert.ok(result.payload.analysis.transactionComparableEvidence.checks.some((item) => item.label === "Source quality" && item.status === "strong"));
   assert.equal(result.payload.analysis.dueDiligencePlan.tasks.length, 10);
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Lawyer" && item.status === "done"));
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Agent" && /subsale/i.test(item.action)));
@@ -185,6 +194,23 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.executionPlan.actions.length, 11);
   assert.ok(result.payload.analysis.executionPlan.actions.some((item) => item.lane === "Offer" && item.status === "clear"));
   assert.ok(result.payload.analysis.executionPlan.actions.some((item) => item.lane === "Renovation" && /RM20,000/.test(item.action)));
+
+  const weakComparable = await post(baseUrl, "/api/jarvis/analyze-deal", {
+    sessionId: session.payload.session.id,
+    dealCard: {
+      ...dealCard,
+      comparableSource: "Property portal listing only",
+      comparableRecency: "Older than 24 months",
+      comparableMatchQuality: "Weak substitute",
+      comparablePriceRange: "RM330k - RM360k",
+      comparableAdjustmentNotes: ""
+    },
+    financialProfile
+  });
+  assert.equal(weakComparable.payload.analysis.verdict, "INVESTIGATE");
+  assert.equal(weakComparable.payload.analysis.transactionComparableEvidence.status, "unsafe");
+  assert.ok(weakComparable.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Completed value proof" && gate.status === "blocked"));
+  assert.ok(weakComparable.payload.analysis.recommendationBlockers.some((message) => /V4\.1 transaction comparable evidence/i.test(message)));
 
   const provisional = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,

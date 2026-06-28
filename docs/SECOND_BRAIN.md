@@ -60,6 +60,8 @@ Deal memory comparison, belief tracking, source transparency, memory-conflict ha
 
 V4.0 adds the evidence engine. This is the proof layer: Apex checks whether completed value evidence, achieved rent, financing/valuation fit, supply absorption, site and management reality, legal/title safety, and the written thesis are strong enough for shortlist-level confidence. If the score is below 80/100, a critical proof gap remains, or an evidence gate is blocked, Apex should keep the deal in investigation mode no matter how attractive the story sounds.
 
+V4.1 strengthens completed value evidence. Apex now checks comparable source, recency, match quality, completed price range, and adjustment notes before trusting conservative value. Listing-only proof or weak substitute comparables should keep the deal in investigation mode.
+
 Public users must not be able to add, edit, or delete backend knowledge. Backend write APIs require the owner-token header to match the server's owner-token environment variable. If no owner token is configured, owner APIs are disabled and public Apex session routes remain the only unauthenticated write surface.
 
 The visible frontend should stay simple and conversational. Knowledge-base development happens through owner-controlled backend files, scripts, or authenticated owner API calls.

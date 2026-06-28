@@ -36,6 +36,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /id="memoryProfile"[\s\S]*?id="memoryProfileTitle"[\s\S]*?id="memoryProfileDetails"/, "V3.1 needs a structured investor memory profile card.");
   assert.match(html, /data-deal-field="annualAssessmentQuitRent"[\s\S]*?data-deal-field="vacancyStressMonths"/, "Deal card needs optional v1.6 stress assumption fields.");
   assert.match(html, /data-deal-field="dealSource"[\s\S]*?data-deal-field="resalePreparation"/, "Deal card needs optional v2 workflow fields.");
+  assert.match(html, /data-deal-field="comparableSource"[\s\S]*?data-deal-field="comparableAdjustmentNotes"/, "Deal card needs v4.1 transaction comparable detail fields.");
   assert.match(html, /data-profile-field="portfolioRole"[\s\S]*?data-profile-field="nextPurchaseReason"/, "Profile card needs optional v1.7 portfolio gate fields.");
   assert.match(html, /id="shortlistPanel"[\s\S]*?DEAL SHORTLIST[\s\S]*?id="shortlistList"/, "Analysed properties need an inline comparison shortlist.");
   assert.match(html, /id="shortlistSummary"[\s\S]*?id="shortlistList"/, "The shortlist needs a comparison summary before the deal cards.");
@@ -67,6 +68,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /readinessMarkup\(analysis\.investorReadiness\)/, "Deal reports need an investor readiness summary.");
   assert.match(app, /evidenceChecklistMarkup\(analysis\.evidenceChecklist/, "Deal reports need an evidence checklist.");
   assert.match(app, /evidenceEngineMarkup\(analysis\.evidenceEngine\)/, "Deal reports need v4.0 evidence engine.");
+  assert.match(app, /transactionComparableMarkup\(analysis\.transactionComparableEvidence\)/, "Deal reports need v4.1 transaction comparable evidence.");
   assert.match(app, /dueDiligenceMarkup\(analysis\.dueDiligencePlan\)/, "Deal reports need a due-diligence task pack.");
   assert.match(app, /stressEnvelopeMarkup\(analysis\.stressEnvelope\)/, "Deal reports need v1.6 stress envelope.");
   assert.match(app, /portfolioGateMarkup\(analysis\.portfolioGate\)/, "Deal reports need v1.7 portfolio expansion gate.");
@@ -91,6 +93,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /personalizedChallenge: analysis\.personalizedChallenge/, "Shortlisted deals must preserve V3.3 personalized challenge context.");
   assert.match(app, /learningLoop: analysis\.learningLoop/, "Shortlisted deals must preserve learning signals for comparison.");
   assert.match(app, /evidenceEngine: analysis\.evidenceEngine/, "Shortlisted deals must preserve V4.0 evidence engine.");
+  assert.match(app, /transactionComparableEvidence: analysis\.transactionComparableEvidence/, "Shortlisted deals must preserve V4.1 transaction comparable evidence.");
   assert.match(app, /dealMemoryComparison: analysis\.dealMemoryComparison/, "Shortlisted deals must preserve V3.4 saved deal comparison.");
   assert.match(app, /beliefTracker: analysis\.beliefTracker/, "Shortlisted deals must preserve V3.5 belief tracking.");
   assert.match(app, /sourceTransparency: analysis\.sourceTransparency/, "Shortlisted deals must preserve V3.6 source transparency.");
@@ -122,6 +125,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.analysisOverview[\s\S]*?grid-template-columns:/, "The v1.1 report needs an organized readiness and scorecard overview.");
   assert.match(styles, /\.analysisEvidence[\s\S]*?\.evidenceItem/, "The v1.1 report needs a styled evidence checklist.");
   assert.match(styles, /\.analysisEvidenceEngine[\s\S]*?\.evidenceGate/, "The v4.0 evidence engine needs styled evidence gates.");
+  assert.match(styles, /\.analysisTransactionComps[\s\S]*?\.transactionCompCheck/, "The v4.1 comparable evidence card needs styled checks.");
   assert.match(styles, /\.analysisDiligence[\s\S]*?\.diligenceTask/, "The v1.4 report needs a styled due-diligence task pack.");
   assert.match(styles, /\.analysisStress[\s\S]*?\.stressAssumptions/, "The v1.6 report needs a styled stress envelope.");
   assert.match(styles, /\.analysisPortfolioGate[\s\S]*?\.portfolioCheck/, "The v1.7 report needs a styled portfolio expansion gate.");
