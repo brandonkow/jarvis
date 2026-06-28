@@ -77,6 +77,13 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
     maintenance: "RM300",
     estimatedInstallment: "RM2,000",
     cashOutlay: "RM80k",
+    bankValuationSupport: "Multiple banker support",
+    loanPrecheckStatus: "Pre-approved / eligibility checked",
+    loanMarginPlan: "Around 90% standard",
+    instalmentStress: "10% higher instalment tested",
+    cashBufferAfterPurchase: "6+ months reserve after purchase",
+    financingDocumentReadiness: "Complete income / CTOS / CCRIS documents",
+    financingNotes: "Banker checked valuation, DSR, margin, documents, and 10% instalment stress.",
     annualAssessmentQuitRent: "RM1,200",
     annualInsuranceTax: "RM600",
     monthlyRepairReserve: "RM200",
@@ -137,7 +144,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.response.status, 200);
   assert.equal(result.payload.analysis.dimensions.length, 4);
   assert.deepEqual(result.payload.analysis.dimensions.map((item) => item.key), ["property", "investor", "evidence", "exit"]);
-  assert.equal(result.payload.analysis.dimensions.find((item) => item.key === "evidence").score, 95);
+  assert.equal(result.payload.analysis.dimensions.find((item) => item.key === "evidence").score, 100);
   assert.equal(result.payload.analysis.scenarios.length, 4);
   assert.equal(result.payload.analysis.scenarios[0].monthlyCashFlow, 700);
   assert.ok(result.payload.analysis.scenarios[3].monthlyCashFlow < result.payload.analysis.scenarios[0].monthlyCashFlow);
@@ -174,7 +181,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.exitStrategy.checks.some((item) => item.label === "Resale emotion" && item.status === "clear"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v4.2");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v4.3");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");
@@ -195,6 +202,10 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.achievedRentalEvidence.score, 100);
   assert.equal(result.payload.analysis.achievedRentalEvidence.checks.length, 7);
   assert.ok(result.payload.analysis.achievedRentalEvidence.checks.some((item) => item.label === "Tenant urgency" && item.status === "strong"));
+  assert.equal(result.payload.analysis.financingValuationEvidence.status, "strong");
+  assert.equal(result.payload.analysis.financingValuationEvidence.score, 100);
+  assert.equal(result.payload.analysis.financingValuationEvidence.checks.length, 8);
+  assert.ok(result.payload.analysis.financingValuationEvidence.checks.some((item) => item.label === "DSR fit" && item.status === "strong"));
   assert.equal(result.payload.analysis.dueDiligencePlan.tasks.length, 10);
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Lawyer" && item.status === "done"));
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Agent" && /subsale/i.test(item.action)));
@@ -240,6 +251,25 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(weakRental.payload.analysis.achievedRentalEvidence.status, "unsafe");
   assert.ok(weakRental.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Achieved rent proof" && gate.status === "blocked"));
   assert.ok(weakRental.payload.analysis.recommendationBlockers.some((message) => /V4\.2 achieved rental evidence/i.test(message)));
+
+  const weakFinancing = await post(baseUrl, "/api/jarvis/analyze-deal", {
+    sessionId: session.payload.session.id,
+    dealCard: {
+      ...dealCard,
+      bankValuationSupport: "Valuation below price",
+      loanPrecheckStatus: "Rejected / weak profile",
+      loanMarginPlan: "Above 90% / cash-out",
+      instalmentStress: "Not tested",
+      cashBufferAfterPurchase: "Below 3 months reserve after purchase",
+      financingDocumentReadiness: "Weak score / rejected documents",
+      financingNotes: "Loan rejected by many banks and valuation shortfall is likely."
+    },
+    financialProfile
+  });
+  assert.equal(weakFinancing.payload.analysis.verdict, "INVESTIGATE");
+  assert.equal(weakFinancing.payload.analysis.financingValuationEvidence.status, "unsafe");
+  assert.ok(weakFinancing.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Financing and valuation fit" && gate.status === "blocked"));
+  assert.ok(weakFinancing.payload.analysis.recommendationBlockers.some((message) => /V4\.3 financing and valuation evidence/i.test(message)));
 
   const provisional = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,

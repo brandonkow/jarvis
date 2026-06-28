@@ -384,6 +384,61 @@
               <label>Maintenance<input data-deal-field="maintenance" placeholder="RM350/month" inputmode="decimal" /></label>
               <label>Loan Instalment<input data-deal-field="estimatedInstallment" placeholder="RM2,100/month" inputmode="decimal" /></label>
               <label>Cash Outlay<input data-deal-field="cashOutlay" placeholder="RM80k all-in cash" inputmode="decimal" /></label>
+              <label>Bank Valuation
+                <select data-deal-field="bankValuationSupport">
+                  <option value="">Select</option>
+                  <option>Multiple banker support</option>
+                  <option>One banker indicative support</option>
+                  <option>Agent valuation claim only</option>
+                  <option>Valuation below price</option>
+                  <option>Not checked</option>
+                </select>
+              </label>
+              <label>Loan Precheck
+                <select data-deal-field="loanPrecheckStatus">
+                  <option value="">Select</option>
+                  <option>Pre-approved / eligibility checked</option>
+                  <option>Banker says likely</option>
+                  <option>Not checked</option>
+                  <option>Rejected / weak profile</option>
+                </select>
+              </label>
+              <label>Loan Margin
+                <select data-deal-field="loanMarginPlan">
+                  <option value="">Select</option>
+                  <option>80% or lower</option>
+                  <option>Around 90% standard</option>
+                  <option>Above 90% / cash-out</option>
+                  <option>Unknown</option>
+                </select>
+              </label>
+              <label>Instalment Stress
+                <select data-deal-field="instalmentStress">
+                  <option value="">Select</option>
+                  <option>10% higher instalment tested</option>
+                  <option>Base instalment only</option>
+                  <option>Not tested</option>
+                </select>
+              </label>
+              <label>Cash Buffer
+                <select data-deal-field="cashBufferAfterPurchase">
+                  <option value="">Select</option>
+                  <option>6+ months reserve after purchase</option>
+                  <option>3-6 months reserve after purchase</option>
+                  <option>Below 3 months reserve after purchase</option>
+                  <option>Unknown</option>
+                </select>
+              </label>
+              <label>Loan Documents
+                <select data-deal-field="financingDocumentReadiness">
+                  <option value="">Select</option>
+                  <option>Complete income / CTOS / CCRIS documents</option>
+                  <option>Partial documents</option>
+                  <option>Weak score / rejected documents</option>
+                  <option>Unknown</option>
+                </select>
+              </label>
+              <label class="contextWide">Financing Notes<input data-deal-field="financingNotes" placeholder="Valuation basis, DSR concern, loan margin, approval risk, banker comment..." /></label>
               <label>Assessment / Quit Rent<input data-deal-field="annualAssessmentQuitRent" placeholder="RM1,200/year" inputmode="decimal" /></label>
               <label>Insurance / Tax<input data-deal-field="annualInsuranceTax" placeholder="RM800/year" inputmode="decimal" /></label>
               <label>Repair Reserve<input data-deal-field="monthlyRepairReserve" placeholder="RM150/month" inputmode="decimal" /></label>

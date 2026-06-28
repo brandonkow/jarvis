@@ -364,7 +364,7 @@ function normalizeReportMarketIntelligence(market = {}) {
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v4.2", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v4.3", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -546,6 +546,19 @@ function normalizeReportAnalysis(analysis = {}) {
       summary: reportText(analysis?.achievedRentalEvidence?.summary, 800),
       coveragePosition: reportText(analysis?.achievedRentalEvidence?.coveragePosition, 260),
       checks: objectList(analysis?.achievedRentalEvidence?.checks, 8, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
+        proof: reportText(item?.proof, 360),
+        gap: reportText(item?.gap, 360),
+        action: reportText(item?.action, 420)
+      }))
+    },
+    financingValuationEvidence: {
+      status: ["strong", "usable", "thin", "unsafe", "missing", "unknown"].includes(analysis?.financingValuationEvidence?.status) ? analysis.financingValuationEvidence.status : "unknown",
+      score: Math.max(0, Math.min(100, Number(analysis?.financingValuationEvidence?.score || 0))),
+      summary: reportText(analysis?.financingValuationEvidence?.summary, 800),
+      affordabilityPosition: reportText(analysis?.financingValuationEvidence?.affordabilityPosition, 300),
+      checks: objectList(analysis?.financingValuationEvidence?.checks, 8, (item) => ({
         label: reportText(item?.label, 140),
         status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
         proof: reportText(item?.proof, 360),
@@ -2229,6 +2242,13 @@ const dealContextLabels = {
   vacancySignal: "Vacancy signal",
   rentalSustainability: "Rental sustainability",
   rentalAdjustmentNotes: "Rental adjustment notes",
+  bankValuationSupport: "Bank valuation support",
+  loanPrecheckStatus: "Loan precheck status",
+  loanMarginPlan: "Loan margin plan",
+  instalmentStress: "Instalment stress test",
+  cashBufferAfterPurchase: "Cash buffer after purchase",
+  financingDocumentReadiness: "Financing document readiness",
+  financingNotes: "Financing notes",
   siteVisit: "Site visit",
   legalCheck: "Title and legal check",
   dealSource: "Deal source",
@@ -2421,6 +2441,13 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const vacancySignal = String(dealCard.vacancySignal || "").toLowerCase();
   const rentalSustainability = String(dealCard.rentalSustainability || "").toLowerCase();
   const rentalAdjustmentNotes = String(dealCard.rentalAdjustmentNotes || "");
+  const bankValuationSupport = String(dealCard.bankValuationSupport || "").toLowerCase();
+  const loanPrecheckStatus = String(dealCard.loanPrecheckStatus || "").toLowerCase();
+  const loanMarginPlan = String(dealCard.loanMarginPlan || "").toLowerCase();
+  const instalmentStress = String(dealCard.instalmentStress || "").toLowerCase();
+  const cashBufferAfterPurchase = String(dealCard.cashBufferAfterPurchase || "").toLowerCase();
+  const financingDocumentReadiness = String(dealCard.financingDocumentReadiness || "").toLowerCase();
+  const financingNotes = String(dealCard.financingNotes || "");
   const dealNarrative = signalText(
     dealCard.mainConcern,
     dealCard.investmentThesis,
@@ -2436,6 +2463,13 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     dealCard.tenantScreening,
     dealCard.furnishingStrategy,
     dealCard.rentalAdjustmentNotes,
+    dealCard.bankValuationSupport,
+    dealCard.loanPrecheckStatus,
+    dealCard.loanMarginPlan,
+    dealCard.instalmentStress,
+    dealCard.cashBufferAfterPurchase,
+    dealCard.financingDocumentReadiness,
+    dealCard.financingNotes,
     dealCard.exitStrategyPlan,
     dealCard.resalePreparation
   );
@@ -2475,6 +2509,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   if (!dealCard.rentEvidence || dealCard.rentEvidence === "None" || dealCard.rentEvidence === "Listing only") missingEvidence.push("Achieved-rent proof beyond advertised listings");
   if (dealCard.rentEvidence && dealCard.rentEvidence !== "None" && dealCard.rentEvidence !== "Listing only" && (!dealCard.rentalSource || !dealCard.rentalRecency || !dealCard.tenantUrgency || !dealCard.vacancySignal)) {
     missingEvidence.push("V4.2 rental source, recency, tenant urgency, and vacancy signal");
+  }
+  if (installment && (!dealCard.bankValuationSupport || !dealCard.loanPrecheckStatus || !dealCard.loanMarginPlan || !dealCard.instalmentStress || !dealCard.cashBufferAfterPurchase)) {
+    missingEvidence.push("V4.3 bank valuation, loan precheck, margin plan, instalment stress, and post-purchase cash buffer");
   }
   if (dealCard.siteVisit !== "Completed") missingEvidence.push("A completed site visit");
   if (dealCard.legalCheck !== "Clear") missingEvidence.push("Clear title, caveat, restriction, and legal checks");
@@ -2933,6 +2970,186 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     addBlocker("V4.2 achieved rental evidence is still thin; clear source, recency, urgency, vacancy, sustainability, and coverage gaps before shortlist.");
   }
 
+  const financeStatusScore = { strong: 100, usable: 72, thin: 42, unsafe: 8, missing: 0 };
+  const financeCheck = (label, status, proof, gap, action) => ({
+    label,
+    status,
+    proof,
+    gap,
+    action
+  });
+  const valuationSupportStatus = /multiple|bank valuation|banker support|indicative/.test(bankValuationSupport)
+    ? /multiple|bank valuation/.test(bankValuationSupport) ? "strong" : "usable"
+    : /agent|verbal/.test(bankValuationSupport)
+      ? "thin"
+      : /below price|shortfall|valuation below/.test(bankValuationSupport)
+        ? "unsafe"
+        : bankValuationSupport
+          ? "missing"
+          : "missing";
+  const valuationFitStatus = price && fairValue
+    ? price <= fairValue
+      ? "strong"
+      : price <= fairValue * 1.05
+        ? "usable"
+        : price <= fairValue * 1.1
+          ? "thin"
+          : "unsafe"
+    : "missing";
+  const loanPrecheckEvidenceStatus = /pre.?approved|eligibility checked|approved/.test(loanPrecheckStatus)
+    ? "strong"
+    : /likely|banker says|banker/.test(loanPrecheckStatus)
+      ? "usable"
+      : /not checked|pending/.test(loanPrecheckStatus)
+        ? "thin"
+        : /reject|weak/.test(loanPrecheckStatus)
+          ? "unsafe"
+          : "missing";
+  const loanMarginStatus = /80|lower|conservative/.test(loanMarginPlan)
+    ? "strong"
+    : /90|standard/.test(loanMarginPlan)
+      ? "strong"
+      : /above|cash.?out|cash out|max/.test(loanMarginPlan)
+        ? holdingCashFlow !== null && holdingCashFlow > 300 ? "thin" : "unsafe"
+        : "missing";
+  const dsrEvidenceStatus = postDealDsr !== null
+    ? postDealDsr < 50
+      ? "strong"
+      : postDealDsr < 70
+        ? "usable"
+        : postDealDsr < 80
+          ? "thin"
+          : "unsafe"
+    : "missing";
+  const instalmentStressStatus = /not tested/.test(instalmentStress)
+    ? "missing"
+    : /base only|base/.test(instalmentStress)
+      ? "thin"
+      : /10|higher|stress tested|tested/.test(instalmentStress)
+        ? "strong"
+        : "missing";
+  const cashBufferStatus = /6\+|six|6 months|above 6|more than 6/.test(cashBufferAfterPurchase)
+    ? "strong"
+    : /3-6|3 to 6|three/.test(cashBufferAfterPurchase)
+      ? "usable"
+      : /below 3|less than 3|under 3/.test(cashBufferAfterPurchase)
+        ? "unsafe"
+        : cashAfterPurchase !== null && reserveMonths >= 6
+          ? "usable"
+          : "missing";
+  const documentReadinessStatus = /complete|ctos|ccris|income/.test(financingDocumentReadiness)
+    ? "strong"
+    : /partial/.test(financingDocumentReadiness)
+      ? "usable"
+      : /weak|reject|rejected|low score/.test(financingDocumentReadiness)
+        ? "unsafe"
+        : "missing";
+  const affordabilityPosition = [
+    postDealDsr === null ? "Post-deal DSR is not calculated." : `Post-deal DSR is about ${money(postDealDsr)}%.`,
+    cashAfterPurchase === null ? "Cash after purchase is not calculated." : `Cash after stated outlay is ${formatRinggit(cashAfterPurchase)}.`,
+    holdingCashFlow === null ? "Rental coverage is not calculated." : holdingCashFlow >= 0 ? `Monthly holding shows ${formatRinggit(holdingCashFlow)} surplus before deeper stress.` : `Monthly holding shows ${formatRinggit(Math.abs(holdingCashFlow))} shortfall.`
+  ].join(" ");
+  const financingChecks = [
+    financeCheck(
+      "Bank valuation support",
+      valuationSupportStatus,
+      valuationSupportStatus === "strong" ? "Bank valuation support is stated clearly." : valuationSupportStatus === "usable" ? "Banker indicative support is useful but should be confirmed." : "",
+      valuationSupportStatus === "thin" ? "Agent-only valuation claim can overstate bankability." : valuationSupportStatus === "unsafe" ? "Valuation support appears below price or has shortfall risk." : valuationSupportStatus === "missing" ? "Bank valuation support is not recorded." : "",
+      "Ask banker for valuation basis, supported amount, margin, likely shortfall, and whether comparable evidence aligns with the bank view."
+    ),
+    financeCheck(
+      "Price versus value",
+      valuationFitStatus,
+      valuationFitStatus === "strong" || valuationFitStatus === "usable" ? "Asking price is inside or close to conservative fair value." : "",
+      valuationFitStatus === "thin" ? "Asking price is above conservative value and needs stronger justification." : valuationFitStatus === "unsafe" ? "Asking price is materially above conservative value." : valuationFitStatus === "missing" ? "Price or conservative value is missing." : "",
+      "Do not rely on bank approval alone if the purchase price is above conservative completed-value evidence."
+    ),
+    financeCheck(
+      "Loan precheck",
+      loanPrecheckEvidenceStatus,
+      loanPrecheckEvidenceStatus === "strong" ? "Loan eligibility or pre-approval is checked." : loanPrecheckEvidenceStatus === "usable" ? "Banker indicates likely approval." : "",
+      loanPrecheckEvidenceStatus === "thin" ? "Loan has not been properly checked yet." : loanPrecheckEvidenceStatus === "unsafe" ? "Loan rejection or weak profile signal means the buyer may be forcing the deal." : loanPrecheckEvidenceStatus === "missing" ? "Loan precheck status is not recorded." : "",
+      "Check eligibility with the right bank before offer pressure starts, including DSR, income documents, CTOS/CCRIS, and property type restrictions."
+    ),
+    financeCheck(
+      "Loan margin discipline",
+      loanMarginStatus,
+      loanMarginStatus === "strong" ? "Loan margin is standard or conservative." : loanMarginStatus === "thin" ? "Cash-out or high leverage only looks tolerable because rent coverage has a buffer." : "",
+      loanMarginStatus === "unsafe" ? "High leverage or cash-out is unsafe without strong rent coverage and cash reserve." : loanMarginStatus === "missing" ? "Loan margin plan is not recorded." : "",
+      "Do not maximise loan margin just to avoid upfront cash outlay. Match loan amount to repayment comfort under downturn."
+    ),
+    financeCheck(
+      "DSR fit",
+      dsrEvidenceStatus,
+      dsrEvidenceStatus === "strong" ? affordabilityPosition : dsrEvidenceStatus === "usable" ? affordabilityPosition : "",
+      dsrEvidenceStatus === "thin" ? `${affordabilityPosition} DSR is elevated.` : dsrEvidenceStatus === "unsafe" ? `${affordabilityPosition} DSR is in the danger zone.` : dsrEvidenceStatus === "missing" ? "Income, debt, or instalment is missing." : "",
+      "Use post-deal DSR, not just current income, to decide whether the investor is ready."
+    ),
+    financeCheck(
+      "Instalment stress",
+      instalmentStressStatus,
+      instalmentStressStatus === "strong" ? "Higher instalment stress is recorded as tested." : "",
+      instalmentStressStatus === "thin" ? "Only base instalment is considered." : instalmentStressStatus === "missing" ? "Instalment increase stress is not recorded." : "",
+      "Stress-test at least a 10% instalment increase and confirm rent/cash reserve can absorb it."
+    ),
+    financeCheck(
+      "Cash buffer",
+      cashBufferStatus,
+      cashBufferStatus === "strong" ? "Post-purchase cash buffer meets the six-month baseline." : cashBufferStatus === "usable" ? "Cash buffer is usable but should be protected." : "",
+      cashBufferStatus === "unsafe" ? "Cash buffer after purchase is below the safe baseline." : cashBufferStatus === "missing" ? "Post-purchase cash buffer is not recorded." : "",
+      "Keep at least six months of salary or living reserve after down payment, fees, renovation, furnishing, and deposits."
+    ),
+    financeCheck(
+      "Document readiness",
+      documentReadinessStatus,
+      documentReadinessStatus === "strong" ? "Income, CTOS/CCRIS, or loan documents are stated as complete." : documentReadinessStatus === "usable" ? "Some documents are ready, but approval confidence is not final." : "",
+      documentReadinessStatus === "unsafe" ? "Weak credit or rejected documents signal approval risk." : documentReadinessStatus === "missing" ? "Financing document readiness is not recorded." : "",
+      "Prepare income proof, bank statements, CTOS/CCRIS, tax documents, and property documents before treating approval as safe."
+    )
+  ];
+  const financingValuationScore = clampScore(
+    financeStatusScore[valuationSupportStatus] * 0.16 +
+    financeStatusScore[valuationFitStatus] * 0.16 +
+    financeStatusScore[loanPrecheckEvidenceStatus] * 0.14 +
+    financeStatusScore[loanMarginStatus] * 0.1 +
+    financeStatusScore[dsrEvidenceStatus] * 0.16 +
+    financeStatusScore[instalmentStressStatus] * 0.1 +
+    financeStatusScore[cashBufferStatus] * 0.1 +
+    financeStatusScore[documentReadinessStatus] * 0.08
+  );
+  const financingUnsafe = [valuationSupportStatus, valuationFitStatus, loanPrecheckEvidenceStatus, loanMarginStatus, dsrEvidenceStatus, cashBufferStatus, documentReadinessStatus].includes("unsafe");
+  const financingHasAnyProof = installment || fairValue || bankValuationSupport || loanPrecheckStatus || loanMarginPlan || financingDocumentReadiness;
+  const financingValuationStatus = financingUnsafe
+    ? "unsafe"
+    : financingValuationScore >= 85
+      ? "strong"
+      : financingValuationScore >= 65
+        ? "usable"
+        : financingValuationScore >= 40 || financingHasAnyProof
+          ? "thin"
+          : "missing";
+  const financingValuationEvidence = {
+    status: financingValuationStatus,
+    score: financingValuationScore,
+    summary: financingValuationStatus === "strong"
+      ? "Financing and valuation proof is strong: bankability, price-value fit, DSR, stress, cash buffer, and documents support the structure."
+      : financingValuationStatus === "usable"
+        ? "Financing and valuation proof is usable, but Apex still wants stronger checks before treating the structure as safe."
+        : financingValuationStatus === "thin"
+          ? "Financing and valuation proof is thin. The deal may qualify, but repayment comfort and bankability are not proven enough."
+          : financingValuationStatus === "unsafe"
+            ? "Financing and valuation proof is unsafe because valuation, approval, leverage, DSR, cash buffer, or documents can break the deal."
+            : "Financing and valuation proof is missing.",
+    affordabilityPosition,
+    checks: financingChecks
+  };
+  if (["unsafe", "missing"].includes(financingValuationStatus)) {
+    addBlocker("V4.3 financing and valuation evidence is not reliable enough to validate the deal structure.");
+  } else if (financingValuationStatus === "thin") {
+    addBlocker("V4.3 financing and valuation evidence is still thin; clear valuation, DSR, margin, stress, cash buffer, and document gaps before shortlist.");
+  }
+  financingScore = clampScore(financingScore + (financingValuationStatus === "strong" ? 8 : financingValuationStatus === "usable" ? 4 : financingValuationStatus === "thin" ? -5 : financingValuationStatus === "unsafe" ? -18 : -10));
+
   let holdingScore = 50;
   if (holdingCashFlow !== null) {
     if (holdingCashFlow >= 0) holdingScore += 30;
@@ -2988,6 +3205,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   else if (achievedRentalStatus === "usable") evidenceScore += 19;
   else if (achievedRentalStatus === "thin") evidenceScore += 9;
   else if (achievedRentalStatus === "unsafe") evidenceScore -= 5;
+  if (financingValuationStatus === "strong") evidenceScore += 10;
+  else if (financingValuationStatus === "usable") evidenceScore += 7;
+  else if (financingValuationStatus === "thin") evidenceScore += 2;
+  else if (financingValuationStatus === "unsafe") evidenceScore -= 5;
   if (dealCard.siteVisit === "Completed") evidenceScore += 20;
   if (dealCard.legalCheck === "Clear") evidenceScore += 15;
   else if (dealCard.legalCheck === "Pending") evidenceScore += 4;
@@ -3016,12 +3237,12 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       : achievedRentalStatus === "unsafe"
         ? "blocked"
         : "missing";
-  const financingGateStatus = installment && fairValue && discountToFairValue !== null && discountToFairValue < -10
-    ? "blocked"
-    : installment && fairValue && price && price <= fairValue
-      ? "proven"
-      : installment && (fairValue || price)
-        ? "partial"
+  const financingGateStatus = financingValuationStatus === "strong"
+    ? "proven"
+    : financingValuationStatus === "usable" || financingValuationStatus === "thin"
+      ? "partial"
+      : financingValuationStatus === "unsafe"
+        ? "blocked"
         : "missing";
   const supplyGateStatus = supplyKnown && !supplyRisk
     ? "proven"
@@ -3069,10 +3290,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       "Financing and valuation fit",
       financingGateStatus,
       15,
-      financingGateStatus === "blocked" ? 0 : gateScore(financingGateStatus, 60),
-      financingGateStatus === "proven" ? "Instalment and conservative value support the entry price." : financingGateStatus === "partial" ? "Some financing or value inputs exist, but the full fit is not proven." : "",
-      financingGateStatus === "blocked" ? "Asking price is materially above conservative value." : financingGateStatus === "missing" ? "Loan instalment, value, or price inputs are missing." : "",
-      "Ask the banker for instalment, margin, valuation basis, DSR effect, and downside repayment stress."
+      financingValuationScore,
+      financingGateStatus === "proven" ? financingValuationEvidence.summary : financingGateStatus === "partial" ? financingValuationEvidence.summary : "",
+      financingGateStatus === "blocked" || financingGateStatus === "missing" ? financingValuationEvidence.summary : financingGateStatus === "partial" ? "Valuation support, approval path, DSR, margin, stress, cash buffer, or documents are not yet strong enough." : "",
+      "Use V4.3 financing detail: bank valuation support, loan precheck, margin plan, DSR, instalment stress, cash buffer, and document readiness."
     ),
     evidenceGate(
       "Supply absorption proof",
@@ -3341,10 +3562,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     },
     {
       label: "Loan and holding test",
-      status: installment && holdingCashFlow !== null && holdingCashFlow >= 0 ? "done" : installment ? "warning" : "missing",
-      action: installment
-        ? "Stress-test instalment, maintenance, rent drop, and one-month vacancy."
-        : "Obtain a lender-backed monthly instalment estimate before relying on yield."
+      status: financingValuationStatus === "strong" ? "done" : financingValuationStatus === "unsafe" ? "danger" : financingValuationStatus === "missing" ? "missing" : "warning",
+      action: financingValuationStatus === "strong"
+        ? "Financing is supported by V4.3 valuation, precheck, margin, DSR, stress, cash buffer, and document evidence."
+        : "Verify bank valuation support, loan precheck, margin plan, post-deal DSR, instalment stress, cash buffer, and document readiness."
     },
     {
       label: "Site visit and project feel",
@@ -3415,9 +3636,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     task(
       "Banker",
       "Loan instalment and stress test",
-      taskStatus(installment && postDealDsr !== null),
-      "Provide estimated instalment, margin, DSR after purchase, valuation basis, and stress case if instalment rises by 10%.",
-      !installment || (postDealDsr !== null && postDealDsr >= 80)
+      taskStatus(financingValuationStatus === "strong"),
+      "Provide bank-supported valuation, estimated instalment, margin, DSR after purchase, approval path, document readiness, and stress case if instalment rises by 10%.",
+      financingValuationStatus === "unsafe" || financingValuationStatus === "missing" || financingValuationStatus === "thin"
     ),
     task(
       "Lawyer",
@@ -4210,7 +4431,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   };
 
   return {
-    engineVersion: "Apex v4.2",
+    engineVersion: "Apex v4.3",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -4246,6 +4467,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     evidenceEngine,
     transactionComparableEvidence,
     achievedRentalEvidence,
+    financingValuationEvidence,
     dueDiligencePlan,
     executionPlan,
     hardStops: hardStopText,
@@ -4303,6 +4525,15 @@ function dealAnalysisText(analysis) {
       `- Coverage: ${analysis.achievedRentalEvidence.coveragePosition || "Not calculated."}`
     );
     lines.push(...(analysis.achievedRentalEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+  }
+  if (analysis.financingValuationEvidence?.summary) {
+    lines.push(
+      "",
+      "V4.3 financing and valuation evidence",
+      `- ${analysis.financingValuationEvidence.status || "unknown"} (${analysis.financingValuationEvidence.score || 0}/100): ${analysis.financingValuationEvidence.summary}`,
+      `- Affordability: ${analysis.financingValuationEvidence.affordabilityPosition || "Not calculated."}`
+    );
+    lines.push(...(analysis.financingValuationEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
   }
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", `- ${analysis.dueDiligencePlan.summary}`);

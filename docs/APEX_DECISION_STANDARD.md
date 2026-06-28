@@ -205,6 +205,21 @@ V4.2 deepens the achieved rent proof gate. Apex should not treat advertised rent
 
 If rent is listing-only, enquiry is weak, demand is incentive-supported, or rent cannot cover the loan instalment, Apex should block shortlist-level confidence for rental-led deals.
 
+## v4.3 Financing And Valuation Evidence
+
+V4.3 deepens the financing and valuation fit gate. Apex should not treat bank approval, headline interest rate, or high loan margin as proof that a deal is safe. Financing evidence must also show:
+
+- **Bank valuation support**: banker-supported value, supported amount, likely shortfall, and whether value agrees with completed evidence.
+- **Price versus conservative value**: whether the purchase price is inside, near, or above the defensible value band.
+- **Loan precheck**: whether eligibility, DSR, property type, income documents, and credit profile have been checked before offer pressure starts.
+- **Loan margin discipline**: whether the user is using standard leverage or forcing cash-out/high leverage to reduce upfront cash.
+- **DSR fit**: post-deal debt-service level, not just current income.
+- **Instalment stress**: at least a 10% higher instalment test.
+- **Cash buffer**: six-month reserve after down payment, legal fees, stamp duty, renovation, furnishing, deposits, and other costs.
+- **Document readiness**: income proof, bank statements, CTOS/CCRIS, tax records, and property documents.
+
+If valuation is below price, loan approval is being forced, post-deal DSR is near the danger zone, high leverage is unsupported, or cash buffer is weak, Apex should block shortlist-level confidence.
+
 ## v1.3 Deal Comparison
 
 The v1.3 comparison layer turns the device shortlist into a decision aid:
