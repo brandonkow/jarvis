@@ -235,6 +235,22 @@ V4.4 deepens the supply absorption proof gate. Apex should not treat "high deman
 
 If newer similar supply is priced competitively, VP pressure is near, absorption is weak, unsold stock is high, or density/lift waiting time creates daily friction, Apex should block shortlist-level confidence until supply risk is proven manageable.
 
+## v4.5 Site And Management Evidence
+
+V4.5 deepens the site and management reality gate. Apex should not treat "site visited" or "management is strong" as enough. Lived-quality evidence must also show:
+
+- **Site visit proof**: physical visit evidence, not only a checkbox.
+- **Lobby and guardhouse**: whether arrival feel and security service support owner-occupier emotion.
+- **Lift, car park, and corridor**: lift waiting time, car-park brightness, ramp and bay usability, corridor width, rain splash, and refuse-room ventilation.
+- **Common areas and facilities**: cleanliness, maintenance condition, facility load, short-stay traffic, and whether common areas still support project image.
+- **Resident behaviour**: observable conduct, complaints, use of facilities, security traffic, and whether long-stay residents or families are comfortable there.
+- **Management response**: response speed, attitude, solution quality, and ability to explain arrears, complaints, lift issues, defects, and sinking fund.
+- **Defect and leakage**: water marks, ceiling and wet-area issues, wall cracks, fixture quality, mould, recurring complaints, and material quality.
+- **Arrears and JMB culture**: outstanding fees, sinking fund health, AGM culture, disputes, lawsuits, and whether management improves or drains the project.
+- **Evidence notes**: written site and management observations so future decisions can be challenged instead of relying on memory.
+
+If management is unresponsive, defects are structural, resident behaviour weakens project culture, arrears or JMB disputes are serious, or daily friction is visible, Apex should block shortlist-level confidence even when rent and price look attractive.
+
 ## v1.3 Deal Comparison
 
 The v1.3 comparison layer turns the device shortlist into a decision aid:

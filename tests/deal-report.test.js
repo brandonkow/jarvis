@@ -92,6 +92,15 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
     unsoldStockSignal: "Less than 1% unsold",
     densityLiftStress: "Below 1.5k units and lift wait acceptable",
     supplyNotes: "Closest substitutes checked; no direct similar threat and rent is holding.",
+    siteVisitEvidence: "Physical visit with photos / notes",
+    lobbyGuardhouseSignal: "Welcoming lobby and professional guardhouse",
+    liftCarparkCorridorSignal: "Fast lift, bright car park, good corridor",
+    commonAreaCondition: "Clean and well maintained",
+    residentBehaviourSignal: "Respectful and responsible",
+    managementResponseSignal: "Fast reply and solution-oriented",
+    defectLeakageSignal: "No major defect or leakage",
+    arrearsJmbSignal: "Healthy collection and JMB culture",
+    siteManagementNotes: "Management replied fast, common areas were clean, residents were respectful, and no leakage was observed.",
     annualAssessmentQuitRent: "RM1,200",
     annualInsuranceTax: "RM600",
     monthlyRepairReserve: "RM200",
@@ -189,7 +198,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.exitStrategy.checks.some((item) => item.label === "Resale emotion" && item.status === "clear"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v4.4");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v4.5");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");
@@ -218,6 +227,10 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.supplyAbsorptionEvidence.score, 100);
   assert.equal(result.payload.analysis.supplyAbsorptionEvidence.checks.length, 8);
   assert.ok(result.payload.analysis.supplyAbsorptionEvidence.checks.some((item) => item.label === "Substitute threat" && item.status === "strong"));
+  assert.equal(result.payload.analysis.siteManagementEvidence.status, "strong");
+  assert.equal(result.payload.analysis.siteManagementEvidence.score, 100);
+  assert.equal(result.payload.analysis.siteManagementEvidence.checks.length, 9);
+  assert.ok(result.payload.analysis.siteManagementEvidence.checks.some((item) => item.label === "Management response" && item.status === "strong"));
   assert.equal(result.payload.analysis.dueDiligencePlan.tasks.length, 10);
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Lawyer" && item.status === "done"));
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Agent" && /subsale/i.test(item.action)));
@@ -302,6 +315,26 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(weakSupply.payload.analysis.supplyAbsorptionEvidence.status, "unsafe");
   assert.ok(weakSupply.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Supply absorption proof" && gate.status === "blocked"));
   assert.ok(weakSupply.payload.analysis.recommendationBlockers.some((message) => /V4\.4 supply and absorption evidence/i.test(message)));
+
+  const weakSite = await post(baseUrl, "/api/jarvis/analyze-deal", {
+    sessionId: session.payload.session.id,
+    dealCard: {
+      ...dealCard,
+      lobbyGuardhouseSignal: "Poor arrival / weak security",
+      liftCarparkCorridorSignal: "Lift wait / dark car park / corridor issue",
+      commonAreaCondition: "Dirty, broken, or short-stay heavy",
+      residentBehaviourSignal: "Complaints, nuisance, or overcrowding",
+      managementResponseSignal: "No reply / late / irresponsible",
+      defectLeakageSignal: "Leakage / structural / material concern",
+      arrearsJmbSignal: "High arrears / dispute / lawsuit",
+      siteManagementNotes: "Management is slow, common areas are dirty, lift waits are long, and leakage complaints are visible."
+    },
+    financialProfile
+  });
+  assert.equal(weakSite.payload.analysis.verdict, "INVESTIGATE");
+  assert.equal(weakSite.payload.analysis.siteManagementEvidence.status, "unsafe");
+  assert.ok(weakSite.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Site and management reality" && gate.status === "blocked"));
+  assert.ok(weakSite.payload.analysis.recommendationBlockers.some((message) => /V4\.5 site and management evidence/i.test(message)));
 
   const provisional = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,

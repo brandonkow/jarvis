@@ -364,7 +364,7 @@ function normalizeReportMarketIntelligence(market = {}) {
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v4.4", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v4.5", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -572,6 +572,19 @@ function normalizeReportAnalysis(analysis = {}) {
       summary: reportText(analysis?.supplyAbsorptionEvidence?.summary, 800),
       competitionPosition: reportText(analysis?.supplyAbsorptionEvidence?.competitionPosition, 300),
       checks: objectList(analysis?.supplyAbsorptionEvidence?.checks, 8, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
+        proof: reportText(item?.proof, 360),
+        gap: reportText(item?.gap, 360),
+        action: reportText(item?.action, 420)
+      }))
+    },
+    siteManagementEvidence: {
+      status: ["strong", "usable", "thin", "unsafe", "missing", "unknown"].includes(analysis?.siteManagementEvidence?.status) ? analysis.siteManagementEvidence.status : "unknown",
+      score: Math.max(0, Math.min(100, Number(analysis?.siteManagementEvidence?.score || 0))),
+      summary: reportText(analysis?.siteManagementEvidence?.summary, 800),
+      livedQualityPosition: reportText(analysis?.siteManagementEvidence?.livedQualityPosition, 320),
+      checks: objectList(analysis?.siteManagementEvidence?.checks, 10, (item) => ({
         label: reportText(item?.label, 140),
         status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
         proof: reportText(item?.proof, 360),
@@ -2270,6 +2283,15 @@ const dealContextLabels = {
   unsoldStockSignal: "Unsold stock signal",
   densityLiftStress: "Density and lift stress",
   supplyNotes: "Supply notes",
+  siteVisitEvidence: "Site visit evidence",
+  lobbyGuardhouseSignal: "Lobby and guardhouse signal",
+  liftCarparkCorridorSignal: "Lift, car park, and corridor signal",
+  commonAreaCondition: "Common area condition",
+  residentBehaviourSignal: "Resident behaviour signal",
+  managementResponseSignal: "Management response signal",
+  defectLeakageSignal: "Defect and leakage signal",
+  arrearsJmbSignal: "Arrears and JMB signal",
+  siteManagementNotes: "Site and management notes",
   siteVisit: "Site visit",
   legalCheck: "Title and legal check",
   dealSource: "Deal source",
@@ -2477,6 +2499,15 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const unsoldStockSignal = String(dealCard.unsoldStockSignal || "").toLowerCase();
   const densityLiftStress = String(dealCard.densityLiftStress || "").toLowerCase();
   const supplyNotes = String(dealCard.supplyNotes || "");
+  const siteVisitEvidence = String(dealCard.siteVisitEvidence || "").toLowerCase();
+  const lobbyGuardhouseSignal = String(dealCard.lobbyGuardhouseSignal || "").toLowerCase();
+  const liftCarparkCorridorSignal = String(dealCard.liftCarparkCorridorSignal || "").toLowerCase();
+  const commonAreaCondition = String(dealCard.commonAreaCondition || "").toLowerCase();
+  const residentBehaviourSignal = String(dealCard.residentBehaviourSignal || "").toLowerCase();
+  const managementResponseSignal = String(dealCard.managementResponseSignal || "").toLowerCase();
+  const defectLeakageSignal = String(dealCard.defectLeakageSignal || "").toLowerCase();
+  const arrearsJmbSignal = String(dealCard.arrearsJmbSignal || "").toLowerCase();
+  const siteManagementNotes = String(dealCard.siteManagementNotes || "");
   const dealNarrative = signalText(
     dealCard.mainConcern,
     dealCard.investmentThesis,
@@ -2507,6 +2538,15 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     dealCard.unsoldStockSignal,
     dealCard.densityLiftStress,
     dealCard.supplyNotes,
+    dealCard.siteVisitEvidence,
+    dealCard.lobbyGuardhouseSignal,
+    dealCard.liftCarparkCorridorSignal,
+    dealCard.commonAreaCondition,
+    dealCard.residentBehaviourSignal,
+    dealCard.managementResponseSignal,
+    dealCard.defectLeakageSignal,
+    dealCard.arrearsJmbSignal,
+    dealCard.siteManagementNotes,
     dealCard.exitStrategyPlan,
     dealCard.resalePreparation
   );
@@ -2552,6 +2592,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   }
   if (!dealCard.supplyRadius || !dealCard.substituteCount || !dealCard.substituteThreat || !dealCard.futureSupplyTiming || !dealCard.absorptionEvidence) {
     missingEvidence.push("V4.4 supply radius, substitute count, threat, VP timing, and absorption evidence");
+  }
+  if (!dealCard.siteVisitEvidence || !dealCard.lobbyGuardhouseSignal || !dealCard.liftCarparkCorridorSignal || !dealCard.commonAreaCondition || !dealCard.managementResponseSignal) {
+    missingEvidence.push("V4.5 site visit proof, lobby/guardhouse, lift/car park/corridor, common-area, and management-response evidence");
   }
   if (dealCard.siteVisit !== "Completed") missingEvidence.push("A completed site visit");
   if (dealCard.legalCheck !== "Clear") missingEvidence.push("Clear title, caveat, restriction, and legal checks");
@@ -3405,6 +3448,212 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     addBlocker("V4.4 supply and absorption evidence is still thin; clear substitute count, threat, VP timing, absorption, unsold stock, and lift-density gaps before shortlist.");
   }
 
+  const siteStatusScore = { strong: 100, usable: 72, thin: 42, unsafe: 8, missing: 0 };
+  const siteCheck = (label, status, proof, gap, action) => ({
+    label,
+    status,
+    proof,
+    gap,
+    action
+  });
+  const siteVisitProofStatus = dealCard.siteVisit !== "Completed"
+    ? "missing"
+    : /photo|notes|physical|management office|guardhouse|lobby|facility|completed with evidence/.test(siteVisitEvidence)
+      ? "strong"
+      : siteVisitEvidence || dealCard.siteVisitNotes
+        ? "usable"
+        : "thin";
+  const lobbyStatus = /good|grand|welcoming|comfortable|peaceful|secure|good service|professional|friendly/.test(lobbyGuardhouseSignal)
+    ? "strong"
+    : /poor|dirty|weak|rude|unwelcoming|security weak|bad attitude|not secure/.test(lobbyGuardhouseSignal)
+      ? "unsafe"
+      : /unknown/.test(lobbyGuardhouseSignal)
+        ? "missing"
+        : lobbyGuardhouseSignal
+          ? "thin"
+          : "missing";
+  const liftCarparkStatus = /fast|bright|wide|dry|acceptable|good|well lit|enough lift/.test(liftCarparkCorridorSignal)
+    ? "strong"
+    : /slow|long wait|waiting time concern|dark|narrow|rain splash|refuse|noise|unsafe|bad/.test(liftCarparkCorridorSignal)
+      ? "unsafe"
+      : /unknown/.test(liftCarparkCorridorSignal)
+        ? "missing"
+        : liftCarparkCorridorSignal
+          ? "thin"
+          : "missing";
+  const commonAreaStatus = /clean|well maintained|maintained|good facility|family|orderly|functional/.test(commonAreaCondition)
+    ? "strong"
+    : /dirty|broken|poor|decay|short.?stay|airbnb|high traffic|neglected|damaged/.test(commonAreaCondition)
+      ? "unsafe"
+      : /unknown/.test(commonAreaCondition)
+        ? "missing"
+        : commonAreaCondition
+          ? "thin"
+          : "missing";
+  const residentStatus = /family|respectful|responsible|owner|professional|student|orderly|considerate/.test(residentBehaviourSignal)
+    ? "strong"
+    : /complaint|misuse|overcrowd|short.?stay|arrogant|inconsiderate|problem|nuisance|unsafe/.test(residentBehaviourSignal)
+      ? "unsafe"
+      : /unknown/.test(residentBehaviourSignal)
+        ? "missing"
+        : residentBehaviourSignal
+          ? "thin"
+          : "missing";
+  const managementResponseStatus = /fast|responsive|solution|efficient|good|helpful|clear answer/.test(managementResponseSignal)
+    ? "strong"
+    : /mixed|average|slow but reply|partial/.test(managementResponseSignal)
+      ? "usable"
+      : /no reply|late|irresponsible|dispute|lawsuit|self interest|misuse|poor|rude/.test(managementResponseSignal)
+        ? "unsafe"
+        : /unknown/.test(managementResponseSignal)
+          ? "missing"
+          : managementResponseSignal
+            ? "thin"
+            : "missing";
+  const defectStatus = /no (?:major )?(?:defect|leak)|no .*leak|checked clear|clear|minor only|normal wear/.test(defectLeakageSignal)
+    ? "strong"
+    : /minor|wear and tear|normal/.test(defectLeakageSignal)
+      ? "usable"
+      : /leak|water mark|structural|major|defect|poor material|mould|mold|crack/.test(defectLeakageSignal)
+        ? "unsafe"
+        : /unknown/.test(defectLeakageSignal)
+          ? "missing"
+          : defectLeakageSignal
+            ? "thin"
+            : "missing";
+  const arrearsJmbStatus = /healthy|low arrears|agm active|good jmb|collection healthy|sinking fund healthy/.test(arrearsJmbSignal)
+    ? "strong"
+    : /underfunded but improving|some arrears|monitor/.test(arrearsJmbSignal)
+      ? "usable"
+      : /high arrears|lawsuit|dispute|misuse|poor collection|no agm|fund issue|self interest/.test(arrearsJmbSignal)
+        ? "unsafe"
+        : /unknown/.test(arrearsJmbSignal)
+          ? "missing"
+          : arrearsJmbSignal
+            ? "thin"
+            : "missing";
+  const siteNotesStatus = siteManagementNotes || dealCard.siteVisitNotes || dealCard.inspectionConcern
+    ? "strong"
+    : "missing";
+  const livedQualityPosition = managementResponseStatus === "strong" && lobbyStatus === "strong" && commonAreaStatus === "strong" && residentStatus === "strong"
+    ? "The development has defensible lived-quality evidence: arrival feel, common areas, residents, and management response are aligned."
+    : managementResponseStatus === "unsafe"
+      ? "Management response is a structural risk; good rent or cheap entry should not override it."
+      : defectStatus === "unsafe"
+        ? "Defect or leakage evidence can become a permanent negotiation and holding-cost problem."
+        : residentStatus === "unsafe"
+          ? "Resident behaviour or project culture can weaken own-stay emotion and future saleability."
+          : "Lived quality is not proven enough; Apex needs specific site, resident, defect, and management evidence.";
+  const siteManagementChecks = [
+    siteCheck(
+      "Site visit proof",
+      siteVisitProofStatus,
+      siteVisitProofStatus === "strong" ? "Physical visit evidence is recorded beyond a checkbox." : siteVisitProofStatus === "usable" ? "Site visit is completed, but evidence detail can be sharper." : "",
+      siteVisitProofStatus === "thin" ? "Site visit is marked completed but proof detail is thin." : siteVisitProofStatus === "missing" ? "Site visit is not completed or not evidenced." : "",
+      "Capture site photos or notes on arrival, lobby, guardhouse, lift, car park, corridor, refuse room, facilities, residents, defects, and management office."
+    ),
+    siteCheck(
+      "Lobby and guardhouse",
+      lobbyStatus,
+      lobbyStatus === "strong" ? "Arrival experience and security signal are positive." : "",
+      lobbyStatus === "unsafe" ? "Poor lobby or guardhouse signal weakens own-stay emotion." : lobbyStatus === "missing" ? "Lobby and guardhouse signal is not recorded." : "",
+      "Check whether the lobby feels like coming home and whether guardhouse service feels professional, secure, and respectful."
+    ),
+    siteCheck(
+      "Lift, car park, corridor",
+      liftCarparkStatus,
+      liftCarparkStatus === "strong" ? "Lift, car park, or corridor condition is stated as acceptable." : "",
+      liftCarparkStatus === "unsafe" ? "Lift wait, dark car park, narrow access, rain splash, or refuse-room exposure can become daily friction." : liftCarparkStatus === "missing" ? "Lift, car park, and corridor signal is not recorded." : "",
+      "Observe lift speed, waiting time, car-park brightness, ramp and bay usability, corridor width, rain splash, and refuse-room ventilation."
+    ),
+    siteCheck(
+      "Common areas and facilities",
+      commonAreaStatus,
+      commonAreaStatus === "strong" ? "Common areas and facilities appear clean and maintained." : "",
+      commonAreaStatus === "unsafe" ? "Dirty, broken, neglected, or short-stay-heavy common areas can accelerate project decay." : commonAreaStatus === "missing" ? "Common-area condition is not recorded." : "",
+      "Check facility cleanliness, maintenance condition, security traffic, short-stay load, and whether the common areas still support the project's image."
+    ),
+    siteCheck(
+      "Resident behaviour",
+      residentStatus,
+      residentStatus === "strong" ? "Resident behaviour or project culture is stated as healthy." : "",
+      residentStatus === "unsafe" ? "Observable behaviour, overcrowding, nuisance, or short-stay traffic can damage long-term image." : residentStatus === "missing" ? "Resident behaviour signal is not recorded." : "",
+      "Judge project culture by observable conduct, complaints, use of facilities, security traffic, and whether families or long-stay residents are comfortable there."
+    ),
+    siteCheck(
+      "Management response",
+      managementResponseStatus,
+      managementResponseStatus === "strong" ? "Management response is fast and solution-oriented." : managementResponseStatus === "usable" ? "Management response is usable but should be monitored." : "",
+      managementResponseStatus === "unsafe" ? "Poor management response is a structural value risk." : managementResponseStatus === "missing" ? "Management response is not recorded." : "",
+      "Ask management about arrears, complaints, lift issues, unresolved defects, sinking fund, and response time. Their attitude matters."
+    ),
+    siteCheck(
+      "Defect and leakage",
+      defectStatus,
+      defectStatus === "strong" ? "No major defect or leakage concern is stated." : defectStatus === "usable" ? "Only normal wear or minor issues are stated." : "",
+      defectStatus === "unsafe" ? "Leakage, structural defect, poor materials, or mould can hurt holding cost and resale negotiation." : defectStatus === "missing" ? "Defect and leakage check is not recorded." : "",
+      "Inspect ceiling, wet areas, walls, windows, fixtures, water marks, material quality, and recurring defect complaints."
+    ),
+    siteCheck(
+      "Arrears and JMB culture",
+      arrearsJmbStatus,
+      arrearsJmbStatus === "strong" ? "Maintenance collection, sinking fund, or JMB culture is stated as healthy." : arrearsJmbStatus === "usable" ? "JMB or arrears signal is usable but needs monitoring." : "",
+      arrearsJmbStatus === "unsafe" ? "High arrears, disputes, lawsuits, or self-interest in JMB can damage long-term value." : arrearsJmbStatus === "missing" ? "Arrears and JMB signal is not recorded." : "",
+      "Check outstanding fees, sinking fund, AGM culture, disputes, lawsuits, and whether the management team improves the property or drains it."
+    ),
+    siteCheck(
+      "Evidence notes",
+      siteNotesStatus,
+      siteNotesStatus === "strong" ? "Site or management notes are recorded." : "",
+      siteNotesStatus === "missing" ? "Site and management observations are not written down." : "",
+      "Write the lived-quality observation so Apex can challenge the decision later instead of relying on memory."
+    )
+  ];
+  const siteManagementScore = clampScore(
+    siteStatusScore[siteVisitProofStatus] * 0.16 +
+    siteStatusScore[lobbyStatus] * 0.1 +
+    siteStatusScore[liftCarparkStatus] * 0.12 +
+    siteStatusScore[commonAreaStatus] * 0.12 +
+    siteStatusScore[residentStatus] * 0.12 +
+    siteStatusScore[managementResponseStatus] * 0.18 +
+    siteStatusScore[defectStatus] * 0.1 +
+    siteStatusScore[arrearsJmbStatus] * 0.07 +
+    siteStatusScore[siteNotesStatus] * 0.03
+  );
+  const siteManagementUnsafe = [lobbyStatus, liftCarparkStatus, commonAreaStatus, residentStatus, managementResponseStatus, defectStatus, arrearsJmbStatus].includes("unsafe");
+  const siteManagementKnown = Boolean(dealCard.siteVisit === "Completed" || siteVisitEvidence || lobbyGuardhouseSignal || liftCarparkCorridorSignal || commonAreaCondition || residentBehaviourSignal || managementResponseSignal || defectLeakageSignal || arrearsJmbSignal || siteManagementNotes || dealCard.siteVisitNotes);
+  const siteManagementStatus = siteVisitProofStatus === "missing"
+    ? "missing"
+    : siteManagementUnsafe
+      ? "unsafe"
+      : siteManagementScore >= 85
+      ? "strong"
+      : siteManagementScore >= 65
+        ? "usable"
+        : siteManagementScore >= 40 || siteManagementKnown
+          ? "thin"
+          : "missing";
+  const siteManagementEvidence = {
+    status: siteManagementStatus,
+    score: siteManagementScore,
+    summary: siteManagementStatus === "strong"
+      ? "Site and management evidence is strong: physical visit, arrival quality, operations, residents, management response, defects, and JMB signals support the project."
+      : siteManagementStatus === "usable"
+        ? "Site and management evidence is usable, but Apex still wants sharper proof before treating lived quality as fully defended."
+        : siteManagementStatus === "thin"
+          ? "Site and management evidence is thin. The property may look workable, but lived quality and management durability are not proven enough."
+          : siteManagementStatus === "unsafe"
+            ? "Site and management evidence is unsafe because project culture, defects, operations, management, arrears, or JMB reality can damage holding and exit."
+            : "Site and management evidence is missing.",
+    livedQualityPosition,
+    checks: siteManagementChecks
+  };
+  if (["unsafe", "missing"].includes(siteManagementStatus)) {
+    addBlocker("V4.5 site and management evidence is not reliable enough to validate lived quality.");
+  } else if (siteManagementStatus === "thin") {
+    addBlocker("V4.5 site and management evidence is still thin; clear physical visit, lobby, lift, common-area, resident, management, defect, arrears, and JMB gaps before shortlist.");
+  }
+
   let holdingScore = 50;
   if (holdingCashFlow !== null) {
     if (holdingCashFlow >= 0) holdingScore += 30;
@@ -3468,7 +3717,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   else if (supplyAbsorptionStatus === "usable") evidenceScore += 7;
   else if (supplyAbsorptionStatus === "thin") evidenceScore += 2;
   else if (supplyAbsorptionStatus === "unsafe") evidenceScore -= 5;
-  if (dealCard.siteVisit === "Completed") evidenceScore += 20;
+  if (siteManagementStatus === "strong") evidenceScore += 20;
+  else if (siteManagementStatus === "usable") evidenceScore += 14;
+  else if (siteManagementStatus === "thin") evidenceScore += 6;
+  else if (siteManagementStatus === "unsafe") evidenceScore -= 10;
   if (dealCard.legalCheck === "Clear") evidenceScore += 15;
   else if (dealCard.legalCheck === "Pending") evidenceScore += 4;
   evidenceScore = clampScore(evidenceScore);
@@ -3510,12 +3762,12 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       : supplyAbsorptionStatus === "unsafe"
         ? "blocked"
         : "missing";
-  const siteManagementGateStatus = dealCard.managementQuality === "Weak"
-    ? "blocked"
-    : dealCard.siteVisit === "Completed" && dealCard.managementQuality === "Strong"
-      ? "proven"
-      : dealCard.siteVisit === "Completed"
-        ? "partial"
+  const siteManagementGateStatus = siteManagementStatus === "strong"
+    ? "proven"
+    : siteManagementStatus === "usable" || siteManagementStatus === "thin"
+      ? "partial"
+      : siteManagementStatus === "unsafe"
+        ? "blocked"
         : "missing";
   const legalGateStatus = dealCard.legalCheck === "Clear"
     ? "proven"
@@ -3569,10 +3821,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       "Site and management reality",
       siteManagementGateStatus,
       15,
-      siteManagementGateStatus === "blocked" ? 0 : gateScore(siteManagementGateStatus, 65),
-      siteManagementGateStatus === "proven" ? "Site visit is completed and management/build quality is strong." : siteManagementGateStatus === "partial" ? "Either site visit or management signal exists, but the lived-quality proof is incomplete." : "",
-      siteManagementGateStatus === "blocked" ? "Weak management/build quality is a structural evidence failure." : siteManagementGateStatus === "missing" ? "Site visit and management quality are not proven." : "",
-      "Record lobby, guard, lift, car park, corridor, refuse room, facilities, resident behaviour, defects, and management response."
+      siteManagementScore,
+      siteManagementGateStatus === "proven" ? siteManagementEvidence.summary : siteManagementGateStatus === "partial" ? siteManagementEvidence.summary : "",
+      siteManagementGateStatus === "blocked" || siteManagementGateStatus === "missing" ? siteManagementEvidence.summary : siteManagementGateStatus === "partial" ? "Physical visit, arrival quality, operations, resident behaviour, defects, management response, arrears, or JMB evidence is not yet strong enough." : "",
+      "Use V4.5 site detail: physical visit proof, lobby, guardhouse, lift, car park, corridor, facilities, residents, management response, defects, arrears, and JMB culture."
     ),
     evidenceGate(
       "Legal and title safety",
@@ -3830,10 +4082,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     },
     {
       label: "Site visit and project feel",
-      status: dealCard.siteVisit === "Completed" ? "done" : "missing",
-      action: dealCard.siteVisit === "Completed"
-        ? "Site visit is recorded; preserve notes on lobby, lift, car park, residents, noise, and management."
-        : "Complete a site visit before Apex gives a strong recommendation."
+      status: siteManagementStatus === "strong" ? "done" : siteManagementStatus === "unsafe" ? "danger" : siteManagementStatus === "missing" ? "missing" : "warning",
+      action: siteManagementStatus === "strong"
+        ? "Lived quality is supported by V4.5 physical visit, operations, resident, management, defect, arrears, and JMB evidence."
+        : "Verify V4.5 site detail: physical visit proof, lobby, guardhouse, lift, car park, corridor, facilities, residents, management response, defects, arrears, and JMB culture."
     },
     {
       label: "Legal and title check",
@@ -3911,16 +4163,16 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     task(
       "Management Office",
       "Management quality and arrears",
-      taskStatus(dealCard.managementQuality === "Strong"),
-      "Ask for outstanding maintenance/arrears status, sinking fund health, response time, unresolved defects, lift issues, security, and resident complaints.",
-      dealCard.managementQuality === "Weak" || !dealCard.managementQuality
+      taskStatus(siteManagementStatus === "strong"),
+      "Ask for outstanding maintenance/arrears status, sinking fund health, response time, unresolved defects, lift issues, security, resident complaints, AGM/JMB culture, and management-office attitude.",
+      siteManagementStatus === "unsafe" || siteManagementStatus === "missing" || siteManagementStatus === "thin"
     ),
     task(
       "Site Visit",
       "Own-stay vibe and unit defects",
-      taskStatus(dealCard.siteVisit === "Completed"),
-      "Inspect lobby, lift speed, corridor, refuse room, car park, facilities, noise, view, water leakage, ventilation, resident behaviour, and unit placement.",
-      dealCard.siteVisit !== "Completed"
+      taskStatus(siteManagementStatus === "strong"),
+      "Inspect lobby, guardhouse, lift speed, corridor, refuse room, car park, facilities, noise, view, water leakage, ventilation, resident behaviour, unit placement, and evidence notes.",
+      siteManagementStatus === "unsafe" || siteManagementStatus === "missing" || siteManagementStatus === "thin"
     ),
     task(
       "Market Check",
@@ -4482,7 +4734,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
         : "The v1 decision path blocks commitment until failed conditions are fixed or the deal is abandoned.",
     conditions: sealConditions
   };
-  const siteRiskNarrative = dealNarrative.replace(/lift wait acceptable|acceptable lift|lift waiting time acceptable/g, "");
+  const siteRiskNarrative = dealNarrative
+    .replace(/lift wait acceptable|acceptable lift|lift waiting time acceptable/g, "")
+    .replace(/no major defect or leakage|no major defects or leakages|no defect|no defects|no leak|no leakage|no leakages/g, "");
   const siteRiskSignal = hasSignal(siteRiskNarrative, [
     /leak/,
     /water mark/,
@@ -4693,7 +4947,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   };
 
   return {
-    engineVersion: "Apex v4.4",
+    engineVersion: "Apex v4.5",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -4731,6 +4985,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     achievedRentalEvidence,
     financingValuationEvidence,
     supplyAbsorptionEvidence,
+    siteManagementEvidence,
     dueDiligencePlan,
     executionPlan,
     hardStops: hardStopText,
@@ -4806,6 +5061,15 @@ function dealAnalysisText(analysis) {
       `- Competition: ${analysis.supplyAbsorptionEvidence.competitionPosition || "Not calculated."}`
     );
     lines.push(...(analysis.supplyAbsorptionEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+  }
+  if (analysis.siteManagementEvidence?.summary) {
+    lines.push(
+      "",
+      "V4.5 site and management evidence",
+      `- ${analysis.siteManagementEvidence.status || "unknown"} (${analysis.siteManagementEvidence.score || 0}/100): ${analysis.siteManagementEvidence.summary}`,
+      `- Lived quality: ${analysis.siteManagementEvidence.livedQualityPosition || "Not calculated."}`
+    );
+    lines.push(...(analysis.siteManagementEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
   }
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", `- ${analysis.dueDiligencePlan.summary}`);
