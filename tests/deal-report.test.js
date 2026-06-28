@@ -84,6 +84,14 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
     cashBufferAfterPurchase: "6+ months reserve after purchase",
     financingDocumentReadiness: "Complete income / CTOS / CCRIS documents",
     financingNotes: "Banker checked valuation, DSR, margin, documents, and 10% instalment stress.",
+    supplyRadius: "Within 2.5km checked",
+    substituteCount: "Less than 5",
+    substituteThreat: "No direct similar substitute",
+    futureSupplyTiming: "No material VP nearby",
+    absorptionEvidence: "Occupancy and rent holding strong",
+    unsoldStockSignal: "Less than 1% unsold",
+    densityLiftStress: "Below 1.5k units and lift wait acceptable",
+    supplyNotes: "Closest substitutes checked; no direct similar threat and rent is holding.",
     annualAssessmentQuitRent: "RM1,200",
     annualInsuranceTax: "RM600",
     monthlyRepairReserve: "RM200",
@@ -181,7 +189,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.exitStrategy.checks.some((item) => item.label === "Resale emotion" && item.status === "clear"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v4.3");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v4.4");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");
@@ -206,6 +214,10 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.financingValuationEvidence.score, 100);
   assert.equal(result.payload.analysis.financingValuationEvidence.checks.length, 8);
   assert.ok(result.payload.analysis.financingValuationEvidence.checks.some((item) => item.label === "DSR fit" && item.status === "strong"));
+  assert.equal(result.payload.analysis.supplyAbsorptionEvidence.status, "strong");
+  assert.equal(result.payload.analysis.supplyAbsorptionEvidence.score, 100);
+  assert.equal(result.payload.analysis.supplyAbsorptionEvidence.checks.length, 8);
+  assert.ok(result.payload.analysis.supplyAbsorptionEvidence.checks.some((item) => item.label === "Substitute threat" && item.status === "strong"));
   assert.equal(result.payload.analysis.dueDiligencePlan.tasks.length, 10);
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Lawyer" && item.status === "done"));
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Agent" && /subsale/i.test(item.action)));
@@ -270,6 +282,26 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(weakFinancing.payload.analysis.financingValuationEvidence.status, "unsafe");
   assert.ok(weakFinancing.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Financing and valuation fit" && gate.status === "blocked"));
   assert.ok(weakFinancing.payload.analysis.recommendationBlockers.some((message) => /V4\.3 financing and valuation evidence/i.test(message)));
+
+  const weakSupply = await post(baseUrl, "/api/jarvis/analyze-deal", {
+    sessionId: session.payload.session.id,
+    dealCard: {
+      ...dealCard,
+      supplyRadius: "Same road / township only",
+      substituteCount: "5 or more",
+      substituteThreat: "Newer similar layout or pricing",
+      futureSupplyTiming: "VP within 12 months",
+      absorptionEvidence: "Weak absorption / rental drop",
+      unsoldStockSignal: "Bulk purchase / clear inventory",
+      densityLiftStress: "1.5k+ units or lift wait concern",
+      supplyNotes: "Newer similar projects are entering VP and rental asking has started to drop."
+    },
+    financialProfile
+  });
+  assert.equal(weakSupply.payload.analysis.verdict, "INVESTIGATE");
+  assert.equal(weakSupply.payload.analysis.supplyAbsorptionEvidence.status, "unsafe");
+  assert.ok(weakSupply.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Supply absorption proof" && gate.status === "blocked"));
+  assert.ok(weakSupply.payload.analysis.recommendationBlockers.some((message) => /V4\.4 supply and absorption evidence/i.test(message)));
 
   const provisional = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,

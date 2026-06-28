@@ -1046,6 +1046,7 @@ function saveAnalysisToShortlist(analysis) {
     transactionComparableEvidence: analysis.transactionComparableEvidence || null,
     achievedRentalEvidence: analysis.achievedRentalEvidence || null,
     financingValuationEvidence: analysis.financingValuationEvidence || null,
+    supplyAbsorptionEvidence: analysis.supplyAbsorptionEvidence || null,
     counterThesis: analysis.counterThesis,
     context: analysis.context || {}
   };
@@ -1159,6 +1160,15 @@ function analysisExportText(analysis) {
       `Affordability: ${analysis.financingValuationEvidence.affordabilityPosition || "Not calculated."}`
     );
     for (const item of analysis.financingValuationEvidence.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
+  }
+  if (analysis.supplyAbsorptionEvidence?.summary) {
+    lines.push(
+      "",
+      "V4.4 supply and absorption evidence",
+      `${analysis.supplyAbsorptionEvidence.status || "unknown"} (${analysis.supplyAbsorptionEvidence.score || 0}/100): ${analysis.supplyAbsorptionEvidence.summary}`,
+      `Competition: ${analysis.supplyAbsorptionEvidence.competitionPosition || "Not calculated."}`
+    );
+    for (const item of analysis.supplyAbsorptionEvidence.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
   }
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", analysis.dueDiligencePlan.summary || "");
@@ -1808,6 +1818,35 @@ function financingValuationMarkup(section = {}) {
   `;
 }
 
+function supplyAbsorptionMarkup(section = {}) {
+  if (!section.summary) return "";
+  const checks = Array.isArray(section.checks) ? section.checks : [];
+  return `
+    <section class="analysisTransactionComps analysisSupplyEvidence ${escapeHtml(section.status || "unknown")}">
+      <header>
+        <span><small>V4.4 SUPPLY + ABSORPTION</small><b>${escapeHtml(section.summary)}</b></span>
+        <em>${escapeHtml(section.score || 0)}/100</em>
+      </header>
+      <p>${escapeHtml(section.competitionPosition || "Supply competition position is not calculated yet.")}</p>
+      ${checks.length ? `
+        <div>
+          ${checks.map((item) => `
+            <article class="transactionCompCheck supplyEvidenceCheck ${escapeHtml(item.status || "missing")}">
+              <i>${escapeHtml(item.status || "missing")}</i>
+              <span>
+                <b>${escapeHtml(item.label)}</b>
+                ${item.proof ? `<small>${escapeHtml(item.proof)}</small>` : ""}
+                ${item.gap ? `<small>${escapeHtml(item.gap)}</small>` : ""}
+                <em>${escapeHtml(item.action)}</em>
+              </span>
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
 function dueDiligenceMarkup(plan = {}) {
   const tasks = Array.isArray(plan.tasks) ? plan.tasks : [];
   if (!tasks.length) return "";
@@ -2068,7 +2107,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       </section>
     ` : ""}
     <div class="analysisMeta">
-      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v4.3")}</b></span>
+      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v4.4")}</b></span>
       <span>REASONING <b>${escapeHtml(analysis.reasoningMode || (analysis.aiCommentary ? "Framework + AI" : "Framework only"))}</b></span>
       <span>DECISION SCORE <b>${escapeHtml(analysis.averageScore)}/100</b></span>
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
@@ -2083,6 +2122,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     ${transactionComparableMarkup(analysis.transactionComparableEvidence)}
     ${achievedRentalMarkup(analysis.achievedRentalEvidence)}
     ${financingValuationMarkup(analysis.financingValuationEvidence)}
+    ${supplyAbsorptionMarkup(analysis.supplyAbsorptionEvidence)}
     ${dueDiligenceMarkup(analysis.dueDiligencePlan)}
     ${stressEnvelopeMarkup(analysis.stressEnvelope)}
     ${portfolioGateMarkup(analysis.portfolioGate)}

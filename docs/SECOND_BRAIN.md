@@ -66,6 +66,8 @@ V4.2 strengthens rental evidence. Apex now checks rental source, recency, tenant
 
 V4.3 strengthens financing and valuation evidence. Apex now checks bank valuation support, price-versus-value fit, loan precheck, margin discipline, DSR, instalment stress, cash buffer, and document readiness before trusting a financing structure. Bank approval alone is not enough if valuation, repayment comfort, or cash reserve is weak.
 
+V4.4 strengthens supply and absorption evidence. Apex now checks the 2.5km substitute radius, substitute count, direct threat, VP timing, absorption proof, unsold stock, density, lift stress, and ground notes before trusting market demand. High-demand location alone is not enough if newer similar supply can dilute rent or resale emotion.
+
 Public users must not be able to add, edit, or delete backend knowledge. Backend write APIs require the owner-token header to match the server's owner-token environment variable. If no owner token is configured, owner APIs are disabled and public Apex session routes remain the only unauthenticated write surface.
 
 The visible frontend should stay simple and conversational. Knowledge-base development happens through owner-controlled backend files, scripts, or authenticated owner API calls.

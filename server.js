@@ -307,7 +307,7 @@ function reportList(items, limit = 12) {
 
 function normalizeReportContext(context) {
   const cleanRecord = (record) => Object.fromEntries(Object.entries(record || {})
-    .slice(0, 40)
+    .slice(0, 80)
     .map(([key, value]) => [String(key).slice(0, 80), reportText(value, 800)])
     .filter(([, value]) => value));
   return {
@@ -364,7 +364,7 @@ function normalizeReportMarketIntelligence(market = {}) {
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v4.3", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v4.4", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -559,6 +559,19 @@ function normalizeReportAnalysis(analysis = {}) {
       summary: reportText(analysis?.financingValuationEvidence?.summary, 800),
       affordabilityPosition: reportText(analysis?.financingValuationEvidence?.affordabilityPosition, 300),
       checks: objectList(analysis?.financingValuationEvidence?.checks, 8, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
+        proof: reportText(item?.proof, 360),
+        gap: reportText(item?.gap, 360),
+        action: reportText(item?.action, 420)
+      }))
+    },
+    supplyAbsorptionEvidence: {
+      status: ["strong", "usable", "thin", "unsafe", "missing", "unknown"].includes(analysis?.supplyAbsorptionEvidence?.status) ? analysis.supplyAbsorptionEvidence.status : "unknown",
+      score: Math.max(0, Math.min(100, Number(analysis?.supplyAbsorptionEvidence?.score || 0))),
+      summary: reportText(analysis?.supplyAbsorptionEvidence?.summary, 800),
+      competitionPosition: reportText(analysis?.supplyAbsorptionEvidence?.competitionPosition, 300),
+      checks: objectList(analysis?.supplyAbsorptionEvidence?.checks, 8, (item) => ({
         label: reportText(item?.label, 140),
         status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
         proof: reportText(item?.proof, 360),
@@ -2249,6 +2262,14 @@ const dealContextLabels = {
   cashBufferAfterPurchase: "Cash buffer after purchase",
   financingDocumentReadiness: "Financing document readiness",
   financingNotes: "Financing notes",
+  supplyRadius: "Supply check radius",
+  substituteCount: "Substitute count",
+  substituteThreat: "Substitute threat",
+  futureSupplyTiming: "Future supply timing",
+  absorptionEvidence: "Absorption evidence",
+  unsoldStockSignal: "Unsold stock signal",
+  densityLiftStress: "Density and lift stress",
+  supplyNotes: "Supply notes",
   siteVisit: "Site visit",
   legalCheck: "Title and legal check",
   dealSource: "Deal source",
@@ -2448,6 +2469,14 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const cashBufferAfterPurchase = String(dealCard.cashBufferAfterPurchase || "").toLowerCase();
   const financingDocumentReadiness = String(dealCard.financingDocumentReadiness || "").toLowerCase();
   const financingNotes = String(dealCard.financingNotes || "");
+  const supplyRadius = String(dealCard.supplyRadius || "").toLowerCase();
+  const substituteCount = String(dealCard.substituteCount || "").toLowerCase();
+  const substituteThreat = String(dealCard.substituteThreat || "").toLowerCase();
+  const futureSupplyTiming = String(dealCard.futureSupplyTiming || "").toLowerCase();
+  const absorptionEvidence = String(dealCard.absorptionEvidence || "").toLowerCase();
+  const unsoldStockSignal = String(dealCard.unsoldStockSignal || "").toLowerCase();
+  const densityLiftStress = String(dealCard.densityLiftStress || "").toLowerCase();
+  const supplyNotes = String(dealCard.supplyNotes || "");
   const dealNarrative = signalText(
     dealCard.mainConcern,
     dealCard.investmentThesis,
@@ -2470,6 +2499,14 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     dealCard.cashBufferAfterPurchase,
     dealCard.financingDocumentReadiness,
     dealCard.financingNotes,
+    dealCard.supplyRadius,
+    dealCard.substituteCount,
+    dealCard.substituteThreat,
+    dealCard.futureSupplyTiming,
+    dealCard.absorptionEvidence,
+    dealCard.unsoldStockSignal,
+    dealCard.densityLiftStress,
+    dealCard.supplyNotes,
     dealCard.exitStrategyPlan,
     dealCard.resalePreparation
   );
@@ -2513,6 +2550,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   if (installment && (!dealCard.bankValuationSupport || !dealCard.loanPrecheckStatus || !dealCard.loanMarginPlan || !dealCard.instalmentStress || !dealCard.cashBufferAfterPurchase)) {
     missingEvidence.push("V4.3 bank valuation, loan precheck, margin plan, instalment stress, and post-purchase cash buffer");
   }
+  if (!dealCard.supplyRadius || !dealCard.substituteCount || !dealCard.substituteThreat || !dealCard.futureSupplyTiming || !dealCard.absorptionEvidence) {
+    missingEvidence.push("V4.4 supply radius, substitute count, threat, VP timing, and absorption evidence");
+  }
   if (dealCard.siteVisit !== "Completed") missingEvidence.push("A completed site visit");
   if (dealCard.legalCheck !== "Clear") missingEvidence.push("Clear title, caveat, restriction, and legal checks");
   if (!dealCard.investmentThesis) missingEvidence.push("A written causal investment thesis");
@@ -2528,7 +2568,23 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   if (!income || !financialProfile.cashReserveMonths) addBlocker("Financial profile is incomplete, so investor suitability cannot be trusted.");
   if (!dealCard.exitBuyerPool || dealCard.exitBuyerPool === "Unclear") addBlocker("Exit buyer pool is unclear.");
 
-  const markedUpRisk = hasSignal(allNarrative, [
+  const transactionBoundaryNarrative = signalText(
+    dealCard.mainConcern,
+    dealCard.investmentThesis,
+    dealCard.killCriterion,
+    dealCard.dealSource,
+    dealCard.agentBehavior,
+    dealCard.sellerMotivation,
+    dealCard.professionalConcern,
+    dealCard.bankValuationSupport,
+    dealCard.loanPrecheckStatus,
+    dealCard.loanMarginPlan,
+    dealCard.financingNotes,
+    profileNarrative,
+    tenure,
+    dealCard.legalCheck
+  );
+  const markedUpRisk = hasSignal(transactionBoundaryNarrative, [
     /marked[-\s]?up/,
     /mark[-\s]?up/,
     /cash\s*back/,
@@ -2538,7 +2594,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     /fake document/,
     /side letter/
   ]);
-  const bulkRisk = hasSignal(allNarrative, [/bulk purchase/, /bulk deal/, /bulk buyer/, /bulk group/]);
+  const bulkRisk = hasSignal(transactionBoundaryNarrative, [/bulk purchase/, /bulk deal/, /bulk buyer/, /bulk group/]);
   const documentRisk = hasSignal(allNarrative, [
     /caveat/,
     /title dispute/,
@@ -3150,6 +3206,205 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   }
   financingScore = clampScore(financingScore + (financingValuationStatus === "strong" ? 8 : financingValuationStatus === "usable" ? 4 : financingValuationStatus === "thin" ? -5 : financingValuationStatus === "unsafe" ? -18 : -10));
 
+  const supplyStatusScore = { strong: 100, usable: 72, thin: 42, unsafe: 8, missing: 0 };
+  const supplyCheck = (label, status, proof, gap, action) => ({
+    label,
+    status,
+    proof,
+    gap,
+    action
+  });
+  const oldSupplyRiskSignal = dealCard.nearbySupply && hasStatedRisk(dealCard.nearbySupply);
+  const supplyRadiusStatus = /2\.?5|within/.test(supplyRadius)
+    ? "strong"
+    : /same road|same township|same district/.test(supplyRadius)
+      ? "thin"
+      : /not checked|unknown/.test(supplyRadius)
+        ? "missing"
+        : supplyRadius
+          ? "usable"
+          : "missing";
+  const substituteCountStatus = /less than 5|below 5|under 5|0-4|none|no direct/.test(substituteCount)
+    ? "strong"
+    : /5 or more|above 5|many/.test(substituteCount)
+      ? "unsafe"
+      : /unknown/.test(substituteCount)
+        ? "missing"
+        : substituteCount
+          ? "usable"
+          : "missing";
+  const substituteThreatStatus = /no direct|different segment|not comparable/.test(substituteThreat)
+    ? "strong"
+    : /complement|masterplan|master developer/.test(substituteThreat)
+      ? "usable"
+      : /newer similar|similar layout|lower price|comparable price|same tenant|same buyer/.test(substituteThreat)
+        ? "unsafe"
+        : /unknown/.test(substituteThreat)
+          ? "missing"
+          : substituteThreat
+            ? "thin"
+            : "missing";
+  const supplyTimingStatus = /no material|no vp|no near/.test(futureSupplyTiming)
+    ? "strong"
+    : /announcement|launch only/.test(futureSupplyTiming)
+      ? "usable"
+      : /under construction/.test(futureSupplyTiming)
+        ? "thin"
+        : /vp|vacant possession|newly completed|completion|within 12/.test(futureSupplyTiming)
+          ? "unsafe"
+          : /unknown/.test(futureSupplyTiming)
+            ? "missing"
+            : futureSupplyTiming
+              ? "thin"
+              : "missing";
+  const absorptionStatus = /occupancy.*rent|rent.*holding|strong occupancy|strong rent/.test(absorptionEvidence)
+    ? "strong"
+    : /sales rate|unsold.*healthy|agent confirms|healthy/.test(absorptionEvidence)
+      ? "usable"
+      : /weak|no enquiry|rental drop|occupancy drop|unsold high|slow/.test(absorptionEvidence)
+        ? "unsafe"
+        : /unknown/.test(absorptionEvidence)
+          ? "missing"
+          : absorptionEvidence
+            ? "thin"
+            : "missing";
+  const unsoldStockStatus = /less than 1|below 1|minimal|healthy/.test(unsoldStockSignal)
+    ? "strong"
+    : /elevated|many unsold|high unsold|discount/.test(unsoldStockSignal)
+      ? "thin"
+      : /bulk purchase|bulk group|clear inventory|developer desperate/.test(unsoldStockSignal)
+        ? "unsafe"
+        : /unknown/.test(unsoldStockSignal)
+          ? "missing"
+          : unsoldStockSignal
+            ? "usable"
+            : "missing";
+  const densityLiftStatus = /below 1\.?5|under 1\.?5|lift wait acceptable|acceptable lift/.test(densityLiftStress)
+    ? "strong"
+    : /high density but prime|prime pricing|acceptable in prime/.test(densityLiftStress)
+      ? "usable"
+      : /1\.?5k|1500|lift wait|waiting time|too dense|too high/.test(densityLiftStress)
+        ? "unsafe"
+        : /unknown/.test(densityLiftStress)
+          ? "missing"
+          : densityLiftStress
+            ? "thin"
+            : "missing";
+  const supplyNotesStatus = dealCard.nearbySupply || supplyNotes
+    ? oldSupplyRiskSignal
+      ? "thin"
+      : "strong"
+    : "missing";
+  const competitionPosition = substituteThreatStatus === "strong" && absorptionStatus === "strong"
+    ? "Closest substitutes do not currently threaten the tenant or buyer pool."
+    : substituteThreatStatus === "unsafe"
+      ? "A newer, similar, or cheaper substitute can steal the same tenant or future buyer."
+      : absorptionStatus === "unsafe"
+        ? "Absorption evidence is weak; supply may already be pressuring rent or liquidity."
+        : densityLiftStatus === "unsafe"
+          ? "Density or lift waiting time can become a permanent competitiveness problem."
+          : "Supply position is not proven enough; check substitutes, timing, absorption, unsold stock, and density.";
+  const supplyChecks = [
+    supplyCheck(
+      "Supply radius",
+      supplyRadiusStatus,
+      supplyRadiusStatus === "strong" ? "Supply check uses the founder's 2.5km substitute radius." : supplyRadiusStatus === "usable" ? "Supply radius is stated, but confirm the exact substitute catchment." : "",
+      supplyRadiusStatus === "thin" ? "A narrower supply check can miss nearby projects competing for the same tenant or buyer." : supplyRadiusStatus === "missing" ? "Supply check radius is not recorded." : "",
+      "Check direct substitutes within roughly 2.5km, then narrow by same road, township, access, and tenant/buyer pool."
+    ),
+    supplyCheck(
+      "Substitute count",
+      substituteCountStatus,
+      substituteCountStatus === "strong" ? "Competing substitute count is within the founder's comfort range." : substituteCountStatus === "usable" ? "Competing substitute count is stated." : "",
+      substituteCountStatus === "unsafe" ? "Five or more close substitutes creates choice pressure for tenants and buyers." : substituteCountStatus === "missing" ? "Competing substitute count is not recorded." : "",
+      "List the closest substitute projects and compare them by package, not just distance."
+    ),
+    supplyCheck(
+      "Substitute threat",
+      substituteThreatStatus,
+      substituteThreatStatus === "strong" ? "No direct newer similar substitute is stated." : substituteThreatStatus === "usable" ? "Supply may be complementary under a stronger masterplan." : "",
+      substituteThreatStatus === "unsafe" ? "Newer similar layout or comparable/lower pricing is a direct threat." : substituteThreatStatus === "missing" ? "Substitute threat is not recorded." : "",
+      "Treat newer similar high-rises with similar layout and pricing as serious threats until rent and absorption prove otherwise."
+    ),
+    supplyCheck(
+      "Future supply timing",
+      supplyTimingStatus,
+      supplyTimingStatus === "strong" ? "No material VP or completion pressure is stated." : supplyTimingStatus === "usable" ? "Supply is still announcement or launch-stage, so timing risk is lower." : "",
+      supplyTimingStatus === "thin" ? "Under-construction supply can become real soon." : supplyTimingStatus === "unsafe" ? "Vacant possession or newly completed supply is the point where rental pressure usually appears." : supplyTimingStatus === "missing" ? "Future supply timing is not recorded." : "",
+      "Map future supply by announcement, launch, construction, VP, and first rental wave. VP is the serious pressure point."
+    ),
+    supplyCheck(
+      "Absorption proof",
+      absorptionStatus,
+      absorptionStatus === "strong" ? "Occupancy and rent are holding against nearby supply." : absorptionStatus === "usable" ? "Sales rate, unsold stock, or agent feedback supports partial absorption." : "",
+      absorptionStatus === "unsafe" ? "Weak enquiries, slow sales, rising vacancy, or rental reduction suggests demand is not absorbing supply." : absorptionStatus === "missing" ? "Absorption evidence is not recorded." : "",
+      "Verify existing occupancy, achieved rent, tenant enquiries, sales rate, unsold units, and whether new supply is reducing rent."
+    ),
+    supplyCheck(
+      "Unsold stock",
+      unsoldStockStatus,
+      unsoldStockStatus === "strong" ? "Unsold developer stock is within the founder's low-risk range." : unsoldStockStatus === "usable" ? "Unsold stock signal is recorded." : "",
+      unsoldStockStatus === "thin" ? "Elevated unsold stock can signal ambitious pricing or weak demand." : unsoldStockStatus === "unsafe" ? "Bulk purchase or desperate inventory clearing is a project-level warning." : unsoldStockStatus === "missing" ? "Unsold stock signal is not recorded." : "",
+      "Check unsold stock, public discounts, bulk-purchase activity, and whether remaining units are only weak layouts."
+    ),
+    supplyCheck(
+      "Density and lift stress",
+      densityLiftStatus,
+      densityLiftStatus === "strong" ? "Density and lift waiting time are stated as acceptable." : densityLiftStatus === "usable" ? "High density may be acceptable because the location and pricing compensate." : "",
+      densityLiftStatus === "unsafe" ? "Very high density or lift waiting time can damage own-stay emotion and resale resilience." : densityLiftStatus === "missing" ? "Density and lift stress are not recorded." : "",
+      "For high-rise, check total units, plot ratio, number of lifts, waiting time, facility load, security traffic, and maintenance sustainability."
+    ),
+    supplyCheck(
+      "Ground notes",
+      supplyNotesStatus,
+      supplyNotesStatus === "strong" ? "Supply notes or nearby supply comment is recorded without flagging direct risk." : "",
+      supplyNotesStatus === "thin" ? "The free-text supply note flags risk but does not yet prove absorption." : supplyNotesStatus === "missing" ? "Supply notes are not recorded." : "",
+      "Record the actual substitute names, rental pressure, VP batch, occupancy, and why this subject still defends demand."
+    )
+  ];
+  const supplyAbsorptionScore = clampScore(
+    supplyStatusScore[supplyRadiusStatus] * 0.1 +
+    supplyStatusScore[substituteCountStatus] * 0.12 +
+    supplyStatusScore[substituteThreatStatus] * 0.18 +
+    supplyStatusScore[supplyTimingStatus] * 0.15 +
+    supplyStatusScore[absorptionStatus] * 0.18 +
+    supplyStatusScore[unsoldStockStatus] * 0.12 +
+    supplyStatusScore[densityLiftStatus] * 0.1 +
+    supplyStatusScore[supplyNotesStatus] * 0.05
+  );
+  const supplyUnsafe = [substituteCountStatus, substituteThreatStatus, supplyTimingStatus, absorptionStatus, unsoldStockStatus, densityLiftStatus].includes("unsafe");
+  const supplyKnown = Boolean(dealCard.nearbySupply || supplyRadius || substituteCount || substituteThreat || futureSupplyTiming || absorptionEvidence || unsoldStockSignal || densityLiftStress || supplyNotes);
+  const supplyRisk = supplyUnsafe || (oldSupplyRiskSignal && !/no direct|no similar|none/.test(String(dealCard.nearbySupply || "").toLowerCase()));
+  const supplyAbsorptionStatus = supplyUnsafe
+    ? "unsafe"
+    : supplyAbsorptionScore >= 85
+      ? "strong"
+      : supplyAbsorptionScore >= 65
+        ? "usable"
+        : supplyAbsorptionScore >= 40 || supplyKnown
+          ? "thin"
+          : "missing";
+  const supplyAbsorptionEvidence = {
+    status: supplyAbsorptionStatus,
+    score: supplyAbsorptionScore,
+    summary: supplyAbsorptionStatus === "strong"
+      ? "Supply and competition evidence is strong: substitutes, timing, absorption, stock, density, and lift stress are controlled."
+      : supplyAbsorptionStatus === "usable"
+        ? "Supply evidence is usable, but Apex still wants stronger absorption proof before treating the market as protected."
+        : supplyAbsorptionStatus === "thin"
+          ? "Supply evidence is thin. The market may still absorb the deal, but substitute and VP risk are not proven enough."
+          : supplyAbsorptionStatus === "unsafe"
+            ? "Supply evidence is unsafe because nearby substitute, timing, absorption, unsold stock, density, or lift pressure can weaken rent or resale."
+            : "Supply and absorption evidence is missing.",
+    competitionPosition,
+    checks: supplyChecks
+  };
+  if (["unsafe", "missing"].includes(supplyAbsorptionStatus)) {
+    addBlocker("V4.4 supply and absorption evidence is not reliable enough to validate market demand.");
+  } else if (supplyAbsorptionStatus === "thin") {
+    addBlocker("V4.4 supply and absorption evidence is still thin; clear substitute count, threat, VP timing, absorption, unsold stock, and lift-density gaps before shortlist.");
+  }
+
   let holdingScore = 50;
   if (holdingCashFlow !== null) {
     if (holdingCashFlow >= 0) holdingScore += 30;
@@ -3180,9 +3435,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   portfolioScore = clampScore(portfolioScore);
 
   let marketScore = 45;
-  const supplyKnown = Boolean(dealCard.nearbySupply);
-  const supplyRisk = supplyKnown && hasStatedRisk(dealCard.nearbySupply);
-  if (supplyKnown && !supplyRisk) marketScore += 15;
+  if (supplyAbsorptionStatus === "strong") marketScore += 18;
+  else if (supplyAbsorptionStatus === "usable") marketScore += 10;
+  else if (supplyAbsorptionStatus === "thin") marketScore -= 6;
   if (supplyRisk) {
     marketScore -= 15;
     addWatchout("Nearby supply may compete for the same tenant and future buyer pool.");
@@ -3209,6 +3464,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   else if (financingValuationStatus === "usable") evidenceScore += 7;
   else if (financingValuationStatus === "thin") evidenceScore += 2;
   else if (financingValuationStatus === "unsafe") evidenceScore -= 5;
+  if (supplyAbsorptionStatus === "strong") evidenceScore += 10;
+  else if (supplyAbsorptionStatus === "usable") evidenceScore += 7;
+  else if (supplyAbsorptionStatus === "thin") evidenceScore += 2;
+  else if (supplyAbsorptionStatus === "unsafe") evidenceScore -= 5;
   if (dealCard.siteVisit === "Completed") evidenceScore += 20;
   if (dealCard.legalCheck === "Clear") evidenceScore += 15;
   else if (dealCard.legalCheck === "Pending") evidenceScore += 4;
@@ -3244,11 +3503,13 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       : financingValuationStatus === "unsafe"
         ? "blocked"
         : "missing";
-  const supplyGateStatus = supplyKnown && !supplyRisk
+  const supplyGateStatus = supplyAbsorptionStatus === "strong"
     ? "proven"
-    : supplyKnown
+    : supplyAbsorptionStatus === "usable" || supplyAbsorptionStatus === "thin"
       ? "partial"
-      : "missing";
+      : supplyAbsorptionStatus === "unsafe"
+        ? "blocked"
+        : "missing";
   const siteManagementGateStatus = dealCard.managementQuality === "Weak"
     ? "blocked"
     : dealCard.siteVisit === "Completed" && dealCard.managementQuality === "Strong"
@@ -3299,10 +3560,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       "Supply absorption proof",
       supplyGateStatus,
       15,
-      gateScore(supplyGateStatus, 45),
-      supplyGateStatus === "proven" ? "Nearby supply is considered and no direct similar threat is stated." : supplyGateStatus === "partial" ? "Supply is known, but it may compete for the same tenant or buyer pool." : "",
-      supplyGateStatus === "missing" ? "Nearby comparable supply within the target radius is not recorded." : supplyGateStatus === "partial" ? "Absorption, occupancy, rent pressure, and VP timing are not yet proven." : "",
-      "Compare newer similar projects within roughly 2.5km by layout, pricing, VP batch, occupancy, and rent pressure."
+      supplyAbsorptionScore,
+      supplyGateStatus === "proven" ? supplyAbsorptionEvidence.summary : supplyGateStatus === "partial" ? supplyAbsorptionEvidence.summary : "",
+      supplyGateStatus === "blocked" || supplyGateStatus === "missing" ? supplyAbsorptionEvidence.summary : supplyGateStatus === "partial" ? "Substitute count, threat, timing, absorption, unsold stock, density, or lift stress is not yet strong enough." : "",
+      "Use V4.4 supply detail: 2.5km radius, substitute count, direct threat, VP timing, absorption, unsold stock, density, and lift stress."
     ),
     evidenceGate(
       "Site and management reality",
@@ -3583,10 +3844,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     },
     {
       label: "Substitute supply",
-      status: !supplyKnown ? "missing" : supplyRisk ? "warning" : "done",
-      action: supplyRisk
-        ? "Check absorption, rent pressure, and pricing of nearby newer similar projects within the same tenant or buyer pool."
-        : "Nearby supply has been considered; keep monitoring VP batches and developer inventory."
+      status: supplyAbsorptionStatus === "strong" ? "done" : supplyAbsorptionStatus === "unsafe" ? "danger" : supplyAbsorptionStatus === "missing" ? "missing" : "warning",
+      action: supplyAbsorptionStatus === "strong"
+        ? "Supply is supported by V4.4 substitute, timing, absorption, unsold stock, and density evidence."
+        : "Verify V4.4 supply detail: 2.5km substitutes, VP timing, occupancy, rent pressure, unsold stock, and lift-density stress."
     },
     {
       label: "Exit buyer pool",
@@ -3664,9 +3925,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     task(
       "Market Check",
       "Future supply and substitute threat",
-      taskStatus(supplyKnown && !supplyRisk),
-      "List nearby newer similar projects within 2.5km; compare layout, pricing, VP timing, occupancy, absorption, and rent pressure.",
-      supplyRisk || !supplyKnown
+      taskStatus(supplyAbsorptionStatus === "strong"),
+      "List nearby newer similar projects within 2.5km; compare layout, pricing, VP timing, occupancy, absorption, unsold stock, density, lift stress, and rent pressure.",
+      supplyAbsorptionStatus === "unsafe" || supplyAbsorptionStatus === "missing" || supplyAbsorptionStatus === "thin"
     ),
     task(
       "Buyer Pool",
@@ -4221,7 +4482,8 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
         : "The v1 decision path blocks commitment until failed conditions are fixed or the deal is abandoned.",
     conditions: sealConditions
   };
-  const siteRiskSignal = hasSignal(dealNarrative, [
+  const siteRiskNarrative = dealNarrative.replace(/lift wait acceptable|acceptable lift|lift waiting time acceptable/g, "");
+  const siteRiskSignal = hasSignal(siteRiskNarrative, [
     /leak/,
     /water mark/,
     /lift.*slow/,
@@ -4431,7 +4693,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   };
 
   return {
-    engineVersion: "Apex v4.3",
+    engineVersion: "Apex v4.4",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -4468,6 +4730,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     transactionComparableEvidence,
     achievedRentalEvidence,
     financingValuationEvidence,
+    supplyAbsorptionEvidence,
     dueDiligencePlan,
     executionPlan,
     hardStops: hardStopText,
@@ -4534,6 +4797,15 @@ function dealAnalysisText(analysis) {
       `- Affordability: ${analysis.financingValuationEvidence.affordabilityPosition || "Not calculated."}`
     );
     lines.push(...(analysis.financingValuationEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+  }
+  if (analysis.supplyAbsorptionEvidence?.summary) {
+    lines.push(
+      "",
+      "V4.4 supply and absorption evidence",
+      `- ${analysis.supplyAbsorptionEvidence.status || "unknown"} (${analysis.supplyAbsorptionEvidence.score || 0}/100): ${analysis.supplyAbsorptionEvidence.summary}`,
+      `- Competition: ${analysis.supplyAbsorptionEvidence.competitionPosition || "Not calculated."}`
+    );
+    lines.push(...(analysis.supplyAbsorptionEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
   }
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", `- ${analysis.dueDiligencePlan.summary}`);
@@ -5126,8 +5398,8 @@ function reportSimilarityScore(currentAnalysis = {}, savedReport = {}) {
   const currentDeal = currentAnalysis.context?.dealCard || {};
   const savedDeal = savedAnalysis.context?.dealCard || {};
   let score = tokenOverlapScore(
-    `${currentDeal.projectName || ""} ${currentDeal.area || ""} ${currentDeal.propertyType || ""} ${currentDeal.nearbySupply || ""}`,
-    `${savedReport.subject || ""} ${savedDeal.projectName || ""} ${savedDeal.area || ""} ${savedDeal.propertyType || ""} ${savedDeal.nearbySupply || ""}`
+    `${currentDeal.projectName || ""} ${currentDeal.area || ""} ${currentDeal.propertyType || ""} ${currentDeal.nearbySupply || ""} ${currentDeal.substituteThreat || ""} ${currentDeal.futureSupplyTiming || ""} ${currentDeal.absorptionEvidence || ""}`,
+    `${savedReport.subject || ""} ${savedDeal.projectName || ""} ${savedDeal.area || ""} ${savedDeal.propertyType || ""} ${savedDeal.nearbySupply || ""} ${savedDeal.substituteThreat || ""} ${savedDeal.futureSupplyTiming || ""} ${savedDeal.absorptionEvidence || ""}`
   ) * 45;
   score += tokenOverlapScore(analysisWeakSignalText(currentAnalysis), analysisWeakSignalText(savedAnalysis)) * 45;
   if (currentAnalysis.verdict && savedAnalysis.verdict && currentAnalysis.verdict === savedAnalysis.verdict) score += 10;

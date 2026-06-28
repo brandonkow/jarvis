@@ -220,6 +220,21 @@ V4.3 deepens the financing and valuation fit gate. Apex should not treat bank ap
 
 If valuation is below price, loan approval is being forced, post-deal DSR is near the danger zone, high leverage is unsupported, or cash buffer is weak, Apex should block shortlist-level confidence.
 
+## v4.4 Supply And Absorption Evidence
+
+V4.4 deepens the supply absorption proof gate. Apex should not treat "high demand area" or "nearby supply checked" as enough. Supply evidence must also show:
+
+- **Supply radius**: direct substitute projects within roughly 2.5km, not only the same road or the most obvious project.
+- **Substitute count**: whether the number of closest alternatives remains within the founder's comfort range of fewer than five serious substitutes.
+- **Substitute threat**: whether nearby projects have similar layout, similar or lower pricing, newer appeal, and the same tenant or future buyer pool.
+- **Future supply timing**: announcement, launch, construction, VP, and first rental wave. Vacant possession is the serious pressure point.
+- **Absorption proof**: occupancy, achieved rent, tenant enquiries, sales rate, and unsold units showing demand is actually absorbing supply.
+- **Unsold stock**: whether developer inventory is minimal, elevated, discounted publicly, or being pushed through bulk-purchase channels.
+- **Density and lift stress**: total units, plot ratio, lift count, waiting time, facility load, security traffic, and whether high density is compensated by prime pricing.
+- **Ground notes**: actual substitute names, VP batches, rental pressure, occupancy, and why the subject property still defends demand.
+
+If newer similar supply is priced competitively, VP pressure is near, absorption is weak, unsold stock is high, or density/lift waiting time creates daily friction, Apex should block shortlist-level confidence until supply risk is proven manageable.
+
 ## v1.3 Deal Comparison
 
 The v1.3 comparison layer turns the device shortlist into a decision aid:
