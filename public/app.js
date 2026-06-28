@@ -1042,6 +1042,7 @@ function saveAnalysisToShortlist(analysis) {
     personalOperatingRules: analysis.personalOperatingRules || null,
     investorReadiness: analysis.investorReadiness || null,
     learningLoop: analysis.learningLoop || null,
+    evidenceEngine: analysis.evidenceEngine || null,
     counterThesis: analysis.counterThesis,
     context: analysis.context || {}
   };
@@ -1118,6 +1119,16 @@ function analysisExportText(analysis) {
   if (analysis.evidenceChecklist?.length) {
     lines.push("", "Evidence checklist");
     for (const item of analysis.evidenceChecklist) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
+  }
+  if (analysis.evidenceEngine?.summary) {
+    lines.push(
+      "",
+      "V4.0 evidence engine",
+      `${analysis.evidenceEngine.status || "unknown"} (${analysis.evidenceEngine.score || 0}/100): ${analysis.evidenceEngine.summary}`,
+      `Gate: ${analysis.evidenceEngine.recommendationGate || "Evidence gate not calculated."}`
+    );
+    for (const item of analysis.evidenceEngine.criticalGaps || []) lines.push(`- Critical gap: ${item}`);
+    for (const item of analysis.evidenceEngine.gates || []) lines.push(`- ${item.label}: ${item.status}, ${item.score}/100. ${item.action}`);
   }
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", analysis.dueDiligencePlan.summary || "");
@@ -1649,6 +1660,37 @@ function evidenceChecklistMarkup(items = []) {
   `;
 }
 
+function evidenceEngineMarkup(engine = {}) {
+  if (!engine.summary) return "";
+  const gates = Array.isArray(engine.gates) ? engine.gates : [];
+  const criticalGaps = Array.isArray(engine.criticalGaps) ? engine.criticalGaps : [];
+  return `
+    <section class="analysisEvidenceEngine ${escapeHtml(engine.status || "unknown")}">
+      <header>
+        <span><small>V4.0 EVIDENCE ENGINE</small><b>${escapeHtml(engine.summary)}</b></span>
+        <em>${escapeHtml(engine.score || 0)}/100</em>
+      </header>
+      <p>${escapeHtml(engine.recommendationGate || "Evidence gate not calculated.")}</p>
+      ${criticalGaps.length ? `<ul>${criticalGaps.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+      ${gates.length ? `
+        <div>
+          ${gates.map((item) => `
+            <article class="evidenceGate ${escapeHtml(item.status || "missing")}">
+              <i>${escapeHtml(item.status || "missing")}</i>
+              <span>
+                <b>${escapeHtml(item.label)} <small>${escapeHtml(item.score || 0)}/100</small></b>
+                ${item.proof ? `<small>${escapeHtml(item.proof)}</small>` : ""}
+                ${item.gap ? `<small>${escapeHtml(item.gap)}</small>` : ""}
+                <em>${escapeHtml(item.action)}</em>
+              </span>
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
 function dueDiligenceMarkup(plan = {}) {
   const tasks = Array.isArray(plan.tasks) ? plan.tasks : [];
   if (!tasks.length) return "";
@@ -1909,7 +1951,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       </section>
     ` : ""}
     <div class="analysisMeta">
-      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v3.8")}</b></span>
+      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v4.0")}</b></span>
       <span>REASONING <b>${escapeHtml(analysis.reasoningMode || (analysis.aiCommentary ? "Framework + AI" : "Framework only"))}</b></span>
       <span>DECISION SCORE <b>${escapeHtml(analysis.averageScore)}/100</b></span>
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
@@ -1920,6 +1962,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     </div>
     ${metricMarkup ? `<div class="analysisMetrics">${metricMarkup}</div>` : ""}
     ${evidenceChecklistMarkup(analysis.evidenceChecklist || [])}
+    ${evidenceEngineMarkup(analysis.evidenceEngine)}
     ${dueDiligenceMarkup(analysis.dueDiligencePlan)}
     ${stressEnvelopeMarkup(analysis.stressEnvelope)}
     ${portfolioGateMarkup(analysis.portfolioGate)}

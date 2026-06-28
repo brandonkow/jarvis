@@ -58,6 +58,8 @@ Personalized challenge mode should make Apex feel more like a second brain: it r
 
 Deal memory comparison, belief tracking, source transparency, memory-conflict handling, and personal operating rules complete the V3 memory path. They make Apex compare a new deal against saved reports and approved personal memory while clearly showing which sources were used. They do not train the shared framework automatically.
 
+V4.0 adds the evidence engine. This is the proof layer: Apex checks whether completed value evidence, achieved rent, financing/valuation fit, supply absorption, site and management reality, legal/title safety, and the written thesis are strong enough for shortlist-level confidence. If the score is below 80/100, a critical proof gap remains, or an evidence gate is blocked, Apex should keep the deal in investigation mode no matter how attractive the story sounds.
+
 Public users must not be able to add, edit, or delete backend knowledge. Backend write APIs require the owner-token header to match the server's owner-token environment variable. If no owner token is configured, owner APIs are disabled and public Apex session routes remain the only unauthenticated write surface.
 
 The visible frontend should stay simple and conversational. Knowledge-base development happens through owner-controlled backend files, scripts, or authenticated owner API calls.

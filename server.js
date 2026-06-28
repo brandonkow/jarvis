@@ -364,7 +364,7 @@ function normalizeReportMarketIntelligence(market = {}) {
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v3.8", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v4.0", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -511,6 +511,22 @@ function normalizeReportAnalysis(analysis = {}) {
       status: ["done", "warning", "missing", "danger"].includes(item?.status) ? item.status : "missing",
       action: reportText(item?.action, 300)
     })),
+    evidenceEngine: {
+      status: ["proven", "conditional", "weak", "blocked", "unknown"].includes(analysis?.evidenceEngine?.status) ? analysis.evidenceEngine.status : "unknown",
+      score: Math.max(0, Math.min(100, Number(analysis?.evidenceEngine?.score || 0))),
+      summary: reportText(analysis?.evidenceEngine?.summary, 800),
+      recommendationGate: reportText(analysis?.evidenceEngine?.recommendationGate, 240),
+      criticalGaps: reportList(analysis?.evidenceEngine?.criticalGaps, 8),
+      gates: objectList(analysis?.evidenceEngine?.gates, 10, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["proven", "partial", "missing", "blocked"].includes(item?.status) ? item.status : "missing",
+        weight: Math.max(0, Math.min(100, Number(item?.weight || 0))),
+        score: Math.max(0, Math.min(100, Number(item?.score || 0))),
+        proof: reportText(item?.proof, 420),
+        gap: reportText(item?.gap, 420),
+        action: reportText(item?.action, 420)
+      }))
+    },
     dueDiligencePlan: {
       summary: reportText(analysis?.dueDiligencePlan?.summary, 500),
       tasks: objectList(analysis?.dueDiligencePlan?.tasks, 12, (item) => ({
@@ -2598,6 +2614,155 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   else if (dealCard.legalCheck === "Pending") evidenceScore += 4;
   evidenceScore = clampScore(evidenceScore);
 
+  const evidenceGate = (label, status, weight, score, proof, gap, action) => ({
+    label,
+    status,
+    weight,
+    score: clampScore(score),
+    proof,
+    gap,
+    action
+  });
+  const valueGateStatus = fairValue && dealCard.comparableTransactions === "3 or more"
+    ? "proven"
+    : fairValue || dealCard.comparableTransactions === "1 to 2"
+      ? "partial"
+      : "missing";
+  const rentGateStatus = dealCard.rentEvidence === "Signed tenancy or achieved rent"
+    ? "proven"
+    : dealCard.rentEvidence === "Agent-confirmed"
+      ? "partial"
+      : "missing";
+  const financingGateStatus = installment && fairValue && discountToFairValue !== null && discountToFairValue < -10
+    ? "blocked"
+    : installment && fairValue && price && price <= fairValue
+      ? "proven"
+      : installment && (fairValue || price)
+        ? "partial"
+        : "missing";
+  const supplyGateStatus = supplyKnown && !supplyRisk
+    ? "proven"
+    : supplyKnown
+      ? "partial"
+      : "missing";
+  const siteManagementGateStatus = dealCard.managementQuality === "Weak"
+    ? "blocked"
+    : dealCard.siteVisit === "Completed" && dealCard.managementQuality === "Strong"
+      ? "proven"
+      : dealCard.siteVisit === "Completed"
+        ? "partial"
+        : "missing";
+  const legalGateStatus = dealCard.legalCheck === "Clear"
+    ? "proven"
+    : dealCard.legalCheck === "Pending"
+      ? "partial"
+      : "blocked";
+  const thesisGateStatus = dealCard.investmentThesis && dealCard.killCriterion
+    ? "proven"
+    : dealCard.investmentThesis || dealCard.killCriterion
+      ? "partial"
+      : "missing";
+  const gateScore = (status, partialScore = 55) => status === "proven" ? 100 : status === "partial" ? partialScore : 0;
+  const evidenceGates = [
+    evidenceGate(
+      "Completed value proof",
+      valueGateStatus,
+      20,
+      gateScore(valueGateStatus, 60),
+      valueGateStatus === "proven" ? "Conservative value is backed by three or more completed comparable transactions." : fairValue ? "A conservative value is supplied, but comparable depth is still thin." : "",
+      valueGateStatus === "missing" ? "No completed subsale or successful auction proof supports the value." : valueGateStatus === "partial" ? "Comparable count or quality is not yet strong enough." : "",
+      "Use completed subsale and successful auction evidence, not listing price, to defend fair value."
+    ),
+    evidenceGate(
+      "Achieved rent proof",
+      rentGateStatus,
+      20,
+      gateScore(rentGateStatus, 75),
+      rentGateStatus === "proven" ? "Signed tenancy or achieved rent is supplied." : rentGateStatus === "partial" ? "Agent-confirmed rent is useful but still needs achieved-rent support." : "",
+      rentGateStatus === "missing" ? "Rental evidence is listing-only, absent, or too weak." : rentGateStatus === "partial" ? "Agent feedback should be cross-checked against actual achieved rent and tenant urgency." : "",
+      "Confirm achieved rent, enquiry urgency, tenant profile, vacancy period, and whether incentives or seasonality distort the rent."
+    ),
+    evidenceGate(
+      "Financing and valuation fit",
+      financingGateStatus,
+      15,
+      financingGateStatus === "blocked" ? 0 : gateScore(financingGateStatus, 60),
+      financingGateStatus === "proven" ? "Instalment and conservative value support the entry price." : financingGateStatus === "partial" ? "Some financing or value inputs exist, but the full fit is not proven." : "",
+      financingGateStatus === "blocked" ? "Asking price is materially above conservative value." : financingGateStatus === "missing" ? "Loan instalment, value, or price inputs are missing." : "",
+      "Ask the banker for instalment, margin, valuation basis, DSR effect, and downside repayment stress."
+    ),
+    evidenceGate(
+      "Supply absorption proof",
+      supplyGateStatus,
+      15,
+      gateScore(supplyGateStatus, 45),
+      supplyGateStatus === "proven" ? "Nearby supply is considered and no direct similar threat is stated." : supplyGateStatus === "partial" ? "Supply is known, but it may compete for the same tenant or buyer pool." : "",
+      supplyGateStatus === "missing" ? "Nearby comparable supply within the target radius is not recorded." : supplyGateStatus === "partial" ? "Absorption, occupancy, rent pressure, and VP timing are not yet proven." : "",
+      "Compare newer similar projects within roughly 2.5km by layout, pricing, VP batch, occupancy, and rent pressure."
+    ),
+    evidenceGate(
+      "Site and management reality",
+      siteManagementGateStatus,
+      15,
+      siteManagementGateStatus === "blocked" ? 0 : gateScore(siteManagementGateStatus, 65),
+      siteManagementGateStatus === "proven" ? "Site visit is completed and management/build quality is strong." : siteManagementGateStatus === "partial" ? "Either site visit or management signal exists, but the lived-quality proof is incomplete." : "",
+      siteManagementGateStatus === "blocked" ? "Weak management/build quality is a structural evidence failure." : siteManagementGateStatus === "missing" ? "Site visit and management quality are not proven." : "",
+      "Record lobby, guard, lift, car park, corridor, refuse room, facilities, resident behaviour, defects, and management response."
+    ),
+    evidenceGate(
+      "Legal and title safety",
+      legalGateStatus,
+      10,
+      legalGateStatus === "blocked" ? 0 : gateScore(legalGateStatus, 45),
+      legalGateStatus === "proven" ? "Legal and title status is recorded as clear." : legalGateStatus === "partial" ? "Legal/title review is pending." : "",
+      legalGateStatus === "blocked" ? "Legal, title, caveat, restriction, consent, or seller-authority issue is unresolved." : legalGateStatus === "partial" ? "Pending legal checks can still change the deal." : "",
+      "Clear title, caveat, restrictions, consent, seller authority, arrears, and stakeholder fund flow before commitment."
+    ),
+    evidenceGate(
+      "Decision thesis and kill rule",
+      thesisGateStatus,
+      5,
+      gateScore(thesisGateStatus, 50),
+      thesisGateStatus === "proven" ? "Investment thesis and walk-away criterion are recorded." : thesisGateStatus === "partial" ? "Only one of thesis or kill criterion is recorded." : "",
+      thesisGateStatus === "missing" ? "The user has not recorded why this should work and what discovery means walk away." : "",
+      "Write the causal thesis, counter-thesis, target hold, exit buyer, and exact kill criterion before booking."
+    )
+  ];
+  const evidenceEngineScore = clampScore(evidenceGates.reduce((total, gate) => total + (gate.score * gate.weight / 100), 0));
+  const evidenceCriticalGaps = evidenceGates
+    .filter((gate) => gate.status === "blocked" || (gate.status === "missing" && gate.weight >= 10))
+    .map((gate) => `${gate.label}: ${gate.gap || gate.action}`);
+  const evidenceEngineStatus = evidenceGates.some((gate) => gate.status === "blocked") || hardStops.length
+    ? "blocked"
+    : evidenceCriticalGaps.length
+      ? evidenceEngineScore >= 70 ? "conditional" : "weak"
+    : evidenceEngineScore >= 85
+      ? "proven"
+      : evidenceEngineScore >= 70
+        ? "conditional"
+        : evidenceEngineScore >= 50
+          ? "weak"
+          : "blocked";
+  const evidenceEngine = {
+    status: evidenceEngineStatus,
+    score: evidenceEngineScore,
+    summary: evidenceEngineStatus === "proven"
+      ? "Evidence is strong enough for shortlist-level confidence, while final professional verification is still required."
+      : evidenceEngineStatus === "conditional"
+        ? "Evidence is usable for investigation, but at least one important gate still needs stronger proof before shortlist confidence."
+        : evidenceEngineStatus === "weak"
+          ? "Evidence is too thin for a strong recommendation. Apex should keep the deal in investigation mode."
+          : "Evidence blocks validation until the missing or unsafe proof is cleared.",
+    recommendationGate: evidenceEngineScore >= 80 && evidenceEngineStatus !== "blocked" && !evidenceCriticalGaps.length
+      ? "Shortlist-level confidence allowed if the rest of the framework also passes."
+      : "Shortlist-level confidence blocked until V4 evidence strength reaches 80/100, no critical evidence gap remains, and no evidence gate is blocked.",
+    criticalGaps: uniqueText(evidenceCriticalGaps, 8),
+    gates: evidenceGates
+  };
+  if (evidenceEngineScore < 80 || evidenceEngineStatus === "blocked") {
+    addBlocker(evidenceEngine.recommendationGate);
+  }
+
   let journalScore = 35;
   if (dealCard.investmentThesis) journalScore += 25;
   if (dealCard.killCriterion) journalScore += 25;
@@ -3663,7 +3828,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   };
 
   return {
-    engineVersion: "Apex v3.8",
+    engineVersion: "Apex v4.0",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -3696,6 +3861,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     decisionFocus,
     investorReadiness,
     evidenceChecklist,
+    evidenceEngine,
     dueDiligencePlan,
     executionPlan,
     hardStops: hardStopText,
@@ -3725,6 +3891,16 @@ function dealAnalysisText(analysis) {
   }
   if (analysis.evidenceChecklist?.length) {
     lines.push("", "Evidence checklist", ...analysis.evidenceChecklist.map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+  }
+  if (analysis.evidenceEngine?.summary) {
+    lines.push(
+      "",
+      "V4.0 evidence engine",
+      `- ${analysis.evidenceEngine.status || "unknown"} (${analysis.evidenceEngine.score || 0}/100): ${analysis.evidenceEngine.summary}`,
+      `- Gate: ${analysis.evidenceEngine.recommendationGate || "Evidence gate not calculated."}`
+    );
+    if (analysis.evidenceEngine.criticalGaps?.length) lines.push(...analysis.evidenceEngine.criticalGaps.map((item) => `- Critical gap: ${item}`));
+    lines.push(...(analysis.evidenceEngine.gates || []).map((item) => `- ${item.label}: ${item.status}, ${item.score}/100. ${item.action}`));
   }
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", `- ${analysis.dueDiligencePlan.summary}`);

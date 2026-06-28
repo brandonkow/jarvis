@@ -163,7 +163,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.exitStrategy.checks.some((item) => item.label === "Resale emotion" && item.status === "clear"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v3.8");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v4.0");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");
@@ -172,6 +172,10 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.investorReadiness.score >= 80);
   assert.equal(result.payload.analysis.evidenceChecklist.length, 8);
   assert.ok(result.payload.analysis.evidenceChecklist.some((item) => item.label === "Completed value evidence" && item.status === "done"));
+  assert.equal(result.payload.analysis.evidenceEngine.status, "proven");
+  assert.equal(result.payload.analysis.evidenceEngine.score, 100);
+  assert.equal(result.payload.analysis.evidenceEngine.gates.length, 7);
+  assert.match(result.payload.analysis.evidenceEngine.recommendationGate, /Shortlist-level confidence allowed/i);
   assert.equal(result.payload.analysis.dueDiligencePlan.tasks.length, 10);
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Lawyer" && item.status === "done"));
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Agent" && /subsale/i.test(item.action)));
@@ -193,6 +197,8 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(provisional.payload.analysis.challengeMode.label, "Evidence blocker");
   assert.equal(provisional.payload.analysis.decisionFocus.label, "Clear before shortlist");
   assert.ok(provisional.payload.analysis.evidenceChecklist.some((item) => item.label === "Site visit and project feel" && item.status === "missing"));
+  assert.ok(provisional.payload.analysis.evidenceEngine.score < 100);
+  assert.ok(provisional.payload.analysis.evidenceEngine.criticalGaps.some((item) => /Site and management/i.test(item)));
   assert.ok(provisional.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Site Visit" && item.priority === "high" && item.status === "required"));
   assert.ok(provisional.payload.analysis.executionPlan.actions.some((item) => item.lane === "Site" && item.status === "caution"));
 
@@ -214,6 +220,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(boundaryBreach.payload.analysis.portfolioGate.status, "block");
   assert.equal(boundaryBreach.payload.analysis.holdExitPlan.action, "pause");
   assert.equal(boundaryBreach.payload.analysis.decisionSeal.status, "blocked");
+  assert.equal(boundaryBreach.payload.analysis.evidenceEngine.status, "blocked");
 
   const forcedFinancing = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,
@@ -235,4 +242,5 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   });
   assert.equal(unsafe.payload.analysis.verdict, "REJECT");
   assert.ok(unsafe.payload.analysis.hardStops.some((message) => /title or legal issue/i.test(message)));
+  assert.ok(unsafe.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Legal and title safety" && gate.status === "blocked"));
 });

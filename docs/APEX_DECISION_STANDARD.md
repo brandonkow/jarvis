@@ -157,6 +157,29 @@ Personal operating rules turn the user's standards into repeatable guardrails.
 - A hard operating-rule breach blocks validation until cleared.
 - A warning operating-rule breach allows investigation, but Apex should challenge the user before any shortlist language.
 
+## v4.0 Evidence Engine
+
+The evidence engine separates proof strength from story quality. A deal can sound attractive, match the user's memory, and still fail V4.0 if the evidence is thin.
+
+V4.0 scores seven gates:
+
+- **Completed value proof**: completed subsale transactions and successful auction evidence, not asking prices.
+- **Achieved rent proof**: signed tenancy, achieved rent, agent-confirmed urgency, vacancy, and tenant profile.
+- **Financing and valuation fit**: instalment, bank valuation basis, DSR impact, and whether price sits inside conservative value.
+- **Supply absorption proof**: nearby newer substitutes, VP timing, occupancy, rent pressure, and absorption.
+- **Site and management reality**: physical site visit, lobby, guard, lifts, car park, corridor, resident behaviour, defects, and management response.
+- **Legal and title safety**: title, caveat, restrictions, consent, seller authority, arrears, and stakeholder fund flow.
+- **Decision thesis and kill rule**: written causal thesis, counter-thesis, holding period, exit buyer, and exact walk-away discovery.
+
+V4.0 should block shortlist-level confidence unless:
+
+- Evidence strength is at least 80/100.
+- No critical evidence gap remains.
+- No evidence gate is blocked.
+- The rest of the framework also passes.
+
+The evidence engine does not replace due diligence. It decides whether Apex is allowed to speak with strong confidence before due diligence is completed.
+
 ## v1.3 Deal Comparison
 
 The v1.3 comparison layer turns the device shortlist into a decision aid:

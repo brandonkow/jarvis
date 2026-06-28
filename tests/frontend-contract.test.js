@@ -66,6 +66,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /personalizedChallengeMarkup\(analysis\.personalizedChallenge\)/, "V3.3 deal reports need a separate personalized challenge card.");
   assert.match(app, /readinessMarkup\(analysis\.investorReadiness\)/, "Deal reports need an investor readiness summary.");
   assert.match(app, /evidenceChecklistMarkup\(analysis\.evidenceChecklist/, "Deal reports need an evidence checklist.");
+  assert.match(app, /evidenceEngineMarkup\(analysis\.evidenceEngine\)/, "Deal reports need v4.0 evidence engine.");
   assert.match(app, /dueDiligenceMarkup\(analysis\.dueDiligencePlan\)/, "Deal reports need a due-diligence task pack.");
   assert.match(app, /stressEnvelopeMarkup\(analysis\.stressEnvelope\)/, "Deal reports need v1.6 stress envelope.");
   assert.match(app, /portfolioGateMarkup\(analysis\.portfolioGate\)/, "Deal reports need v1.7 portfolio expansion gate.");
@@ -89,6 +90,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /decisionFocus: analysis\.decisionFocus/, "Shortlisted deals must preserve decision focus for comparison.");
   assert.match(app, /personalizedChallenge: analysis\.personalizedChallenge/, "Shortlisted deals must preserve V3.3 personalized challenge context.");
   assert.match(app, /learningLoop: analysis\.learningLoop/, "Shortlisted deals must preserve learning signals for comparison.");
+  assert.match(app, /evidenceEngine: analysis\.evidenceEngine/, "Shortlisted deals must preserve V4.0 evidence engine.");
   assert.match(app, /dealMemoryComparison: analysis\.dealMemoryComparison/, "Shortlisted deals must preserve V3.4 saved deal comparison.");
   assert.match(app, /beliefTracker: analysis\.beliefTracker/, "Shortlisted deals must preserve V3.5 belief tracking.");
   assert.match(app, /sourceTransparency: analysis\.sourceTransparency/, "Shortlisted deals must preserve V3.6 source transparency.");
@@ -119,6 +121,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.analysisMarketPulse[\s\S]*?overflow-wrap:\s*anywhere;/, "Market observations must remain readable without overflowing the report.");
   assert.match(styles, /\.analysisOverview[\s\S]*?grid-template-columns:/, "The v1.1 report needs an organized readiness and scorecard overview.");
   assert.match(styles, /\.analysisEvidence[\s\S]*?\.evidenceItem/, "The v1.1 report needs a styled evidence checklist.");
+  assert.match(styles, /\.analysisEvidenceEngine[\s\S]*?\.evidenceGate/, "The v4.0 evidence engine needs styled evidence gates.");
   assert.match(styles, /\.analysisDiligence[\s\S]*?\.diligenceTask/, "The v1.4 report needs a styled due-diligence task pack.");
   assert.match(styles, /\.analysisStress[\s\S]*?\.stressAssumptions/, "The v1.6 report needs a styled stress envelope.");
   assert.match(styles, /\.analysisPortfolioGate[\s\S]*?\.portfolioCheck/, "The v1.7 report needs a styled portfolio expansion gate.");
