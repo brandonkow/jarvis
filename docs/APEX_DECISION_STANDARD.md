@@ -192,6 +192,19 @@ V4.1 deepens the completed value proof gate. Apex should not treat "three or mor
 
 If source, match, or range is unsafe, Apex should block shortlist-level confidence even when the headline asking price appears below market.
 
+## v4.2 Achieved Rental Evidence
+
+V4.2 deepens the achieved rent proof gate. Apex should not treat advertised rent or vague agent confidence as real demand. Rental evidence must also show:
+
+- **Source quality**: signed tenancy, achieved rent record, property manager/owner actual rent, or active rental agent achieved-rent feedback.
+- **Recency**: preferably within six months; older rent can miss new supply, vacancy, or tenant-sentiment changes.
+- **Tenant urgency**: enquiry, viewing, and commitment speed at the target rent.
+- **Vacancy friction**: whether the unit can realistically rent within the founder's one-month baseline or needs a longer holding buffer.
+- **Sustainability**: whether rent is stable, seasonal, incentive-supported, or pressured by nearby new supply.
+- **Coverage fit**: whether rent covers the loan instalment, and preferably instalment plus maintenance for normal retail investors.
+
+If rent is listing-only, enquiry is weak, demand is incentive-supported, or rent cannot cover the loan instalment, Apex should block shortlist-level confidence for rental-led deals.
+
 ## v1.3 Deal Comparison
 
 The v1.3 comparison layer turns the device shortlist into a decision aid:

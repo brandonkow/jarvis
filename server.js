@@ -364,7 +364,7 @@ function normalizeReportMarketIntelligence(market = {}) {
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v4.1", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v4.2", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -533,6 +533,19 @@ function normalizeReportAnalysis(analysis = {}) {
       summary: reportText(analysis?.transactionComparableEvidence?.summary, 800),
       valuePosition: reportText(analysis?.transactionComparableEvidence?.valuePosition, 240),
       checks: objectList(analysis?.transactionComparableEvidence?.checks, 8, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
+        proof: reportText(item?.proof, 360),
+        gap: reportText(item?.gap, 360),
+        action: reportText(item?.action, 420)
+      }))
+    },
+    achievedRentalEvidence: {
+      status: ["strong", "usable", "thin", "unsafe", "missing", "unknown"].includes(analysis?.achievedRentalEvidence?.status) ? analysis.achievedRentalEvidence.status : "unknown",
+      score: Math.max(0, Math.min(100, Number(analysis?.achievedRentalEvidence?.score || 0))),
+      summary: reportText(analysis?.achievedRentalEvidence?.summary, 800),
+      coveragePosition: reportText(analysis?.achievedRentalEvidence?.coveragePosition, 260),
+      checks: objectList(analysis?.achievedRentalEvidence?.checks, 8, (item) => ({
         label: reportText(item?.label, 140),
         status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
         proof: reportText(item?.proof, 360),
@@ -2210,6 +2223,12 @@ const dealContextLabels = {
   comparablePriceRange: "Comparable price range",
   comparableAdjustmentNotes: "Comparable adjustment notes",
   rentEvidence: "Rental evidence",
+  rentalSource: "Rental source",
+  rentalRecency: "Rental recency",
+  tenantUrgency: "Tenant urgency",
+  vacancySignal: "Vacancy signal",
+  rentalSustainability: "Rental sustainability",
+  rentalAdjustmentNotes: "Rental adjustment notes",
   siteVisit: "Site visit",
   legalCheck: "Title and legal check",
   dealSource: "Deal source",
@@ -2396,6 +2415,12 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const comparableMatchQuality = String(dealCard.comparableMatchQuality || "").toLowerCase();
   const comparablePriceRangeText = String(dealCard.comparablePriceRange || "");
   const comparableAdjustmentNotes = String(dealCard.comparableAdjustmentNotes || "");
+  const rentalSource = String(dealCard.rentalSource || "").toLowerCase();
+  const rentalRecency = String(dealCard.rentalRecency || "").toLowerCase();
+  const tenantUrgency = String(dealCard.tenantUrgency || "").toLowerCase();
+  const vacancySignal = String(dealCard.vacancySignal || "").toLowerCase();
+  const rentalSustainability = String(dealCard.rentalSustainability || "").toLowerCase();
+  const rentalAdjustmentNotes = String(dealCard.rentalAdjustmentNotes || "");
   const dealNarrative = signalText(
     dealCard.mainConcern,
     dealCard.investmentThesis,
@@ -2410,6 +2435,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     dealCard.targetTenant,
     dealCard.tenantScreening,
     dealCard.furnishingStrategy,
+    dealCard.rentalAdjustmentNotes,
     dealCard.exitStrategyPlan,
     dealCard.resalePreparation
   );
@@ -2447,6 +2473,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     missingEvidence.push("V4.1 comparable source, recency, match quality, and completed price range");
   }
   if (!dealCard.rentEvidence || dealCard.rentEvidence === "None" || dealCard.rentEvidence === "Listing only") missingEvidence.push("Achieved-rent proof beyond advertised listings");
+  if (dealCard.rentEvidence && dealCard.rentEvidence !== "None" && dealCard.rentEvidence !== "Listing only" && (!dealCard.rentalSource || !dealCard.rentalRecency || !dealCard.tenantUrgency || !dealCard.vacancySignal)) {
+    missingEvidence.push("V4.2 rental source, recency, tenant urgency, and vacancy signal");
+  }
   if (dealCard.siteVisit !== "Completed") missingEvidence.push("A completed site visit");
   if (dealCard.legalCheck !== "Clear") missingEvidence.push("Clear title, caveat, restriction, and legal checks");
   if (!dealCard.investmentThesis) missingEvidence.push("A written causal investment thesis");
@@ -2742,6 +2771,168 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     addBlocker("V4.1 transaction comparable evidence is still thin; clear source, recency, match, range, and adjustment gaps before shortlist.");
   }
 
+  const rentStatusScore = { strong: 100, usable: 72, thin: 42, unsafe: 8, missing: 0 };
+  const rentCheck = (label, status, proof, gap, action) => ({
+    label,
+    status,
+    proof,
+    gap,
+    action
+  });
+  const rentalBaseStatus = dealCard.rentEvidence === "Signed tenancy or achieved rent"
+    ? "strong"
+    : dealCard.rentEvidence === "Agent-confirmed"
+      ? "usable"
+      : dealCard.rentEvidence === "Listing only"
+        ? "unsafe"
+        : "missing";
+  const rentalSourceStatus = /signed|tenancy|achieved|actual|manager|property manager/.test(rentalSource)
+    ? "strong"
+    : /active rental agent|agent/.test(rentalSource)
+      ? "usable"
+      : /listing|portal|unknown/.test(rentalSource)
+        ? "unsafe"
+        : "missing";
+  const rentalRecencyStatus = /0-3|3-6/.test(rentalRecency)
+    ? "strong"
+    : /6-12/.test(rentalRecency)
+      ? "usable"
+      : /older/.test(rentalRecency)
+        ? "thin"
+        : "missing";
+  const tenantUrgencyStatus = /high/.test(tenantUrgency)
+    ? "strong"
+    : /normal/.test(tenantUrgency)
+      ? "usable"
+      : /slow/.test(tenantUrgency)
+        ? "thin"
+        : /no enquiry|no inquiry|none/.test(tenantUrgency)
+          ? "unsafe"
+          : "missing";
+  const vacancyStatus = /0-1|within 1|one month/.test(vacancySignal)
+    ? "strong"
+    : /1-2/.test(vacancySignal)
+      ? "usable"
+      : /more than 2|over 2|above 2/.test(vacancySignal)
+        ? "thin"
+        : "missing";
+  const sustainabilityStatus = /stable|year-round|year round|consistent/.test(rentalSustainability)
+    ? "strong"
+    : /seasonal/.test(rentalSustainability)
+      ? "usable"
+      : /incentive|new supply|pressure|temporary/.test(rentalSustainability)
+        ? "unsafe"
+        : rentalSustainability
+          ? "thin"
+          : "missing";
+  const coverageStatus = rent && installment
+    ? holdingCashFlow !== null && holdingCashFlow >= 0
+      ? "strong"
+      : rent >= installment
+        ? "usable"
+        : "unsafe"
+    : "missing";
+  const rentalCoveragePosition = rent && installment
+    ? holdingCashFlow !== null
+      ? holdingCashFlow >= 0
+        ? `Rent covers instalment and maintenance by ${formatRinggit(holdingCashFlow)} per month.`
+        : `Rent is short of instalment and maintenance by ${formatRinggit(Math.abs(holdingCashFlow))} per month.`
+      : rent >= installment
+        ? "Rent covers the stated loan instalment before maintenance."
+        : "Rent does not cover the stated loan instalment."
+    : "Expected rent and instalment are not enough to judge rental coverage.";
+  const rentalChecks = [
+    rentCheck(
+      "Rent evidence type",
+      rentalBaseStatus,
+      rentalBaseStatus === "strong" ? "Signed tenancy or achieved rent is supplied." : rentalBaseStatus === "usable" ? "Agent-confirmed rent is supplied." : "",
+      rentalBaseStatus === "unsafe" ? "Listing-only rent can overstate real tenant demand." : rentalBaseStatus === "missing" ? "Rental evidence type is missing." : "",
+      "Prefer signed tenancy or achieved rent. Agent feedback is useful only when it includes urgency, vacancy, and tenant profile."
+    ),
+    rentCheck(
+      "Source quality",
+      rentalSourceStatus,
+      rentalSourceStatus === "strong" ? "Source indicates actual achieved rent or signed tenancy." : rentalSourceStatus === "usable" ? "Active rental agent input is useful but needs cross-checking." : "",
+      rentalSourceStatus === "unsafe" ? "Listing-only or unknown source is not proof of real demand." : rentalSourceStatus === "missing" ? "Rental source is not recorded." : "",
+      "Ask active rental agents or managers for achieved rent, not just advertised rent."
+    ),
+    rentCheck(
+      "Recency",
+      rentalRecencyStatus,
+      rentalRecencyStatus === "strong" ? "Rental evidence is within the recent six-month window." : rentalRecencyStatus === "usable" ? "Rental evidence is within 6 to 12 months." : "",
+      rentalRecencyStatus === "thin" ? "Older rental evidence may not capture new supply or tenant sentiment." : rentalRecencyStatus === "missing" ? "Rental recency is not recorded." : "",
+      "Use fresh rental evidence, especially near VP batches, new competing supply, or seasonal university/job-cycle periods."
+    ),
+    rentCheck(
+      "Tenant urgency",
+      tenantUrgencyStatus,
+      tenantUrgencyStatus === "strong" ? "Tenant enquiry urgency is high." : tenantUrgencyStatus === "usable" ? "Tenant enquiry urgency appears normal." : "",
+      tenantUrgencyStatus === "thin" ? "Slow enquiries can still rent, but pricing and furnishing must be checked." : tenantUrgencyStatus === "unsafe" ? "No enquiry signal means rent is not proven." : tenantUrgencyStatus === "missing" ? "Tenant urgency is not recorded." : "",
+      "Ask agents how quickly real tenants are calling, viewing, and committing at the target rent."
+    ),
+    rentCheck(
+      "Vacancy friction",
+      vacancyStatus,
+      vacancyStatus === "strong" ? "Expected vacancy is within the one-month founder baseline." : vacancyStatus === "usable" ? "Vacancy is moderate and needs owner holding buffer." : "",
+      vacancyStatus === "thin" ? "More than two months of vacancy pressure can damage cash-flow assumptions." : vacancyStatus === "missing" ? "Vacancy signal is not recorded." : "",
+      "Judge rent together with vacancy period. A high rent that takes too long to secure is not the same as stable rent."
+    ),
+    rentCheck(
+      "Sustainability",
+      sustainabilityStatus,
+      sustainabilityStatus === "strong" ? "Demand is stated as stable, not just seasonal or incentive-supported." : sustainabilityStatus === "usable" ? "Seasonal demand is explainable, but timing risk remains." : "",
+      sustainabilityStatus === "unsafe" ? "Incentives, temporary demand, or new supply pressure may make the rent unreliable." : sustainabilityStatus === "missing" ? "Rental sustainability is not recorded." : "",
+      "Separate stable demand from admission season, job-change season, incentives, and temporary shortages."
+    ),
+    rentCheck(
+      "Coverage fit",
+      coverageStatus,
+      coverageStatus === "strong" || coverageStatus === "usable" ? rentalCoveragePosition : "",
+      coverageStatus === "unsafe" ? rentalCoveragePosition : coverageStatus === "missing" ? "Expected rent or instalment is missing." : "",
+      "For normal retail investors, rent should at least cover the loan instalment, with maintenance and vacancy stress reviewed separately."
+    )
+  ];
+  const achievedRentalScore = clampScore(
+    rentStatusScore[rentalBaseStatus] * 0.18 +
+    rentStatusScore[rentalSourceStatus] * 0.18 +
+    rentStatusScore[rentalRecencyStatus] * 0.14 +
+    rentStatusScore[tenantUrgencyStatus] * 0.15 +
+    rentStatusScore[vacancyStatus] * 0.12 +
+    rentStatusScore[sustainabilityStatus] * 0.11 +
+    rentStatusScore[coverageStatus] * 0.12
+  );
+  const rentalUnsafe = [rentalBaseStatus, rentalSourceStatus, tenantUrgencyStatus, sustainabilityStatus, coverageStatus].includes("unsafe");
+  const rentalHasAnyProof = rentalBaseStatus !== "missing" || rentalSourceStatus !== "missing" || rent;
+  const achievedRentalStatus = rentalUnsafe
+    ? "unsafe"
+    : achievedRentalScore >= 85
+      ? "strong"
+      : achievedRentalScore >= 65
+        ? "usable"
+        : achievedRentalScore >= 40 || rentalHasAnyProof
+          ? "thin"
+          : "missing";
+  const achievedRentalEvidence = {
+    status: achievedRentalStatus,
+    score: achievedRentalScore,
+    summary: achievedRentalStatus === "strong"
+      ? "Rental proof is strong: achieved rent, source quality, recency, tenant urgency, vacancy, sustainability, and coverage support the holding case."
+      : achievedRentalStatus === "usable"
+        ? "Rental proof is usable, but Apex still wants stronger details before treating rent as fully dependable."
+        : achievedRentalStatus === "thin"
+          ? "Rental proof is thin. The rent may be possible, but the demand and vacancy assumptions are not yet dependable."
+          : achievedRentalStatus === "unsafe"
+            ? "Rental proof is unsafe because listing-only rent, weak urgency, unstable demand, or poor coverage can mislead the holding decision."
+            : "Rental proof is missing.",
+    coveragePosition: rentalCoveragePosition,
+    checks: rentalChecks
+  };
+  if (["unsafe", "missing"].includes(achievedRentalStatus)) {
+    addBlocker("V4.2 achieved rental evidence is not reliable enough to validate holding power.");
+  } else if (achievedRentalStatus === "thin") {
+    addBlocker("V4.2 achieved rental evidence is still thin; clear source, recency, urgency, vacancy, sustainability, and coverage gaps before shortlist.");
+  }
+
   let holdingScore = 50;
   if (holdingCashFlow !== null) {
     if (holdingCashFlow >= 0) holdingScore += 30;
@@ -2784,7 +2975,8 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   }
   if (transactionComparableStatus === "strong") marketScore += 10;
   else if (transactionComparableStatus === "usable") marketScore += 5;
-  if (dealCard.rentEvidence === "Signed tenancy or achieved rent" || dealCard.rentEvidence === "Agent-confirmed") marketScore += 10;
+  if (achievedRentalStatus === "strong") marketScore += 10;
+  else if (achievedRentalStatus === "usable") marketScore += 5;
   marketScore = clampScore(marketScore);
 
   let evidenceScore = 10;
@@ -2792,9 +2984,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   else if (transactionComparableStatus === "usable") evidenceScore += 19;
   else if (transactionComparableStatus === "thin") evidenceScore += 9;
   else if (transactionComparableStatus === "unsafe") evidenceScore -= 5;
-  if (dealCard.rentEvidence === "Signed tenancy or achieved rent") evidenceScore += 25;
-  else if (dealCard.rentEvidence === "Agent-confirmed") evidenceScore += 18;
-  else if (dealCard.rentEvidence === "Listing only") evidenceScore += 5;
+  if (achievedRentalStatus === "strong") evidenceScore += 25;
+  else if (achievedRentalStatus === "usable") evidenceScore += 19;
+  else if (achievedRentalStatus === "thin") evidenceScore += 9;
+  else if (achievedRentalStatus === "unsafe") evidenceScore -= 5;
   if (dealCard.siteVisit === "Completed") evidenceScore += 20;
   if (dealCard.legalCheck === "Clear") evidenceScore += 15;
   else if (dealCard.legalCheck === "Pending") evidenceScore += 4;
@@ -2816,11 +3009,13 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       : transactionComparableStatus === "unsafe"
         ? "blocked"
         : "missing";
-  const rentGateStatus = dealCard.rentEvidence === "Signed tenancy or achieved rent"
+  const rentGateStatus = achievedRentalStatus === "strong"
     ? "proven"
-    : dealCard.rentEvidence === "Agent-confirmed"
+    : achievedRentalStatus === "usable" || achievedRentalStatus === "thin"
       ? "partial"
-      : "missing";
+      : achievedRentalStatus === "unsafe"
+        ? "blocked"
+        : "missing";
   const financingGateStatus = installment && fairValue && discountToFairValue !== null && discountToFairValue < -10
     ? "blocked"
     : installment && fairValue && price && price <= fairValue
@@ -2865,10 +3060,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       "Achieved rent proof",
       rentGateStatus,
       20,
-      gateScore(rentGateStatus, 75),
-      rentGateStatus === "proven" ? "Signed tenancy or achieved rent is supplied." : rentGateStatus === "partial" ? "Agent-confirmed rent is useful but still needs achieved-rent support." : "",
-      rentGateStatus === "missing" ? "Rental evidence is listing-only, absent, or too weak." : rentGateStatus === "partial" ? "Agent feedback should be cross-checked against actual achieved rent and tenant urgency." : "",
-      "Confirm achieved rent, enquiry urgency, tenant profile, vacancy period, and whether incentives or seasonality distort the rent."
+      achievedRentalScore,
+      rentGateStatus === "proven" ? achievedRentalEvidence.summary : rentGateStatus === "partial" ? achievedRentalEvidence.summary : "",
+      rentGateStatus === "blocked" || rentGateStatus === "missing" ? achievedRentalEvidence.summary : rentGateStatus === "partial" ? "Rental source, recency, urgency, vacancy, sustainability, or coverage is not yet strong enough." : "",
+      "Use V4.2 rental detail: achieved source, recency, tenant urgency, vacancy signal, sustainability, and coverage fit."
     ),
     evidenceGate(
       "Financing and valuation fit",
@@ -3139,10 +3334,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     },
     {
       label: "Rental demand proof",
-      status: dealCard.rentEvidence === "Signed tenancy or achieved rent" ? "done" : dealCard.rentEvidence === "Agent-confirmed" ? "warning" : "missing",
-      action: dealCard.rentEvidence === "Signed tenancy or achieved rent"
-        ? "Achieved rent is supplied; still verify tenant quality and vacancy risk."
-        : "Ask active rental agents for achieved rent, enquiry urgency, and vacancy trend."
+      status: achievedRentalStatus === "strong" ? "done" : achievedRentalStatus === "unsafe" ? "danger" : achievedRentalStatus === "missing" ? "missing" : "warning",
+      action: achievedRentalStatus === "strong"
+        ? "Rental demand is supported by V4.2 source, recency, urgency, vacancy, sustainability, and coverage detail."
+        : "Ask active rental agents for achieved rent, source quality, recency, tenant urgency, vacancy signal, and sustainability."
     },
     {
       label: "Loan and holding test",
@@ -3213,9 +3408,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     task(
       "Rental Agent",
       "Achieved rent and tenant urgency",
-      taskStatus(dealCard.rentEvidence === "Signed tenancy or achieved rent"),
-      "Confirm achieved rent, enquiry urgency, vacancy period, tenant profile, and whether the rent is seasonal or incentive-supported.",
-      dealCard.rentEvidence === "None" || dealCard.rentEvidence === "Listing only" || !dealCard.rentEvidence
+      taskStatus(achievedRentalStatus === "strong"),
+      "Confirm achieved rent, source, recency, enquiry urgency, vacancy period, tenant profile, and whether rent is seasonal, incentive-supported, or pressured by new supply.",
+      achievedRentalStatus === "unsafe" || achievedRentalStatus === "missing" || achievedRentalStatus === "thin"
     ),
     task(
       "Banker",
@@ -3299,8 +3494,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const publicDealSignal = hasSignal(dealNarrative, [/heavily advertised/, /advertis(ed|ement)/, /property portal/, /social media/, /fake listing/]);
   const agentPressureSignal = hasSignal(dealNarrative, [/hard sell/, /keep follow/, /keeps follow/, /desperate/, /push(ing)? inventory/, /urgent booking/]);
   const motivatedSellerSignal = hasSignal(dealNarrative, [/motivated seller/, /urgent sale/, /need cash/, /cash urgent/, /debt/, /family issue/, /open to negotiation/]);
-  const demandProofStrong = transactionComparableStatus === "strong"
-    && ["Signed tenancy or achieved rent", "Agent-confirmed"].includes(dealCard.rentEvidence || "");
+  const demandProofStrong = transactionComparableStatus === "strong" && ["strong", "usable"].includes(achievedRentalStatus);
   const executionStatus = (stop, caution, clear) => stop ? "stop" : caution ? "caution" : clear ? "clear" : "verify";
   const executionAction = (lane, label, status, action) => ({ lane, label, status, action });
   const offerPosture = rejectStops.length
@@ -3645,7 +3839,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     },
     {
       label: "Rental direction",
-      status: rentalDirectionRisk ? "risk" : rent && ["Signed tenancy or achieved rent", "Agent-confirmed"].includes(dealCard.rentEvidence || "") ? "clear" : "caution",
+      status: rentalDirectionRisk ? "risk" : rent && ["strong", "usable"].includes(achievedRentalStatus) ? "clear" : "caution",
       action: rentalDirectionRisk
         ? "Check whether weaker rent is temporary seasonality, pricing, furnishing, tenant segment mismatch, or structural oversupply."
         : "Keep rent evidence current with multiple agents, achieved rent, tenant urgency, and vacancy speed."
@@ -3957,7 +4151,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     },
     {
       label: "Rental evidence",
-      status: dealCard.rentEvidence === "Signed tenancy or achieved rent" || dealCard.rentEvidence === "Agent-confirmed" ? "clear" : "watch",
+      status: ["strong", "usable"].includes(achievedRentalStatus) ? "clear" : "watch",
       action: "Use active rental agents and achieved rent where possible; listings alone do not prove tenant urgency."
     }
   ];
@@ -4016,7 +4210,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   };
 
   return {
-    engineVersion: "Apex v4.1",
+    engineVersion: "Apex v4.2",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -4051,6 +4245,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     evidenceChecklist,
     evidenceEngine,
     transactionComparableEvidence,
+    achievedRentalEvidence,
     dueDiligencePlan,
     executionPlan,
     hardStops: hardStopText,
@@ -4099,6 +4294,15 @@ function dealAnalysisText(analysis) {
       `- Value position: ${analysis.transactionComparableEvidence.valuePosition || "Not calculated."}`
     );
     lines.push(...(analysis.transactionComparableEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+  }
+  if (analysis.achievedRentalEvidence?.summary) {
+    lines.push(
+      "",
+      "V4.2 achieved rental evidence",
+      `- ${analysis.achievedRentalEvidence.status || "unknown"} (${analysis.achievedRentalEvidence.score || 0}/100): ${analysis.achievedRentalEvidence.summary}`,
+      `- Coverage: ${analysis.achievedRentalEvidence.coveragePosition || "Not calculated."}`
+    );
+    lines.push(...(analysis.achievedRentalEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
   }
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", `- ${analysis.dueDiligencePlan.summary}`);

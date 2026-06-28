@@ -165,7 +165,18 @@ test("owner market observations add dated trends and freshness warnings to Apex 
         maintenance: "RM300",
         nearbySupply: "Similar future supply",
         comparableTransactions: "3 or more",
-        rentEvidence: "Signed tenancy or achieved rent"
+        comparableSource: "Brickz / official transaction data",
+        comparableRecency: "0-6 months",
+        comparableMatchQuality: "Same project",
+        comparablePriceRange: "RM460k - RM500k",
+        comparableAdjustmentNotes: "Adjusted for floor, view, renovation, and parking.",
+        rentEvidence: "Signed tenancy or achieved rent",
+        rentalSource: "Signed tenancy / achieved rent record",
+        rentalRecency: "0-3 months",
+        tenantUrgency: "High inquiry",
+        vacancySignal: "0-1 month",
+        rentalSustainability: "Stable year-round demand",
+        rentalAdjustmentNotes: "Achieved rent checked against tenant profile, furnishing, vacancy, and nearby supply."
       },
       financialProfile: { monthlyIncome: "RM10,000", cashReserveMonths: "8", existingProperties: "1" }
     }

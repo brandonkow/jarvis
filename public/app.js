@@ -1044,6 +1044,7 @@ function saveAnalysisToShortlist(analysis) {
     learningLoop: analysis.learningLoop || null,
     evidenceEngine: analysis.evidenceEngine || null,
     transactionComparableEvidence: analysis.transactionComparableEvidence || null,
+    achievedRentalEvidence: analysis.achievedRentalEvidence || null,
     counterThesis: analysis.counterThesis,
     context: analysis.context || {}
   };
@@ -1139,6 +1140,15 @@ function analysisExportText(analysis) {
       `Value position: ${analysis.transactionComparableEvidence.valuePosition || "Not calculated."}`
     );
     for (const item of analysis.transactionComparableEvidence.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
+  }
+  if (analysis.achievedRentalEvidence?.summary) {
+    lines.push(
+      "",
+      "V4.2 achieved rental evidence",
+      `${analysis.achievedRentalEvidence.status || "unknown"} (${analysis.achievedRentalEvidence.score || 0}/100): ${analysis.achievedRentalEvidence.summary}`,
+      `Coverage: ${analysis.achievedRentalEvidence.coveragePosition || "Not calculated."}`
+    );
+    for (const item of analysis.achievedRentalEvidence.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
   }
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", analysis.dueDiligencePlan.summary || "");
@@ -1730,6 +1740,35 @@ function transactionComparableMarkup(section = {}) {
   `;
 }
 
+function achievedRentalMarkup(section = {}) {
+  if (!section.summary) return "";
+  const checks = Array.isArray(section.checks) ? section.checks : [];
+  return `
+    <section class="analysisTransactionComps analysisRentalEvidence ${escapeHtml(section.status || "unknown")}">
+      <header>
+        <span><small>V4.2 ACHIEVED RENTAL EVIDENCE</small><b>${escapeHtml(section.summary)}</b></span>
+        <em>${escapeHtml(section.score || 0)}/100</em>
+      </header>
+      <p>${escapeHtml(section.coveragePosition || "Rental coverage is not calculated yet.")}</p>
+      ${checks.length ? `
+        <div>
+          ${checks.map((item) => `
+            <article class="transactionCompCheck rentalEvidenceCheck ${escapeHtml(item.status || "missing")}">
+              <i>${escapeHtml(item.status || "missing")}</i>
+              <span>
+                <b>${escapeHtml(item.label)}</b>
+                ${item.proof ? `<small>${escapeHtml(item.proof)}</small>` : ""}
+                ${item.gap ? `<small>${escapeHtml(item.gap)}</small>` : ""}
+                <em>${escapeHtml(item.action)}</em>
+              </span>
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
 function dueDiligenceMarkup(plan = {}) {
   const tasks = Array.isArray(plan.tasks) ? plan.tasks : [];
   if (!tasks.length) return "";
@@ -1990,7 +2029,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       </section>
     ` : ""}
     <div class="analysisMeta">
-      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v4.1")}</b></span>
+      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v4.2")}</b></span>
       <span>REASONING <b>${escapeHtml(analysis.reasoningMode || (analysis.aiCommentary ? "Framework + AI" : "Framework only"))}</b></span>
       <span>DECISION SCORE <b>${escapeHtml(analysis.averageScore)}/100</b></span>
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
@@ -2003,6 +2042,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     ${evidenceChecklistMarkup(analysis.evidenceChecklist || [])}
     ${evidenceEngineMarkup(analysis.evidenceEngine)}
     ${transactionComparableMarkup(analysis.transactionComparableEvidence)}
+    ${achievedRentalMarkup(analysis.achievedRentalEvidence)}
     ${dueDiligenceMarkup(analysis.dueDiligencePlan)}
     ${stressEnvelopeMarkup(analysis.stressEnvelope)}
     ${portfolioGateMarkup(analysis.portfolioGate)}

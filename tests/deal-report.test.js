@@ -94,6 +94,12 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
     comparablePriceRange: "RM480k - RM520k",
     comparableAdjustmentNotes: "Adjusted for floor, view, renovation, and parking.",
     rentEvidence: "Signed tenancy or achieved rent",
+    rentalSource: "Signed tenancy / achieved rent record",
+    rentalRecency: "0-3 months",
+    tenantUrgency: "High inquiry",
+    vacancySignal: "0-1 month",
+    rentalSustainability: "Stable year-round demand",
+    rentalAdjustmentNotes: "Achieved rent checked against tenant profile, furnishing, vacancy, and nearby supply.",
     siteVisit: "Completed",
     legalCheck: "Clear",
     dealSource: "Agency in-house app",
@@ -168,7 +174,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.exitStrategy.checks.some((item) => item.label === "Resale emotion" && item.status === "clear"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v4.1");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v4.2");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");
@@ -185,6 +191,10 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.transactionComparableEvidence.score, 100);
   assert.equal(result.payload.analysis.transactionComparableEvidence.checks.length, 6);
   assert.ok(result.payload.analysis.transactionComparableEvidence.checks.some((item) => item.label === "Source quality" && item.status === "strong"));
+  assert.equal(result.payload.analysis.achievedRentalEvidence.status, "strong");
+  assert.equal(result.payload.analysis.achievedRentalEvidence.score, 100);
+  assert.equal(result.payload.analysis.achievedRentalEvidence.checks.length, 7);
+  assert.ok(result.payload.analysis.achievedRentalEvidence.checks.some((item) => item.label === "Tenant urgency" && item.status === "strong"));
   assert.equal(result.payload.analysis.dueDiligencePlan.tasks.length, 10);
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Lawyer" && item.status === "done"));
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Agent" && /subsale/i.test(item.action)));
@@ -211,6 +221,25 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(weakComparable.payload.analysis.transactionComparableEvidence.status, "unsafe");
   assert.ok(weakComparable.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Completed value proof" && gate.status === "blocked"));
   assert.ok(weakComparable.payload.analysis.recommendationBlockers.some((message) => /V4\.1 transaction comparable evidence/i.test(message)));
+
+  const weakRental = await post(baseUrl, "/api/jarvis/analyze-deal", {
+    sessionId: session.payload.session.id,
+    dealCard: {
+      ...dealCard,
+      rentEvidence: "Listing only",
+      rentalSource: "Property portal listing only",
+      rentalRecency: "Older than 12 months",
+      tenantUrgency: "No inquiry",
+      vacancySignal: "More than 2 months",
+      rentalSustainability: "New supply pressure",
+      rentalAdjustmentNotes: ""
+    },
+    financialProfile
+  });
+  assert.equal(weakRental.payload.analysis.verdict, "INVESTIGATE");
+  assert.equal(weakRental.payload.analysis.achievedRentalEvidence.status, "unsafe");
+  assert.ok(weakRental.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Achieved rent proof" && gate.status === "blocked"));
+  assert.ok(weakRental.payload.analysis.recommendationBlockers.some((message) => /V4\.2 achieved rental evidence/i.test(message)));
 
   const provisional = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,

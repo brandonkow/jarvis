@@ -62,6 +62,8 @@ V4.0 adds the evidence engine. This is the proof layer: Apex checks whether comp
 
 V4.1 strengthens completed value evidence. Apex now checks comparable source, recency, match quality, completed price range, and adjustment notes before trusting conservative value. Listing-only proof or weak substitute comparables should keep the deal in investigation mode.
 
+V4.2 strengthens rental evidence. Apex now checks rental source, recency, tenant urgency, vacancy friction, sustainability, and coverage before trusting expected rent. Listing-only rent, weak enquiries, incentive-supported rent, or rent that cannot cover instalment should keep rental-led deals in investigation mode.
+
 Public users must not be able to add, edit, or delete backend knowledge. Backend write APIs require the owner-token header to match the server's owner-token environment variable. If no owner token is configured, owner APIs are disabled and public Apex session routes remain the only unauthenticated write surface.
 
 The visible frontend should stay simple and conversational. Knowledge-base development happens through owner-controlled backend files, scripts, or authenticated owner API calls.
