@@ -126,6 +126,14 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
     rentalAdjustmentNotes: "Achieved rent checked against tenant profile, furnishing, vacancy, and nearby supply.",
     siteVisit: "Completed",
     legalCheck: "Clear",
+    legalTitleType: "Residential title / HDA serviced residence",
+    titleTransferStatus: "Issued title / transfer path clear",
+    caveatRestrictionStatus: "No caveat or blocking restriction",
+    sellerAuthorityStatus: "Seller authority and documents verified",
+    arrearsUtilitiesStatus: "Maintenance, quit rent, assessment, utilities clear",
+    stakeholderFlowStatus: "All payments through lawyer stakeholder / bank channels",
+    lawyerCoordinationStatus: "Lawyer reviewed / responsive with milestones",
+    legalTransactionNotes: "Lawyer reviewed land search, seller documents, arrears, and stakeholder fund flow.",
     dealSource: "Agency in-house app",
     agentBehavior: "One-time genuine approach",
     sellerMotivation: "Urgent cash need and open to negotiation",
@@ -198,7 +206,7 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.exitStrategy.checks.some((item) => item.label === "Resale emotion" && item.status === "clear"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v4.5");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v4.6");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");
@@ -231,6 +239,10 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.siteManagementEvidence.score, 100);
   assert.equal(result.payload.analysis.siteManagementEvidence.checks.length, 9);
   assert.ok(result.payload.analysis.siteManagementEvidence.checks.some((item) => item.label === "Management response" && item.status === "strong"));
+  assert.equal(result.payload.analysis.legalTransactionEvidence.status, "strong");
+  assert.equal(result.payload.analysis.legalTransactionEvidence.score, 100);
+  assert.equal(result.payload.analysis.legalTransactionEvidence.checks.length, 9);
+  assert.ok(result.payload.analysis.legalTransactionEvidence.checks.some((item) => item.label === "Stakeholder and fund flow" && item.status === "strong"));
   assert.equal(result.payload.analysis.dueDiligencePlan.tasks.length, 10);
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Lawyer" && item.status === "done"));
   assert.ok(result.payload.analysis.dueDiligencePlan.tasks.some((item) => item.owner === "Agent" && /subsale/i.test(item.action)));
@@ -335,6 +347,22 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(weakSite.payload.analysis.siteManagementEvidence.status, "unsafe");
   assert.ok(weakSite.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Site and management reality" && gate.status === "blocked"));
   assert.ok(weakSite.payload.analysis.recommendationBlockers.some((message) => /V4\.5 site and management evidence/i.test(message)));
+
+  const weakLegal = await post(baseUrl, "/api/jarvis/analyze-deal", {
+    sessionId: session.payload.session.id,
+    dealCard: {
+      ...dealCard,
+      caveatRestrictionStatus: "Caveat / Malay reserve / Bumi lot / blocking restriction",
+      sellerAuthorityStatus: "Seller refuses documents / authority unclear",
+      stakeholderFlowStatus: "Direct payment / side agreement requested",
+      legalTransactionNotes: "Seller wants direct payment before lawyer review and authority is unclear."
+    },
+    financialProfile
+  });
+  assert.equal(weakLegal.payload.analysis.verdict, "REJECT");
+  assert.equal(weakLegal.payload.analysis.legalTransactionEvidence.status, "unsafe");
+  assert.ok(weakLegal.payload.analysis.evidenceEngine.gates.some((gate) => gate.label === "Legal and title safety" && gate.status === "blocked"));
+  assert.ok(weakLegal.payload.analysis.hardStops.some((message) => /V4\.6 legal/i.test(message)));
 
   const provisional = await post(baseUrl, "/api/jarvis/analyze-deal", {
     sessionId: session.payload.session.id,

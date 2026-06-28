@@ -364,7 +364,7 @@ function normalizeReportMarketIntelligence(market = {}) {
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v4.5", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v4.6", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -585,6 +585,19 @@ function normalizeReportAnalysis(analysis = {}) {
       summary: reportText(analysis?.siteManagementEvidence?.summary, 800),
       livedQualityPosition: reportText(analysis?.siteManagementEvidence?.livedQualityPosition, 320),
       checks: objectList(analysis?.siteManagementEvidence?.checks, 10, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
+        proof: reportText(item?.proof, 360),
+        gap: reportText(item?.gap, 360),
+        action: reportText(item?.action, 420)
+      }))
+    },
+    legalTransactionEvidence: {
+      status: ["strong", "usable", "thin", "unsafe", "missing", "unknown"].includes(analysis?.legalTransactionEvidence?.status) ? analysis.legalTransactionEvidence.status : "unknown",
+      score: Math.max(0, Math.min(100, Number(analysis?.legalTransactionEvidence?.score || 0))),
+      summary: reportText(analysis?.legalTransactionEvidence?.summary, 800),
+      transactionPosition: reportText(analysis?.legalTransactionEvidence?.transactionPosition, 360),
+      checks: objectList(analysis?.legalTransactionEvidence?.checks, 10, (item) => ({
         label: reportText(item?.label, 140),
         status: ["strong", "usable", "thin", "unsafe", "missing"].includes(item?.status) ? item.status : "missing",
         proof: reportText(item?.proof, 360),
@@ -2294,6 +2307,14 @@ const dealContextLabels = {
   siteManagementNotes: "Site and management notes",
   siteVisit: "Site visit",
   legalCheck: "Title and legal check",
+  legalTitleType: "Legal title type",
+  titleTransferStatus: "Title transfer status",
+  caveatRestrictionStatus: "Caveat and restriction status",
+  sellerAuthorityStatus: "Seller authority status",
+  arrearsUtilitiesStatus: "Arrears and utilities status",
+  stakeholderFlowStatus: "Stakeholder and fund flow",
+  lawyerCoordinationStatus: "Lawyer coordination status",
+  legalTransactionNotes: "Legal transaction notes",
   dealSource: "Deal source",
   agentBehavior: "Agent behavior",
   sellerMotivation: "Seller motivation",
@@ -2508,6 +2529,14 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const defectLeakageSignal = String(dealCard.defectLeakageSignal || "").toLowerCase();
   const arrearsJmbSignal = String(dealCard.arrearsJmbSignal || "").toLowerCase();
   const siteManagementNotes = String(dealCard.siteManagementNotes || "");
+  const legalTitleType = String(dealCard.legalTitleType || "").toLowerCase();
+  const titleTransferStatus = String(dealCard.titleTransferStatus || "").toLowerCase();
+  const caveatRestrictionStatus = String(dealCard.caveatRestrictionStatus || "").toLowerCase();
+  const sellerAuthorityStatus = String(dealCard.sellerAuthorityStatus || "").toLowerCase();
+  const arrearsUtilitiesStatus = String(dealCard.arrearsUtilitiesStatus || "").toLowerCase();
+  const stakeholderFlowStatus = String(dealCard.stakeholderFlowStatus || "").toLowerCase();
+  const lawyerCoordinationStatus = String(dealCard.lawyerCoordinationStatus || "").toLowerCase();
+  const legalTransactionNotes = String(dealCard.legalTransactionNotes || "");
   const dealNarrative = signalText(
     dealCard.mainConcern,
     dealCard.investmentThesis,
@@ -2547,6 +2576,14 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     dealCard.defectLeakageSignal,
     dealCard.arrearsJmbSignal,
     dealCard.siteManagementNotes,
+    dealCard.legalTitleType,
+    dealCard.titleTransferStatus,
+    dealCard.caveatRestrictionStatus,
+    dealCard.sellerAuthorityStatus,
+    dealCard.arrearsUtilitiesStatus,
+    dealCard.stakeholderFlowStatus,
+    dealCard.lawyerCoordinationStatus,
+    dealCard.legalTransactionNotes,
     dealCard.exitStrategyPlan,
     dealCard.resalePreparation
   );
@@ -2596,6 +2633,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   if (!dealCard.siteVisitEvidence || !dealCard.lobbyGuardhouseSignal || !dealCard.liftCarparkCorridorSignal || !dealCard.commonAreaCondition || !dealCard.managementResponseSignal) {
     missingEvidence.push("V4.5 site visit proof, lobby/guardhouse, lift/car park/corridor, common-area, and management-response evidence");
   }
+  if (!dealCard.legalTitleType || !dealCard.titleTransferStatus || !dealCard.caveatRestrictionStatus || !dealCard.sellerAuthorityStatus || !dealCard.stakeholderFlowStatus || !dealCard.lawyerCoordinationStatus) {
+    missingEvidence.push("V4.6 legal title, transfer, caveat/restriction, seller-authority, stakeholder-flow, and lawyer-coordination evidence");
+  }
   if (dealCard.siteVisit !== "Completed") missingEvidence.push("A completed site visit");
   if (dealCard.legalCheck !== "Clear") missingEvidence.push("Clear title, caveat, restriction, and legal checks");
   if (!dealCard.investmentThesis) missingEvidence.push("A written causal investment thesis");
@@ -2623,6 +2663,14 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     dealCard.loanPrecheckStatus,
     dealCard.loanMarginPlan,
     dealCard.financingNotes,
+    dealCard.legalTitleType,
+    dealCard.titleTransferStatus,
+    dealCard.caveatRestrictionStatus,
+    dealCard.sellerAuthorityStatus,
+    dealCard.arrearsUtilitiesStatus,
+    dealCard.stakeholderFlowStatus,
+    dealCard.lawyerCoordinationStatus,
+    dealCard.legalTransactionNotes,
     profileNarrative,
     tenure,
     dealCard.legalCheck
@@ -2638,20 +2686,32 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     /side letter/
   ]);
   const bulkRisk = hasSignal(transactionBoundaryNarrative, [/bulk purchase/, /bulk deal/, /bulk buyer/, /bulk group/]);
-  const documentRisk = hasSignal(allNarrative, [
-    /caveat/,
+  const documentRiskNarrative = allNarrative
+    .replace(/no caveat or blocking restriction/g, "")
+    .replace(/no caveat/g, "")
+    .replace(/seller authority and documents verified/g, "")
+    .replace(/all payments through lawyer stakeholder \/ bank channels/g, "");
+  const documentRisk = hasSignal(documentRiskNarrative, [
+    /caveat\s*\//,
+    /existing caveat/,
+    /lodged caveat/,
+    /caveat.*(?:found|issue|risk|unresolved|blocking|not clear)/,
     /title dispute/,
     /court order/,
     /prohibitory order/,
     /not registered proprietor/,
-    /seller authority/,
+    /seller authority.*(?:unclear|risk|issue|not verified|refuse)/,
+    /unclear seller authority/,
     /probate/,
     /bankrupt/,
     /bankruptcy/,
     /winding[-\s]?up/,
     /forged/,
     /direct payment/,
-    /stakeholder/
+    /outside stakeholder/,
+    /bypass.*stakeholder/,
+    /pay.*seller/,
+    /side payment/
   ]);
   const loanRejectionRisk = hasSignal(profileNarrative, [/loan reject/, /rejected by.*bank/, /many banks/, /bank.*reject/, /ccris/, /ctos/]);
   const crowdWithoutConversion = hasSignal(dealNarrative, [/sales gallery/, /crowd/, /many viewer/, /many viewing/])
@@ -3654,6 +3714,222 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     addBlocker("V4.5 site and management evidence is still thin; clear physical visit, lobby, lift, common-area, resident, management, defect, arrears, and JMB gaps before shortlist.");
   }
 
+  const legalStatusScore = { strong: 100, usable: 72, thin: 42, unsafe: 8, missing: 0 };
+  const legalCheckStatus = dealCard.legalCheck === "Clear"
+    ? "strong"
+    : dealCard.legalCheck === "Pending"
+      ? "usable"
+      : dealCard.legalCheck === "Issue found"
+        ? "unsafe"
+        : "missing";
+  const legalCheck = (label, status, proof, gap, action) => ({
+    label,
+    status,
+    proof,
+    gap,
+    action
+  });
+  const titleTypeStatus = /residential|hda|strata|individual|freehold|leasehold/.test(legalTitleType)
+    ? "strong"
+    : /commercial.*residential|serviced.*hda|mixed.*hda/.test(legalTitleType)
+      ? "usable"
+      : /fully office|office commercial|pure commercial|not hda/.test(legalTitleType)
+        ? "unsafe"
+        : /unknown/.test(legalTitleType)
+          ? "missing"
+          : legalTitleType
+            ? "thin"
+            : "missing";
+  const titleTransferPathStatus = /issued|transfer path clear|strata issued|individual title|mot clear|perfection clear|developer solvent/.test(titleTransferStatus)
+    ? "strong"
+    : /master title.*solvent|perfection pending|transfer pending|timeline known|developer consent/.test(titleTransferStatus)
+      ? "usable"
+      : /bankrupt|winding|transfer blocked|title problem|developer insolvent|unclear/.test(titleTransferStatus)
+        ? "unsafe"
+        : /unknown/.test(titleTransferStatus)
+          ? "missing"
+          : titleTransferStatus
+            ? "thin"
+            : "missing";
+  const caveatRestrictionCheckStatus = /no caveat|no blocking|clear|clean|no restriction/.test(caveatRestrictionStatus)
+    ? "strong"
+    : /state consent|affordable.*understood|restriction understood|consent timeline known/.test(caveatRestrictionStatus)
+      ? "usable"
+      : /caveat|malay reserve|bumi|bumiputera|prohibitory|court order|blocking|dispute|encumbrance/.test(caveatRestrictionStatus)
+        ? "unsafe"
+        : /unknown/.test(caveatRestrictionStatus)
+          ? "missing"
+          : caveatRestrictionStatus
+            ? "thin"
+            : "missing";
+  const sellerAuthorityCheckStatus = /verified|land search|documents verified|authority clear|seller clean|id checked/.test(sellerAuthorityStatus)
+    ? "strong"
+    : /partial|agent supplied|pending document|to confirm/.test(sellerAuthorityStatus)
+      ? "usable"
+      : /refuse|unclear|not owner|probate|bankrupt|bankruptcy|estate|divorce|litigation|company wound/.test(sellerAuthorityStatus)
+        ? "unsafe"
+        : /unknown/.test(sellerAuthorityStatus)
+          ? "missing"
+          : sellerAuthorityStatus
+            ? "thin"
+            : "missing";
+  const arrearsUtilitiesCheckStatus = /clear|no arrears|paid up|utilities clear|quit rent clear|assessment clear/.test(arrearsUtilitiesStatus)
+    ? "strong"
+    : /outstanding.*known|settled on completion|apportion|retention/.test(arrearsUtilitiesStatus)
+      ? "usable"
+      : /disputed|unknown arrears|high arrears|unpaid|not disclosed/.test(arrearsUtilitiesStatus)
+        ? "unsafe"
+        : /unknown/.test(arrearsUtilitiesStatus)
+          ? "missing"
+          : arrearsUtilitiesStatus
+            ? "thin"
+            : "missing";
+  const stakeholderFlowCheckStatus = /lawyer stakeholder|proper stakeholder|bank channel|spa stakeholder|all payments.*lawyer|loan redemption/.test(stakeholderFlowStatus)
+    ? "strong"
+    : /to be confirmed|pending lawyer|flow pending|confirm stakeholder/.test(stakeholderFlowStatus)
+      ? "usable"
+      : /direct payment|side agreement|side payment|pay seller|cash back|cashback|outside stakeholder|bypass/.test(stakeholderFlowStatus)
+        ? "unsafe"
+        : /unknown/.test(stakeholderFlowStatus)
+          ? "missing"
+          : stakeholderFlowStatus
+            ? "thin"
+            : "missing";
+  const lawyerCoordinationCheckStatus = /reviewed|responsive|milestone|clear checklist|reports progress|fast reply/.test(lawyerCoordinationStatus)
+    ? "strong"
+    : /pending but responsive|not yet reviewed|to review|average/.test(lawyerCoordinationStatus)
+      ? "usable"
+      : /no lawyer|late|no update|no reply|unresponsive|cannot explain|overcharge|delay/.test(lawyerCoordinationStatus)
+        ? "unsafe"
+        : /unknown/.test(lawyerCoordinationStatus)
+          ? "missing"
+          : lawyerCoordinationStatus
+            ? "thin"
+            : "missing";
+  const legalNotesStatus = legalTransactionNotes
+    ? "strong"
+    : "missing";
+  const legalTransactionPosition = ["unsafe", "missing"].includes(caveatRestrictionCheckStatus) || ["unsafe", "missing"].includes(sellerAuthorityCheckStatus) || ["unsafe", "missing"].includes(stakeholderFlowCheckStatus)
+    ? "The transaction path is not safe enough yet; title, seller authority, restriction, or fund-flow proof can still break completion."
+    : legalCheckStatus === "strong" && titleTypeStatus === "strong" && titleTransferPathStatus === "strong" && lawyerCoordinationCheckStatus === "strong"
+      ? "Legal and transaction evidence supports a clean commitment path, subject to final lawyer confirmation."
+      : "Legal path is workable but still needs sharper lawyer-backed confirmation before commitment.";
+  const legalTransactionChecks = [
+    legalCheck(
+      "Headline legal check",
+      legalCheckStatus,
+      legalCheckStatus === "strong" ? "Title and legal check is recorded as clear." : legalCheckStatus === "usable" ? "Legal check is pending but not yet an issue." : "",
+      legalCheckStatus === "unsafe" ? "A legal issue has already been found." : legalCheckStatus === "missing" ? "Headline legal status is not recorded." : "",
+      "Use the simple legal check only as a headline; still verify title, caveat, restrictions, seller authority, arrears, and fund flow."
+    ),
+    legalCheck(
+      "Title type and use",
+      titleTypeStatus,
+      titleTypeStatus === "strong" ? "Title type is consistent with the residential mandate or bankable HDA-serviced residence path." : titleTypeStatus === "usable" ? "Commercial title may be workable because residential use or HDA protection is clarified." : "",
+      titleTypeStatus === "unsafe" ? "Fully office-commercial or non-HDA commercial title can shrink financing and exit buyer pool." : titleTypeStatus === "missing" ? "Title type is not recorded." : "",
+      "Confirm whether the title/use is residential, HDA serviced residence, fully commercial, strata, individual, freehold, leasehold, or master title."
+    ),
+    legalCheck(
+      "Transfer path",
+      titleTransferPathStatus,
+      titleTransferPathStatus === "strong" ? "Transfer, title, MOT, perfection, or developer-solvency path is stated as clear." : titleTransferPathStatus === "usable" ? "Transfer path is possible but still needs timeline and cost monitoring." : "",
+      titleTransferPathStatus === "unsafe" ? "Transfer, perfection, developer solvency, or title path may block completion or future exit." : titleTransferPathStatus === "missing" ? "Transfer path is not recorded." : "",
+      "Ask the lawyer to confirm strata or individual title, master-title risk, MOT, perfection of transfer/charge, developer consent, and expected timeline."
+    ),
+    legalCheck(
+      "Caveat and restrictions",
+      caveatRestrictionCheckStatus,
+      caveatRestrictionCheckStatus === "strong" ? "No caveat, blocking encumbrance, or unresolved restriction is stated." : caveatRestrictionCheckStatus === "usable" ? "Restriction or consent risk is known and bounded." : "",
+      caveatRestrictionCheckStatus === "unsafe" ? "Caveat, reserve/restricted status, court order, dispute, or blocking encumbrance is a stop sign." : caveatRestrictionCheckStatus === "missing" ? "Caveat and restriction status is not recorded." : "",
+      "Confirm current land search, caveat, encumbrance, Malay reserve, Bumiputera lot, state consent, affordable housing restriction, and whether the buyer can receive title."
+    ),
+    legalCheck(
+      "Seller authority",
+      sellerAuthorityCheckStatus,
+      sellerAuthorityCheckStatus === "strong" ? "Seller authority and documents are verified." : sellerAuthorityCheckStatus === "usable" ? "Seller documents are partly supplied but still need lawyer confirmation." : "",
+      sellerAuthorityCheckStatus === "unsafe" ? "Seller authority, ownership, bankruptcy, probate, company, litigation, or document refusal can stop the transaction." : sellerAuthorityCheckStatus === "missing" ? "Seller authority is not recorded." : "",
+      "Verify seller identity, registered ownership, company authority, bankruptcy/winding-up risk, estate/probate issues, and authority to sign."
+    ),
+    legalCheck(
+      "Arrears and utilities",
+      arrearsUtilitiesCheckStatus,
+      arrearsUtilitiesCheckStatus === "strong" ? "Maintenance, quit rent, assessment, or utilities are stated as clear." : arrearsUtilitiesCheckStatus === "usable" ? "Outstanding amounts are known and can be settled or retained at completion." : "",
+      arrearsUtilitiesCheckStatus === "unsafe" ? "Unknown, disputed, or high arrears can create completion friction or post-purchase cost." : arrearsUtilitiesCheckStatus === "missing" ? "Arrears and utility status is not recorded." : "",
+      "Ask management and lawyer for maintenance, sinking fund, quit rent, assessment, utilities, late interest, and completion settlement mechanics."
+    ),
+    legalCheck(
+      "Stakeholder and fund flow",
+      stakeholderFlowCheckStatus,
+      stakeholderFlowCheckStatus === "strong" ? "Payment path uses lawyer stakeholder, SPA, bank, and redemption channels." : stakeholderFlowCheckStatus === "usable" ? "Fund flow is pending but should be confirmed by the lawyer before payment." : "",
+      stakeholderFlowCheckStatus === "unsafe" ? "Direct payment, side agreement, cashback, or bypassing stakeholder channels is outside Apex boundaries." : stakeholderFlowCheckStatus === "missing" ? "Fund-flow path is not recorded." : "",
+      "Do not pay outside proper lawyer stakeholder or bank-controlled channels. Clarify deposits, redemption sum, retention, and release conditions."
+    ),
+    legalCheck(
+      "Lawyer coordination",
+      lawyerCoordinationCheckStatus,
+      lawyerCoordinationCheckStatus === "strong" ? "Lawyer has reviewed or is responsive with clear progress reporting." : lawyerCoordinationCheckStatus === "usable" ? "Lawyer review is pending but communication is still workable." : "",
+      lawyerCoordinationCheckStatus === "unsafe" ? "No lawyer, late reply, no progress reporting, or poor explanation increases execution risk." : lawyerCoordinationCheckStatus === "missing" ? "Lawyer coordination status is not recorded." : "",
+      "Use a lawyer who reports milestones, explains risks, checks documents early, and controls completion funds properly."
+    ),
+    legalCheck(
+      "Legal transaction notes",
+      legalNotesStatus,
+      legalNotesStatus === "strong" ? "Legal transaction notes are recorded." : "",
+      legalNotesStatus === "missing" ? "No legal transaction notes are written down." : "",
+      "Record what the lawyer, agent, land search, management office, and seller documents actually prove."
+    )
+  ];
+  const legalTransactionScore = clampScore(
+    legalStatusScore[legalCheckStatus] * 0.16 +
+    legalStatusScore[titleTypeStatus] * 0.12 +
+    legalStatusScore[titleTransferPathStatus] * 0.14 +
+    legalStatusScore[caveatRestrictionCheckStatus] * 0.18 +
+    legalStatusScore[sellerAuthorityCheckStatus] * 0.15 +
+    legalStatusScore[arrearsUtilitiesCheckStatus] * 0.1 +
+    legalStatusScore[stakeholderFlowCheckStatus] * 0.12 +
+    legalStatusScore[lawyerCoordinationCheckStatus] * 0.1 +
+    legalStatusScore[legalNotesStatus] * 0.03
+  );
+  const legalHardUnsafe = [legalCheckStatus, titleTypeStatus, titleTransferPathStatus, caveatRestrictionCheckStatus, sellerAuthorityCheckStatus, stakeholderFlowCheckStatus].includes("unsafe");
+  const legalAnyUnsafe = legalHardUnsafe || [arrearsUtilitiesCheckStatus, lawyerCoordinationCheckStatus].includes("unsafe");
+  const legalKnown = Boolean(dealCard.legalCheck || legalTitleType || titleTransferStatus || caveatRestrictionStatus || sellerAuthorityStatus || arrearsUtilitiesStatus || stakeholderFlowStatus || lawyerCoordinationStatus || legalTransactionNotes);
+  const legalTransactionStatus = legalHardUnsafe
+    ? "unsafe"
+    : legalCheckStatus === "missing"
+      ? "missing"
+      : legalAnyUnsafe
+        ? "unsafe"
+        : legalTransactionScore >= 85
+          ? "strong"
+          : legalTransactionScore >= 65
+            ? "usable"
+            : legalTransactionScore >= 40 || legalKnown
+              ? "thin"
+              : "missing";
+  const legalTransactionEvidence = {
+    status: legalTransactionStatus,
+    score: legalTransactionScore,
+    summary: legalTransactionStatus === "strong"
+      ? "Legal and transaction evidence is strong: title, transfer path, caveat/restriction, seller authority, arrears, fund flow, and lawyer coordination are controlled."
+      : legalTransactionStatus === "usable"
+        ? "Legal and transaction path looks workable, but one or more proof points still needs lawyer confirmation."
+        : legalTransactionStatus === "thin"
+          ? "Legal evidence is thin. Apex cannot rely on a clean transaction path without sharper title, seller, restriction, arrears, and fund-flow proof."
+          : legalTransactionStatus === "unsafe"
+            ? "Legal or transaction evidence contains an unsafe stop sign that can break completion, financing, or future exit."
+            : "Legal and transaction evidence is missing.",
+    transactionPosition: legalTransactionPosition,
+    checks: legalTransactionChecks
+  };
+  if (legalHardUnsafe) {
+    addHardStop(1, "V4.6 legal, title, seller-authority, restriction, or fund-flow evidence contains an unresolved stop sign.");
+  }
+  if (["unsafe", "missing"].includes(legalTransactionStatus)) {
+    addBlocker("V4.6 legal and transaction evidence is not reliable enough to validate commitment safety.");
+  } else if (legalTransactionStatus === "thin") {
+    addBlocker("V4.6 legal and transaction evidence is still thin; clear title type, transfer path, caveat/restriction, seller authority, arrears, stakeholder flow, and lawyer coordination.");
+  }
+
   let holdingScore = 50;
   if (holdingCashFlow !== null) {
     if (holdingCashFlow >= 0) holdingScore += 30;
@@ -3721,8 +3997,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   else if (siteManagementStatus === "usable") evidenceScore += 14;
   else if (siteManagementStatus === "thin") evidenceScore += 6;
   else if (siteManagementStatus === "unsafe") evidenceScore -= 10;
-  if (dealCard.legalCheck === "Clear") evidenceScore += 15;
-  else if (dealCard.legalCheck === "Pending") evidenceScore += 4;
+  if (legalTransactionStatus === "strong") evidenceScore += 15;
+  else if (legalTransactionStatus === "usable") evidenceScore += 10;
+  else if (legalTransactionStatus === "thin") evidenceScore += 4;
+  else if (legalTransactionStatus === "unsafe") evidenceScore -= 15;
   evidenceScore = clampScore(evidenceScore);
 
   const evidenceGate = (label, status, weight, score, proof, gap, action) => ({
@@ -3769,11 +4047,13 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       : siteManagementStatus === "unsafe"
         ? "blocked"
         : "missing";
-  const legalGateStatus = dealCard.legalCheck === "Clear"
+  const legalGateStatus = legalTransactionStatus === "strong"
     ? "proven"
-    : dealCard.legalCheck === "Pending"
+    : legalTransactionStatus === "usable" || legalTransactionStatus === "thin"
       ? "partial"
-      : "blocked";
+      : legalTransactionStatus === "unsafe"
+        ? "blocked"
+        : "missing";
   const thesisGateStatus = dealCard.investmentThesis && dealCard.killCriterion
     ? "proven"
     : dealCard.investmentThesis || dealCard.killCriterion
@@ -3830,10 +4110,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       "Legal and title safety",
       legalGateStatus,
       10,
-      legalGateStatus === "blocked" ? 0 : gateScore(legalGateStatus, 45),
-      legalGateStatus === "proven" ? "Legal and title status is recorded as clear." : legalGateStatus === "partial" ? "Legal/title review is pending." : "",
-      legalGateStatus === "blocked" ? "Legal, title, caveat, restriction, consent, or seller-authority issue is unresolved." : legalGateStatus === "partial" ? "Pending legal checks can still change the deal." : "",
-      "Clear title, caveat, restrictions, consent, seller authority, arrears, and stakeholder fund flow before commitment."
+      legalTransactionScore,
+      legalGateStatus === "proven" ? legalTransactionEvidence.summary : legalGateStatus === "partial" ? legalTransactionEvidence.summary : "",
+      legalGateStatus === "blocked" || legalGateStatus === "missing" ? legalTransactionEvidence.summary : legalGateStatus === "partial" ? "Title type, transfer path, caveat/restriction, seller authority, arrears, fund flow, or lawyer coordination is not yet strong enough." : "",
+      "Use V4.6 legal detail: title type, transfer path, caveat/restriction, seller authority, arrears/utilities, stakeholder fund flow, and lawyer coordination."
     ),
     evidenceGate(
       "Decision thesis and kill rule",
@@ -4089,10 +4369,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     },
     {
       label: "Legal and title check",
-      status: dealCard.legalCheck === "Clear" ? "done" : dealCard.legalCheck === "Pending" ? "warning" : "danger",
-      action: dealCard.legalCheck === "Clear"
-        ? "Legal status is recorded as clear."
-        : "Clear title, caveat, restriction, consent, seller authority, arrears, and fund-flow concerns with the lawyer."
+      status: legalTransactionStatus === "strong" ? "done" : legalTransactionStatus === "unsafe" ? "danger" : legalTransactionStatus === "missing" ? "missing" : "warning",
+      action: legalTransactionStatus === "strong"
+        ? "Legal safety is supported by V4.6 title, transfer, caveat/restriction, seller-authority, arrears, stakeholder-flow, and lawyer-coordination evidence."
+        : "Verify V4.6 legal detail: title type, transfer path, caveat/restriction, seller authority, arrears/utilities, stakeholder flow, and lawyer coordination."
     },
     {
       label: "Substitute supply",
@@ -4156,9 +4436,9 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     task(
       "Lawyer",
       "Title, caveat, consent, seller authority",
-      taskStatus(dealCard.legalCheck === "Clear"),
-      "Check title status, caveat, restrictions, consent timeline, seller authority, arrears, and whether all funds flow through proper stakeholder channels.",
-      dealCard.legalCheck !== "Clear" || documentRisk
+      taskStatus(legalTransactionStatus === "strong"),
+      "Check V4.6 legal safety: title type, transfer path, caveat/restriction, seller authority, arrears/utilities, stakeholder fund flow, and lawyer milestone reporting.",
+      legalTransactionStatus === "unsafe" || legalTransactionStatus === "missing" || legalTransactionStatus === "thin" || documentRisk
     ),
     task(
       "Management Office",
@@ -4947,7 +5227,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   };
 
   return {
-    engineVersion: "Apex v4.5",
+    engineVersion: "Apex v4.6",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -4986,6 +5266,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     financingValuationEvidence,
     supplyAbsorptionEvidence,
     siteManagementEvidence,
+    legalTransactionEvidence,
     dueDiligencePlan,
     executionPlan,
     hardStops: hardStopText,
@@ -5070,6 +5351,15 @@ function dealAnalysisText(analysis) {
       `- Lived quality: ${analysis.siteManagementEvidence.livedQualityPosition || "Not calculated."}`
     );
     lines.push(...(analysis.siteManagementEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
+  }
+  if (analysis.legalTransactionEvidence?.summary) {
+    lines.push(
+      "",
+      "V4.6 legal and transaction evidence",
+      `- ${analysis.legalTransactionEvidence.status || "unknown"} (${analysis.legalTransactionEvidence.score || 0}/100): ${analysis.legalTransactionEvidence.summary}`,
+      `- Transaction path: ${analysis.legalTransactionEvidence.transactionPosition || "Not calculated."}`
+    );
+    lines.push(...(analysis.legalTransactionEvidence.checks || []).map((item) => `- ${item.label}: ${item.status}. ${item.action}`));
   }
   if (analysis.dueDiligencePlan?.tasks?.length) {
     lines.push("", "Due diligence pack", `- ${analysis.dueDiligencePlan.summary}`);

@@ -41,6 +41,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /data-deal-field="bankValuationSupport"[\s\S]*?data-deal-field="financingNotes"/, "Deal card needs v4.3 financing and valuation fields.");
   assert.match(html, /data-deal-field="supplyRadius"[\s\S]*?data-deal-field="supplyNotes"/, "Deal card needs v4.4 supply and absorption fields.");
   assert.match(html, /data-deal-field="siteVisitEvidence"[\s\S]*?data-deal-field="siteManagementNotes"/, "Deal card needs v4.5 site and management fields.");
+  assert.match(html, /data-deal-field="legalTitleType"[\s\S]*?data-deal-field="legalTransactionNotes"/, "Deal card needs v4.6 legal and transaction fields.");
   assert.match(html, /data-profile-field="portfolioRole"[\s\S]*?data-profile-field="nextPurchaseReason"/, "Profile card needs optional v1.7 portfolio gate fields.");
   assert.match(html, /id="shortlistPanel"[\s\S]*?DEAL SHORTLIST[\s\S]*?id="shortlistList"/, "Analysed properties need an inline comparison shortlist.");
   assert.match(html, /id="shortlistSummary"[\s\S]*?id="shortlistList"/, "The shortlist needs a comparison summary before the deal cards.");
@@ -77,6 +78,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /financingValuationMarkup\(analysis\.financingValuationEvidence\)/, "Deal reports need v4.3 financing and valuation evidence.");
   assert.match(app, /supplyAbsorptionMarkup\(analysis\.supplyAbsorptionEvidence\)/, "Deal reports need v4.4 supply and absorption evidence.");
   assert.match(app, /siteManagementMarkup\(analysis\.siteManagementEvidence\)/, "Deal reports need v4.5 site and management evidence.");
+  assert.match(app, /legalTransactionMarkup\(analysis\.legalTransactionEvidence\)/, "Deal reports need v4.6 legal and transaction evidence.");
   assert.match(app, /dueDiligenceMarkup\(analysis\.dueDiligencePlan\)/, "Deal reports need a due-diligence task pack.");
   assert.match(app, /stressEnvelopeMarkup\(analysis\.stressEnvelope\)/, "Deal reports need v1.6 stress envelope.");
   assert.match(app, /portfolioGateMarkup\(analysis\.portfolioGate\)/, "Deal reports need v1.7 portfolio expansion gate.");
@@ -106,6 +108,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /financingValuationEvidence: analysis\.financingValuationEvidence/, "Shortlisted deals must preserve V4.3 financing and valuation evidence.");
   assert.match(app, /supplyAbsorptionEvidence: analysis\.supplyAbsorptionEvidence/, "Shortlisted deals must preserve V4.4 supply and absorption evidence.");
   assert.match(app, /siteManagementEvidence: analysis\.siteManagementEvidence/, "Shortlisted deals must preserve V4.5 site and management evidence.");
+  assert.match(app, /legalTransactionEvidence: analysis\.legalTransactionEvidence/, "Shortlisted deals must preserve V4.6 legal and transaction evidence.");
   assert.match(app, /dealMemoryComparison: analysis\.dealMemoryComparison/, "Shortlisted deals must preserve V3.4 saved deal comparison.");
   assert.match(app, /beliefTracker: analysis\.beliefTracker/, "Shortlisted deals must preserve V3.5 belief tracking.");
   assert.match(app, /sourceTransparency: analysis\.sourceTransparency/, "Shortlisted deals must preserve V3.6 source transparency.");

@@ -70,6 +70,8 @@ V4.4 strengthens supply and absorption evidence. Apex now checks the 2.5km subst
 
 V4.5 strengthens site and management evidence. Apex now checks physical visit proof, lobby and guardhouse, lift/car park/corridor, common areas, resident behaviour, management response, defects/leakage, arrears/JMB culture, and written site notes before trusting lived quality. A good number cannot override a project that feels weak, is badly managed, or is physically deteriorating.
 
+V4.6 strengthens legal and transaction evidence. Apex now checks title type, transfer path, caveat/restriction status, seller authority, arrears/utilities, stakeholder fund flow, lawyer coordination, and written legal notes before trusting commitment safety. A cheap price, strong rent, or attractive site visit cannot override an unsafe title, unclear seller authority, blocking restriction, or payment path outside proper lawyer/bank channels.
+
 Public users must not be able to add, edit, or delete backend knowledge. Backend write APIs require the owner-token header to match the server's owner-token environment variable. If no owner token is configured, owner APIs are disabled and public Apex session routes remain the only unauthenticated write surface.
 
 The visible frontend should stay simple and conversational. Knowledge-base development happens through owner-controlled backend files, scripts, or authenticated owner API calls.

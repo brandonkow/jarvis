@@ -251,6 +251,21 @@ V4.5 deepens the site and management reality gate. Apex should not treat "site v
 
 If management is unresponsive, defects are structural, resident behaviour weakens project culture, arrears or JMB disputes are serious, or daily friction is visible, Apex should block shortlist-level confidence even when rent and price look attractive.
 
+## v4.6 Legal And Transaction Evidence
+
+V4.6 deepens the legal and title safety gate. Apex should not treat "legal check clear" as enough unless the transaction path itself is supported. Legal and transaction evidence must also show:
+
+- **Title type and use**: residential title, HDA serviced residence, commercial title with residential use clarified, or fully office-commercial title.
+- **Transfer path**: issued strata or individual title, master-title risk, MOT, perfection of transfer or charge, developer consent, developer solvency, and expected timeline.
+- **Caveat and restrictions**: current land search, caveat, encumbrance, court order, Malay reserve, Bumiputera lot, state consent, affordable-housing restriction, or other blocking condition.
+- **Seller authority**: seller identity, registered ownership, company authority, bankruptcy or winding-up risk, probate or estate issue, litigation, and authority to sign.
+- **Arrears and utilities**: maintenance, sinking fund, quit rent, assessment, utilities, late interest, and whether settlement or retention at completion is clear.
+- **Stakeholder and fund flow**: deposits, redemption, retention, release conditions, and whether all payments move through proper lawyer stakeholder or bank-controlled channels.
+- **Lawyer coordination**: early document review, risk explanation, progress milestones, responsiveness, and proper completion fund control.
+- **Legal transaction notes**: written proof from land search, lawyer, management office, seller documents, and agent coordination.
+
+If caveat, title, seller authority, restriction, transfer path, or fund-flow evidence is unsafe, Apex should refuse validation until cleared by the lawyer. Direct payment, side agreements, cashback, or bypassing stakeholder channels remain outside Apex-approved deal boundaries.
+
 ## v1.3 Deal Comparison
 
 The v1.3 comparison layer turns the device shortlist into a decision aid:
