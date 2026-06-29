@@ -525,6 +525,16 @@ The v6.1 layer turns the trust boundary into a practical onboarding checkpoint:
 - If acknowledgement is missing, open the inline trust workspace and let the user continue the report after accepting.
 - Keep this as a disclosure and consent checkpoint only. It must not imply approval, change legal responsibility, or reduce the evidence required for a strong recommendation.
 
+## v6.2 Report Trust Stamp
+
+The v6.2 layer makes the trust boundary travel with each formal report:
+
+- Show a compact trust stamp inside every on-screen Deal Report.
+- Include the same trust boundary text in copied report exports.
+- Display whether the device has accepted the v6.1 boundary.
+- Remind users that Apex is decision support only and that professional review and live evidence still apply.
+- Keep the stamp visible in print/PDF output without turning it into a separate legal document.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

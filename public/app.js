@@ -602,6 +602,51 @@ function requireTrustBoundary(action) {
   return false;
 }
 
+function trustBoundaryDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-MY", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+function trustBoundaryStamp() {
+  const accepted = readTrustBoundary();
+  const isAccepted = accepted?.version === "v6.1";
+  const acceptedAt = trustBoundaryDate(accepted?.acceptedAt);
+  return {
+    status: isAccepted ? "accepted" : "pending",
+    label: isAccepted ? "BOUNDARY ACCEPTED" : "BOUNDARY PENDING",
+    detail: isAccepted
+      ? `Accepted ${acceptedAt || "on this device"}. Apex is decision support only; live proof and professional review still apply.`
+      : "Apex is decision support only. Acknowledge the trust boundary before generating new formal reports.",
+    checks: [
+      "Not legal, valuation, tax, banking, or financial-planning advice",
+      "Verify completed transactions, achieved rent, financing, title/legal, site, and supply evidence",
+      "No validation of false documents, hidden cashback, misleading prices, or lender deception"
+    ]
+  };
+}
+
+function trustStampMarkup() {
+  const stamp = trustBoundaryStamp();
+  return `
+    <section class="analysisTrustStamp ${escapeHtml(stamp.status)}" aria-label="Report trust boundary">
+      <header><small>V6.2 REPORT TRUST STAMP</small><b>${escapeHtml(stamp.label)}</b></header>
+      <p>${escapeHtml(stamp.detail)}</p>
+      <div>${stamp.checks.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </section>
+  `;
+}
+
+function trustStampText() {
+  const stamp = trustBoundaryStamp();
+  return [
+    "Report trust boundary:",
+    `- ${stamp.label}: ${stamp.detail}`,
+    ...stamp.checks.map((item) => `- ${item}`)
+  ];
+}
+
 function sourceLabel(type) {
   if (type === "memory") return "MEMORY";
   if (type === "journal") return "JOURNAL";
@@ -1453,6 +1498,8 @@ function analysisExportText(analysis) {
     `Confidence: ${analysis.confidence || 0}%`,
     `Score: ${analysis.averageScore || 0}/100`,
     `Reasoning: ${analysis.reasoningMode || "Framework only"}`,
+    "",
+    ...trustStampText(),
     "",
     `Summary: ${analysis.summary || ""}`
   ];
@@ -2667,6 +2714,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       <span>DECISION SCORE <b>${escapeHtml(analysis.averageScore)}/100</b></span>
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
     </div>
+    ${trustStampMarkup()}
     <div class="analysisOverview">
       ${readinessMarkup(analysis.investorReadiness)}
       ${dimensionMarkup ? `<section class="analysisDimensionSection"><h3>DEAL SCORECARD</h3><div class="analysisDimensions">${dimensionMarkup}</div></section>` : ""}

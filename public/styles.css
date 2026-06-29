@@ -3046,6 +3046,72 @@ button {
   font-weight: 500;
 }
 
+.analysisTrustStamp {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-left: 2px solid rgba(103, 229, 255, 0.46);
+  border-radius: 10px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(69, 199, 225, 0.07), transparent 58%), rgba(0, 11, 18, 0.42);
+}
+
+.analysisTrustStamp.accepted {
+  border-color: rgba(112, 230, 179, 0.2);
+  border-left-color: #6fd9a0;
+}
+
+.analysisTrustStamp.pending {
+  border-color: rgba(255, 210, 116, 0.22);
+  border-left-color: #d0ad69;
+}
+
+.analysisTrustStamp header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.analysisTrustStamp small {
+  color: #67b7c7;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+}
+
+.analysisTrustStamp b {
+  color: #d8fbff;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+}
+
+.analysisTrustStamp p {
+  margin: 0;
+  color: #9fc8d0;
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+.analysisTrustStamp div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.analysisTrustStamp span {
+  border: 1px solid rgba(103, 229, 255, 0.11);
+  border-radius: 9px;
+  padding: 7px;
+  color: #87b3bd;
+  background: rgba(0, 10, 17, 0.42);
+  font-size: 0.57rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .analysisOverview {
   display: grid;
   grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.2fr);
@@ -5790,6 +5856,16 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .analysisTrustStamp header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .analysisTrustStamp div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .analysisDimensions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -6085,6 +6161,17 @@ button {
     color: #17343d;
     font-size: 18pt;
     font-weight: 500;
+  }
+
+  body.printMode .analysisTrustStamp {
+    border-color: #8fb3bc;
+    border-left-color: #2b8fa3;
+    background: #f4fbfd;
+  }
+
+  body.printMode .analysisTrustStamp span {
+    border-color: #c8dce2;
+    background: #fff;
   }
 
   body.printMode .analysisMessage *,
