@@ -117,6 +117,32 @@ test("production phase keeps evidence owner-only and completes the account lifec
   assert.equal(metrics.payload.recent[0].queryLength > 0, true);
   assert.ok(!JSON.stringify(metrics.payload).includes("semiconductor rental enquiries"));
 
+  const guidedChat = await request(baseUrl, "/api/jarvis/query", {
+    method: "POST",
+    body: {
+      sessionId: session.payload.session.id,
+      query: "Should I buy this condo if the rent looks okay?",
+      dealCard: {
+        area: "Bayan Lepas",
+        propertyType: "Condo",
+        askingPrice: "RM500k",
+        expectedRent: "RM2,500",
+        maintenance: "RM350",
+        nearbySupply: "Newer similar project within 2.5km"
+      },
+      financialProfile: {
+        experienceLevel: "Beginner",
+        guidanceMode: "Guided",
+        preferredOutput: "Short answer",
+        confidenceComfort: "Conservative"
+      }
+    }
+  });
+  assert.equal(guidedChat.response.status, 200);
+  assert.equal(guidedChat.payload.mode, "framework");
+  assert.match(guidedChat.payload.answer, /Plain-English read/i);
+  assert.match(guidedChat.payload.answer, /Beginner trap/i);
+
   const registration = await request(baseUrl, "/api/auth/register", {
     method: "POST",
     body: { displayName: "Production Member", email: "production@example.com", password: "initial-password-123" }

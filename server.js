@@ -2231,11 +2231,128 @@ function detectCompanionIntent(query) {
   return null;
 }
 
-function companionAnswer(kind) {
+function responsePersonaFromProfile(financialProfile = {}) {
+  const level = String(financialProfile.experienceLevel || "").toLowerCase();
+  const mode = String(financialProfile.guidanceMode || "").toLowerCase();
+  const output = String(financialProfile.preferredOutput || "").toLowerCase();
+  const comfort = String(financialProfile.confidenceComfort || "").toLowerCase();
+  const notes = String(financialProfile.onboardingNotes || "").trim();
+  const guided = mode.includes("guided") || level.includes("beginner");
+  const professional = mode.includes("professional") || level.includes("professional");
+  const checklist = output.includes("checklist");
+  const voice = output.includes("voice");
+  const concise = mode.includes("concise") || output.includes("short") || voice;
+  const kind = guided ? "guided" : professional ? "professional" : checklist ? "checklist" : concise ? "concise" : "balanced";
+  const label = {
+    guided: "Guided beginner mode",
+    professional: "Professional due-diligence mode",
+    checklist: "Checklist mode",
+    concise: voice ? "Voice-summary mode" : "Concise mode",
+    balanced: "Balanced mode"
+  }[kind];
+  const instruction = {
+    guided: "Use plain language, explain the why, name the beginner trap, and end with one next action.",
+    professional: "Use a tighter due-diligence tone: verdict, evidence, blocker, and action without extra teaching.",
+    checklist: "Turn the response into an action checklist with clear pass, verify, and stop items.",
+    concise: "Give the verdict first, then only the strongest reason, main risk, and next action.",
+    balanced: "Balance judgment, evidence, risk, and next action in a natural conversational answer."
+  }[kind];
+  return {
+    kind,
+    label,
+    instruction,
+    level: financialProfile.experienceLevel || "Not stated",
+    mode: financialProfile.guidanceMode || "Not stated",
+    output: financialProfile.preferredOutput || "Not stated",
+    comfort: financialProfile.confidenceComfort || "Not stated",
+    conservative: comfort.includes("conservative"),
+    notes
+  };
+}
+
+function responsePersonaForPrompt(persona = {}) {
+  return [
+    `Mode: ${persona.label || "Balanced mode"}.`,
+    `Instruction: ${persona.instruction || "Balance judgment, evidence, risk, and next action."}`,
+    `Experience level: ${persona.level || "Not stated"}.`,
+    `Preferred output: ${persona.output || "Not stated"}.`,
+    `Confidence comfort: ${persona.comfort || "Not stated"}.`,
+    persona.notes ? `User notes: ${persona.notes}` : ""
+  ].filter(Boolean).join("\n");
+}
+
+function firstMeaningful(items = [], fallback = "") {
+  return (items || []).map((item) => String(item || "").trim()).find(Boolean) || fallback;
+}
+
+function adaptFrameworkAnswerToPersona(answer, persona = {}, context = {}) {
+  if (!answer || persona.kind === "balanced") return answer;
+  const reason = firstMeaningful(context.reasoning, "The decision still depends on evidence, not the headline price or yield.");
+  const risk = firstMeaningful(context.risks, persona.conservative ? "If evidence is incomplete, treat the answer as provisional." : "");
+  const next = firstMeaningful(context.evidenceChecks, "Get the cheapest evidence that can change the decision.");
+  const challenge = firstMeaningful(context.challenge, "What evidence would make you walk away?");
+  const evidence = firstMeaningful(context.ownerEvidenceLines, firstMeaningful(context.marketLines, ""));
+  const profile = firstMeaningful(context.profileFit, "");
+  const deal = firstMeaningful(context.dealRead, "");
+
+  if (persona.kind === "concise") {
+    return [
+      `Quick read: ${String(context.verdict || answer).replace(/^My take:\s*/i, "")}`,
+      reason ? `Why: ${reason}` : "",
+      evidence ? `Evidence: ${evidence}` : "",
+      risk ? `Risk: ${risk}` : "",
+      profile ? `Profile fit: ${profile}` : "",
+      `Next: ${next}`
+    ].filter(Boolean).join("\n");
+  }
+
+  if (persona.kind === "guided") {
+    return [
+      `Plain-English read: ${String(context.verdict || answer).replace(/^My take:\s*/i, "")}`,
+      "",
+      `Why this matters: ${reason}`,
+      deal ? `What the deal is telling us: ${deal}` : "",
+      risk ? `Beginner trap to avoid: ${risk}` : "Beginner trap to avoid: do not let a cheap-looking entry price replace evidence.",
+      `Check next: ${next}`,
+      `My challenge back: ${challenge}`
+    ].filter(Boolean).join("\n");
+  }
+
+  if (persona.kind === "checklist") {
+    const checks = [
+      reason ? `PASS/VERIFY - Thesis: ${reason}` : "",
+      evidence ? `VERIFY - Evidence: ${evidence}` : "",
+      deal ? `VERIFY - Deal context: ${deal}` : "",
+      profile ? `VERIFY - Profile fit: ${profile}` : "",
+      risk ? `STOP/CAUTION - Risk: ${risk}` : "",
+      `NEXT - ${next}`,
+      `CHALLENGE - ${challenge}`
+    ].filter(Boolean);
+    return [`Checklist read: ${String(context.verdict || answer).replace(/^My take:\s*/i, "")}`, "", ...checks.map((item) => `- ${item}`)].join("\n");
+  }
+
+  if (persona.kind === "professional") {
+    return [
+      `Professional read: ${String(context.verdict || answer).replace(/^My take:\s*/i, "")}`,
+      `Evidence position: ${evidence || reason}`,
+      risk ? `Primary blocker: ${risk}` : "",
+      profile ? `Investor fit: ${profile}` : "",
+      `Action: ${next}`,
+      `Challenge: ${challenge}`
+    ].filter(Boolean).join("\n");
+  }
+
+  return answer;
+}
+
+function companionAnswer(kind, persona = responsePersonaFromProfile()) {
+  const compact = persona.kind === "concise" || persona.output === "Voice summary";
   if (kind === "greeting") {
+    if (compact) return "Hey. Send me the deal, area, price, rent, or concern.";
     return "Hey, I am here. Give me a property, area, price, rent, or concern, and we will pressure-test it together.";
   }
   if (kind === "how_are_you") {
+    if (compact) return "I am good. Bring me the next deal or doubt.";
     return "I am good. More importantly, I am switched on. Bring me the next deal, area, or doubt you want to examine.";
   }
   if (kind === "presence") {
@@ -6397,6 +6514,7 @@ async function generateJarvisLlmAnswer({
   memoryProfile,
   journal,
   marketIntelligence = null,
+  responsePersona = responsePersonaFromProfile(financialProfile),
   fallbackAnswer
 }) {
   const decisionContext = decisions.length
@@ -6414,6 +6532,9 @@ ${conversationForPrompt(session)}
 
 STRUCTURED USER CONTEXT
 ${structuredContext}
+
+RESPONSE PERSONA
+${responsePersonaForPrompt(responsePersona)}
 
 RELEVANT APEX ANALYTIC REFERENCES
 ${referencesForPrompt(references)}
@@ -6439,7 +6560,7 @@ ${marketIntelligenceForPrompt(marketIntelligence)}
 DETERMINISTIC FALLBACK ANALYSIS
 ${fallbackAnswer}
 
-Respond to the current user message. Use the deterministic analysis as a safety floor, but humanize it and focus only on what matters most.`;
+Respond to the current user message. Use the deterministic analysis as a safety floor, follow the response persona, and focus only on what matters most.`;
   return requestLlmText({ instructions: jarvisLlmInstructions, input, maxOutputTokens: 1200 });
 }
 
@@ -6519,6 +6640,7 @@ async function retrieveGuidance(query, property, brain, knowledge = emptyKnowled
 async function retrieveJarvisAnswer(query, brain, session, context = {}, knowledge = emptyKnowledge(), userMemories = [], userJournal = []) {
   const dealCard = cleanContextRecord(context.dealCard, dealContextLabels);
   const financialProfile = cleanContextRecord(context.financialProfile, profileContextLabels);
+  const responsePersona = responsePersonaFromProfile(financialProfile);
   const hasStructuredContext = hasContextData({ dealCard, financialProfile });
   const contextForSearch = [
     contextText(dealCard, dealContextLabels, "Deal card"),
@@ -6529,7 +6651,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
   const relevantJournal = selectRelevantUserJournal(userJournal, `${query} ${contextForSearch}`);
   const companionIntent = detectCompanionIntent(query);
   if (companionIntent && (companionIntent !== "need_context" || !hasStructuredContext)) {
-    const fallbackAnswer = companionAnswer(companionIntent);
+    const fallbackAnswer = companionAnswer(companionIntent, responsePersona);
     if (llmEnabled()) {
       try {
         const completion = await generateJarvisLlmAnswer({
@@ -6543,6 +6665,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
           memories: relevantMemories,
           memoryProfile: relevantMemoryProfile,
           journal: [],
+          responsePersona,
           fallbackAnswer
         });
         return { answer: completion.text, sources: [], mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: "none" };
@@ -6645,22 +6768,27 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     if (basis) challenge.unshift(`Personal challenge: you previously recorded "${basis}". Does this current view still obey that?`);
   }
 
+  const ownerEvidenceLines = ownerEvidence.slice(0, 2).map((reference) => `${reference.title}: ${shortSentence(reference.content, 180)}`);
+  const marketLines = marketIntelligence.observations.slice(0, 3).map((observation) => observation.body);
+  const memoryProfileLines = relevantMemoryProfile.approvedCount ? [
+    `${relevantMemoryProfile.investorType}; ${relevantMemoryProfile.riskStyle}.`,
+    relevantMemoryProfile.preferredAssets.length ? `Preferred: ${relevantMemoryProfile.preferredAssets.join("; ")}` : "",
+    relevantMemoryProfile.avoidedRisks.length ? `Watch: ${relevantMemoryProfile.avoidedRisks.join("; ")}` : ""
+  ].filter(Boolean) : [];
+  const memoryLines = relevantMemories.map((memory) => memory.content);
+  const journalLines = relevantJournal.map((decision) => {
+    const lesson = decision.outcome.reviewedAt ? ` Lesson: ${decision.outcome.lesson}` : "";
+    return `${decision.subject}: ${decision.prePurchase.decision}. ${decision.prePurchase.thesis}${lesson}`;
+  });
   const sections = [
     verdict,
-    bulletSection("Owner evidence", ownerEvidence.slice(0, 2).map((reference) => `${reference.title}: ${shortSentence(reference.content, 180)}`), 2),
-    bulletSection("Market intelligence", marketIntelligence.observations.slice(0, 3).map((observation) => observation.body), 3),
+    bulletSection("Owner evidence", ownerEvidenceLines, 2),
+    bulletSection("Market intelligence", marketLines, 3),
     marketIntelligence.observations.length ? bulletSection("Market freshness", [marketIntelligence.summary.warning], 1) : "",
     bulletSection("Deal read", dealRead, 3),
-    bulletSection("Memory profile", relevantMemoryProfile.approvedCount ? [
-      `${relevantMemoryProfile.investorType}; ${relevantMemoryProfile.riskStyle}.`,
-      relevantMemoryProfile.preferredAssets.length ? `Preferred: ${relevantMemoryProfile.preferredAssets.join("; ")}` : "",
-      relevantMemoryProfile.avoidedRisks.length ? `Watch: ${relevantMemoryProfile.avoidedRisks.join("; ")}` : ""
-    ].filter(Boolean) : [], 3),
-    bulletSection("Your memory", relevantMemories.map((memory) => memory.content), 3),
-    bulletSection("Your decision journal", relevantJournal.map((decision) => {
-      const lesson = decision.outcome.reviewedAt ? ` Lesson: ${decision.outcome.lesson}` : "";
-      return `${decision.subject}: ${decision.prePurchase.decision}. ${decision.prePurchase.thesis}${lesson}`;
-    }), 2),
+    bulletSection("Memory profile", memoryProfileLines, 3),
+    bulletSection("Your memory", memoryLines, 3),
+    bulletSection("Your decision journal", journalLines, 2),
     bulletSection("Why", reasoning, 3),
     bulletSection("Watch-outs", risks, 2),
     bulletSection("Profile fit", profileFit, 3),
@@ -6668,7 +6796,20 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     bulletSection("My challenge back", challenge, 1)
   ].filter(Boolean);
 
-  const fallbackAnswer = sections.join("\n\n");
+  const fallbackAnswer = adaptFrameworkAnswerToPersona(sections.join("\n\n"), responsePersona, {
+    verdict,
+    reasoning,
+    risks,
+    evidenceChecks,
+    challenge,
+    ownerEvidenceLines,
+    marketLines,
+    dealRead,
+    profileFit,
+    memoryProfileLines,
+    memoryLines,
+    journalLines
+  });
   const promptReferences = uniqueSources([
     ...ownerEvidence,
     ...marketIntelligence.observations,
@@ -6738,6 +6879,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         memoryProfile: relevantMemoryProfile,
         journal: relevantJournal,
         marketIntelligence,
+        responsePersona,
         fallbackAnswer
       });
       return { answer: completion.text, sources, mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: evidenceResult.mode };

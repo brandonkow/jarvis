@@ -315,6 +315,7 @@ The second brain should adapt how it speaks without changing what it requires:
 - Beginner or guided users should receive plain-language reasoning, obvious next steps, and warnings against common emotional mistakes.
 - Concise or voice-summary users should receive the verdict, strongest reason, blocker, and next action first.
 - Professional users should receive a tighter due-diligence format with evidence gates, hard stops, and tasks.
+- The same response persona should apply to ordinary chat and structured reports, whether Apex is using only the framework or an external reasoning model.
 - User preference affects explanation style only. It must not weaken proof standards, legal boundaries, financial stress tests, or hard-stop rules.
 
 ## Geographic Portability

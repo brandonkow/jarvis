@@ -412,6 +412,16 @@ The v5.0 layer makes Apex easier for normal users to operate without changing th
 - Use onboarding completeness to show whether Apex has enough user-experience context to choose the right answer shape.
 - Preserve the same transaction, rental, financing, supply, site, management, legal, stress, portfolio, and exit requirements regardless of user confidence or preferred format.
 
+## v5.1 Response Persona Router
+
+The v5.1 layer applies the Guidance card to normal chat replies, not only structured Deal Reports:
+
+- Guided mode explains the conclusion in plain language, names beginner traps, and ends with one next action.
+- Concise or voice-summary mode leads with the verdict, strongest reason, main risk, and next action.
+- Checklist mode turns the framework read into pass, verify, stop, and next-action items.
+- Professional mode uses a tighter due-diligence format around evidence position, primary blocker, investor fit, and action.
+- The router must work in framework-only mode and must also pass the same persona instruction into any external reasoning prompt.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

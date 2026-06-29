@@ -112,7 +112,11 @@ test("OpenRouter uses its free router and reports the model that actually answer
   const session = await jsonRequest(baseUrl, "/api/jarvis/sessions", { method: "POST", body: {} });
   const answer = await jsonRequest(baseUrl, "/api/jarvis/query", {
     method: "POST",
-    body: { sessionId: session.payload.session.id, query: "Hello Apex Analytic" }
+    body: {
+      sessionId: session.payload.session.id,
+      query: "Hello Apex Analytic",
+      financialProfile: { guidanceMode: "Concise", preferredOutput: "Short answer" }
+    }
   });
   assert.equal(answer.response.status, 200);
   assert.equal(answer.payload.mode, "llm");
@@ -128,6 +132,8 @@ test("OpenRouter uses its free router and reports the model that actually answer
   assert.equal(captured[0].title, "Apex Analytic");
   assert.equal(captured[0].body.model, "openrouter/free");
   assert.equal(captured[0].body.messages[0].role, "system");
+  assert.match(captured[0].body.messages[1].content, /RESPONSE PERSONA/);
+  assert.match(captured[0].body.messages[1].content, /Concise mode/);
   assert.ok(captured[1].body.max_tokens > captured[0].body.max_tokens);
   assert.match(captured[1].body.messages[0].content, /complete answer/i);
 
