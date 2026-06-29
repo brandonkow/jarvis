@@ -4781,7 +4781,7 @@ button {
 
 .commandBar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 7px;
   border: 1px solid rgba(103, 229, 255, 0.24);
   border-radius: 999px;
@@ -4791,6 +4791,36 @@ button {
     rgba(2, 13, 21, 0.78);
   box-shadow: 0 0 46px rgba(28, 190, 221, 0.11), inset 0 0 28px rgba(28, 190, 221, 0.045);
   backdrop-filter: blur(18px);
+}
+
+.inputModeHint {
+  align-self: center;
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 999px;
+  padding: 7px 9px;
+  color: #7fb9c4;
+  background: rgba(0, 10, 17, 0.44);
+  font-size: 0.48rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.commandBar[data-input-mode="screen"] .inputModeHint,
+.commandBar[data-input-mode="offer"] .inputModeHint {
+  border-color: rgba(208, 173, 105, 0.32);
+  color: #d0ad69;
+}
+
+.commandBar[data-input-mode="compare"] .inputModeHint,
+.commandBar[data-input-mode="checklist"] .inputModeHint {
+  border-color: rgba(112, 230, 179, 0.28);
+  color: #70e6b3;
+}
+
+.commandBar[data-input-mode="voice"] .inputModeHint {
+  border-color: rgba(103, 229, 255, 0.38);
+  color: var(--cyan);
 }
 
 .commandBar:focus-within {
@@ -4888,6 +4918,11 @@ button {
 .stopVoiceBtn {
   color: #ffd4d4 !important;
   text-shadow: 0 0 10px rgba(255, 121, 121, 0.2);
+}
+
+.voiceMuted #soundToggle {
+  border-color: rgba(230, 142, 142, 0.28);
+  color: #d7a6a6;
 }
 
 .stopVoiceBtn[hidden] {
@@ -5607,6 +5642,12 @@ button {
     padding: 5px 6px 5px 12px;
   }
 
+  .inputModeHint {
+    padding: 6px 7px;
+    font-size: 0.42rem;
+    letter-spacing: 0.08em;
+  }
+
   .commandBar input {
     padding: 0 4px;
     font-size: 1rem;
@@ -5936,6 +5977,11 @@ button {
 
   .commandBar {
     min-height: 48px;
+  }
+
+  .inputModeHint {
+    padding: 5px 6px;
+    font-size: 0.4rem;
   }
 
   .commandBar input {

@@ -1,6 +1,7 @@
 const jarvisOrb = document.querySelector("#jarvisOrb");
 const chatForm = document.querySelector("#chatForm");
 const chatInput = document.querySelector("#chatInput");
+const inputModeHint = document.querySelector("#inputModeHint");
 const transcript = document.querySelector("#transcript");
 const assistantPrompt = document.querySelector("#assistantPrompt");
 const systemStatus = document.querySelector("#systemStatus");
@@ -219,6 +220,75 @@ function setSystemState(state, prompt) {
 
 function setSessionState(text) {
   sessionStatus.textContent = text;
+}
+
+const inputModes = {
+  chat: {
+    label: "CHAT",
+    placeholder: "Ask Apex Analytic...",
+    prompt: "Ask naturally. Apex will route the response style."
+  },
+  screen: {
+    label: "SCREEN",
+    placeholder: "Ask if this deal should be shortlisted...",
+    prompt: "Screening mode: include area, price, rent, and concern if you have them."
+  },
+  compare: {
+    label: "COMPARE",
+    placeholder: "Compare two projects, areas, or deals...",
+    prompt: "Comparison mode: name both options and the decision you need."
+  },
+  offer: {
+    label: "OFFER",
+    placeholder: "Prepare offer, negotiation, or walk-away price...",
+    prompt: "Offer mode: Apex will focus on price proof, leverage, and walk-away rule."
+  },
+  checklist: {
+    label: "CHECKLIST",
+    placeholder: "Ask for a checklist or next action list...",
+    prompt: "Checklist mode: Apex will convert the answer into action items."
+  },
+  voice: {
+    label: "VOICE",
+    placeholder: "Ask for a short voice-safe answer...",
+    prompt: "Voice mode: Apex will keep the spoken answer compact."
+  }
+};
+
+function detectInputMode(value) {
+  const text = String(value || "").toLowerCase();
+  if (!text.trim()) return { id: "chat", ...inputModes.chat };
+  if (/\b(compare|comparison|versus| vs |which one|option a|option b|better between)\b/.test(` ${text} `)) return { id: "compare", ...inputModes.compare };
+  if (/\b(offer|negotiate|negotiation|booking|walk.?away|counter.?offer|asking price|max price)\b/.test(text)) return { id: "offer", ...inputModes.offer };
+  if (/\b(checklist|check list|steps|to.?do|action list|what next|next actions)\b/.test(text)) return { id: "checklist", ...inputModes.checklist };
+  if (/\b(voice|read|earphone|summary|short answer|brief)\b/.test(text)) return { id: "voice", ...inputModes.voice };
+  if (/\b(buy|purchase|deal|invest|shortlist|screen|condo|apartment|property|rent|rental|yield|price)\b/.test(text)) return { id: "screen", ...inputModes.screen };
+  return { id: "chat", ...inputModes.chat };
+}
+
+function updateInputModeHint(value = chatInput.value) {
+  const mode = detectInputMode(value);
+  if (inputModeHint) {
+    inputModeHint.textContent = mode.label;
+    inputModeHint.title = mode.prompt;
+  }
+  chatForm.dataset.inputMode = mode.id;
+  chatForm.setAttribute("aria-label", mode.prompt);
+  chatInput.placeholder = mode.placeholder;
+  return mode;
+}
+
+function voiceSafeText(value) {
+  const text = brandVisibleText(value).replace(/\s+/g, " ").trim();
+  if (text.length <= 520) return text;
+  const sentences = text.match(/[^.!?]+[.!?]?/g) || [text];
+  let spoken = "";
+  for (const sentence of sentences) {
+    const next = `${spoken} ${sentence}`.trim();
+    if (next.length > 420) break;
+    spoken = next;
+  }
+  return `${spoken || text.slice(0, 420)} Full answer is on screen.`;
 }
 
 function setAuthMode(mode) {
@@ -2584,12 +2654,13 @@ async function speakWithServer(text) {
 
 function speak(text) {
   if (!voiceResponsesEnabled) return;
+  const spokenText = voiceSafeText(text);
   if (!("speechSynthesis" in window)) {
-    if (serverTtsEnabled) void speakWithServer(text);
+    if (serverTtsEnabled) void speakWithServer(spokenText);
     return;
   }
   stopSpeaking("Ready when you are.");
-  const utterance = new SpeechSynthesisUtterance(text);
+  const utterance = new SpeechSynthesisUtterance(spokenText);
   utterance.rate = 0.96;
   utterance.pitch = 0.9;
   utterance.onstart = () => {
@@ -2873,10 +2944,12 @@ async function ensureSession() {
 
 async function askJarvis(question) {
   await ensureSession();
+  const inputMode = detectInputMode(question);
   const result = await requestJson("/api/jarvis/query", {
     method: "POST",
     body: JSON.stringify({
       query: question,
+      inputMode: inputMode.id,
       sessionId,
       clientId: clientId(),
       dealCard: collectDealCard(),
@@ -2895,6 +2968,7 @@ async function submitQuestion(question) {
   if (!cleanQuestion) return;
   addMessage("user", cleanQuestion);
   chatInput.value = "";
+  updateInputModeHint("");
   setSystemState("Analyzing", "Reviewing your knowledge and prior decisions.");
   jarvisOrb.classList.add("speaking");
   try {
@@ -3188,11 +3262,19 @@ document.addEventListener("keydown", (event) => {
 });
 window.addEventListener("afterprint", finishPrinting);
 
+chatInput.addEventListener("input", () => updateInputModeHint());
+chatInput.addEventListener("focus", () => {
+  const mode = updateInputModeHint();
+  setSystemState("System ready", mode.prompt);
+});
+
 soundToggle.addEventListener("click", () => {
   voiceResponsesEnabled = !voiceResponsesEnabled;
   soundToggle.textContent = voiceResponsesEnabled ? "VOICE ON" : "VOICE OFF";
   soundToggle.setAttribute("aria-pressed", String(voiceResponsesEnabled));
+  document.body.classList.toggle("voiceMuted", !voiceResponsesEnabled);
   if (!voiceResponsesEnabled) stopSpeaking("Voice response off.");
+  else setSystemState("System ready", "Voice response on. Spoken replies stay compact.");
 });
 
 for (const field of dealFields) {
@@ -3208,6 +3290,7 @@ for (const field of profileFields) {
 async function bootJarvis() {
   restoreContext(dealFields, "data-deal-field", dealContextKey);
   restoreContext(profileFields, "data-profile-field", profileContextKey);
+  updateInputModeHint();
   renderContextReadiness();
   renderShortlist();
   bootContextPanels();

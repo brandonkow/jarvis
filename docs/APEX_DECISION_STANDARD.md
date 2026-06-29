@@ -442,6 +442,24 @@ The v5.3 layer gives users a quiet readiness signal before they ask or analyse:
 - Keep the strip hidden when account, memory, report, journal, market, shortlist, or print views replace the chat workspace.
 - Treat readiness as workflow guidance only. It must not approve a deal or weaken the evidence engine.
 
+## v5.4 Smart Input Mode
+
+The v5.4 layer lets Apex infer what job the user is trying to do before the message is sent:
+
+- Detect chat, deal screening, comparison, offer preparation, checklist, and voice-summary intent from the input text.
+- Show the detected mode as a compact command-bar chip and adjust the placeholder/action prompt.
+- Send the detected mode with chat requests for future server-side routing.
+- Keep this as UI guidance only. It must not override user wording, evidence gates, or deal analysis rules.
+
+## v5.5 Mobile And Voice Polish
+
+The v5.5 layer improves phone and earphone use:
+
+- Spoken replies should be shortened automatically so Apex does not read long reports into the user's earphones.
+- The full written answer remains on screen even when speech is compact.
+- Voice on/off state should be visible and stop controls should remain easy to reach.
+- Mobile command controls should stay compact without hiding the main send action.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.
