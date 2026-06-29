@@ -357,6 +357,30 @@ function sourcesMarkup(sources = []) {
   `;
 }
 
+function contextCoachMarkup(coach = {}) {
+  const prompts = Array.isArray(coach.prompts) ? coach.prompts.slice(0, 4) : [];
+  const missing = Array.isArray(coach.missing) ? coach.missing.slice(0, 4) : [];
+  if (!prompts.length && !missing.length) return "";
+  return `
+    <section class="contextCoach">
+      <header>
+        <span><small>${escapeHtml(coach.title || "NEXT MOVES")}</small><b>${escapeHtml(coach.summary || "Choose the next question to sharpen the decision.")}</b></span>
+      </header>
+      ${missing.length ? `<p><b>Missing</b><span>${escapeHtml(missing.join(", "))}</span></p>` : ""}
+      ${prompts.length ? `
+        <div>
+          ${prompts.map((prompt) => `
+            <button type="button" data-coach-prompt="${escapeHtml(prompt.text)}">
+              <small>${escapeHtml(prompt.kind || "question")}</small>
+              <span>${escapeHtml(prompt.label)}</span>
+            </button>
+          `).join("")}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
 function intelligenceMarkup({ mode = "", provider = "", model = "" } = {}) {
   if (mode === "framework") {
     return '<span class="intelligenceBadge framework" title="No external reasoning model generated this response"><i></i>FRAMEWORK ONLY</span>';
@@ -374,6 +398,7 @@ function addMessage(role, text, sources = [], intelligence = {}) {
     ${role === "jarvis" ? intelligenceMarkup(intelligence) : ""}
     <div class="messageText">${escapeHtml(text).replace(/\n/g, "<br>")}</div>
     ${role === "jarvis" ? sourcesMarkup(sources) : ""}
+    ${role === "jarvis" ? contextCoachMarkup(intelligence.contextCoach) : ""}
   `;
   transcript.append(message);
   transcript.scrollTop = transcript.scrollHeight;
@@ -3033,6 +3058,12 @@ for (const container of [transcript, memoryList]) {
     if (memoryButton) void handleMemoryAction(memoryButton);
     const analysisButton = event.target.closest("[data-analysis-action]");
     if (analysisButton) handleAnalysisAction(analysisButton);
+    const coachButton = event.target.closest("[data-coach-prompt]");
+    if (coachButton) {
+      chatInput.value = coachButton.getAttribute("data-coach-prompt") || "";
+      chatInput.focus();
+      setSystemState("System ready", "Prompt loaded. Edit or send when ready.");
+    }
   });
 }
 shortlistList.addEventListener("click", (event) => {

@@ -1026,6 +1026,20 @@ function normalizeJarvisSession(session) {
 
 function normalizeJarvisMessage(message) {
   if (!message?.role || !message?.content) return null;
+  const contextCoach = message.contextCoach && typeof message.contextCoach === "object"
+    ? {
+      title: String(message.contextCoach.title || "").trim().slice(0, 120),
+      summary: String(message.contextCoach.summary || "").trim().slice(0, 500),
+      missing: Array.isArray(message.contextCoach.missing) ? message.contextCoach.missing.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 6) : [],
+      prompts: Array.isArray(message.contextCoach.prompts)
+        ? message.contextCoach.prompts.map((item) => ({
+          label: String(item?.label || "").trim().slice(0, 80),
+          text: String(item?.text || "").trim().slice(0, 500),
+          kind: String(item?.kind || "question").trim().slice(0, 40)
+        })).filter((item) => item.label && item.text).slice(0, 4)
+        : []
+    }
+    : null;
   return {
     id: String(message.id || randomUUID()),
     role: message.role === "user" ? "user" : "jarvis",
@@ -1034,7 +1048,8 @@ function normalizeJarvisMessage(message) {
     mode: ["framework", "llm"].includes(message.mode) ? message.mode : "",
     provider: String(message.provider || "").trim().slice(0, 40),
     model: String(message.model || "").trim().slice(0, 160),
-    sources: Array.isArray(message.sources) ? message.sources.slice(0, 8) : []
+    sources: Array.isArray(message.sources) ? message.sources.slice(0, 8) : [],
+    contextCoach: contextCoach?.prompts.length || contextCoach?.missing.length ? contextCoach : null
   };
 }
 
@@ -2343,6 +2358,78 @@ function adaptFrameworkAnswerToPersona(answer, persona = {}, context = {}) {
   }
 
   return answer;
+}
+
+function buildContextCoach({ query = "", dealCard = {}, financialProfile = {}, responsePersona = responsePersonaFromProfile(), sources = [] } = {}) {
+  const missing = [];
+  const prompts = [];
+  const queryText = String(query || "").toLowerCase();
+  const addMissing = (label) => {
+    if (label && !missing.includes(label)) missing.push(label);
+  };
+  const addPrompt = (label, text, kind = "question") => {
+    if (!label || !text || prompts.some((item) => item.text === text)) return;
+    prompts.push({ label, text, kind });
+  };
+
+  if (!dealCard.area && !dealCard.projectName) {
+    addMissing("area or project name");
+    addPrompt("Name the deal", "I am looking at [project/area]. Help me screen the area, buyer pool, and main risks.", "deal-context");
+  }
+  if (!dealCard.askingPrice) {
+    addMissing("asking price");
+    addPrompt("Add entry price", "The asking price is RM[amount]. Is this within the right price segment for the area?", "deal-context");
+  }
+  if (!dealCard.expectedRent) {
+    addMissing("expected or achieved rent");
+    addPrompt("Test rent", "Expected rent is RM[amount]. Does this rent prove real demand or just advertised hope?", "rental-proof");
+  }
+  if (!dealCard.estimatedInstallment && !financialProfile.monthlyIncome) {
+    addMissing("installment or income profile");
+    addPrompt("Check affordability", "My income is RM[amount] and estimated installment is RM[amount]. Stress-test whether I can hold this.", "profile-fit");
+  }
+  if (!dealCard.comparableTransactions && !dealCard.comparableSource) {
+    addMissing("completed transaction comparables");
+    addPrompt("Prove value", "Comparable transactions show [range/source]. Does this prove I am buying below the right segment?", "value-proof");
+  }
+  if (!dealCard.siteVisitEvidence && /buy|purchase|deal|condo|apartment|property/.test(queryText)) {
+    addMissing("site visit or lived-quality proof");
+    addPrompt("Site visit lens", "I visited the project. Help me judge lobby, guardhouse, lifts, car park, residents, and management.", "site-visit");
+  }
+  if (!dealCard.legalTitleType && /buy|purchase|deal|title|legal/.test(queryText)) {
+    addMissing("title and transaction status");
+    addPrompt("Legal filter", "Title and transaction status is [status]. What legal or financing issue should stop the deal?", "legal");
+  }
+  if (!financialProfile.experienceLevel || !financialProfile.guidanceMode) {
+    addMissing("guidance preference");
+    addPrompt("Set guidance", "Use guided mode. Explain this like I am a beginner but keep the evidence standard strict.", "guidance");
+  }
+  if (responsePersona.kind === "checklist") {
+    addPrompt("Convert to checklist", "Turn this deal into a pass, verify, stop checklist.", "format");
+  } else if (responsePersona.kind === "professional") {
+    addPrompt("Professional review", "Give me the due-diligence version: evidence position, primary blocker, investor fit, and action.", "format");
+  } else if (responsePersona.kind === "concise") {
+    addPrompt("Short answer", "Give me the shortest useful answer: verdict, reason, risk, next action.", "format");
+  } else if (responsePersona.kind === "guided") {
+    addPrompt("Explain simply", "Explain the beginner trap in this deal and the one evidence item I should get next.", "format");
+  }
+
+  const hasEvidenceSource = sources.some((source) => ["evidence", "market", "memory", "journal"].includes(source.type));
+  if (!hasEvidenceSource) {
+    addPrompt("Bring proof", "What exact proof should I collect first so Apex can move from opinion to evidence?", "evidence");
+  }
+
+  const title = responsePersona.kind === "concise" ? "NEXT" : "NEXT MOVES";
+  const summary = missing.length
+    ? `Apex still needs ${missing.slice(0, 3).join(", ")} before the answer can become stronger.`
+    : "The basics are present. The next move is to sharpen proof, stress, or negotiation posture.";
+
+  return {
+    title,
+    summary,
+    missing: missing.slice(0, 6),
+    prompts: prompts.slice(0, 4)
+  };
 }
 
 function companionAnswer(kind, persona = responsePersonaFromProfile()) {
@@ -6668,12 +6755,14 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
           responsePersona,
           fallbackAnswer
         });
-        return { answer: completion.text, sources: [], mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: "none" };
+        const contextCoach = buildContextCoach({ query, dealCard, financialProfile, responsePersona, sources: [] });
+        return { answer: completion.text, sources: [], mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: "none", contextCoach };
       } catch (error) {
         console.warn(`Apex Analytic LLM fallback: ${error.message}`);
       }
     }
-    return { answer: fallbackAnswer, sources: [], mode: "framework", retrievalMode: "none" };
+    const contextCoach = buildContextCoach({ query, dealCard, financialProfile, responsePersona, sources: [] });
+    return { answer: fallbackAnswer, sources: [], mode: "framework", retrievalMode: "none", contextCoach };
   }
 
   const corpus = await readJson(RAG_PATH, []);
@@ -6882,13 +6971,15 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         responsePersona,
         fallbackAnswer
       });
-      return { answer: completion.text, sources, mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: evidenceResult.mode };
+      const contextCoach = buildContextCoach({ query, dealCard, financialProfile, responsePersona, sources });
+      return { answer: completion.text, sources, mode: "llm", provider: completion.provider, model: completion.model, retrievalMode: evidenceResult.mode, contextCoach };
     } catch (error) {
       console.warn(`Apex Analytic LLM fallback: ${error.message}`);
     }
   }
 
-  return { answer: fallbackAnswer, sources, mode: "framework", retrievalMode: evidenceResult.mode };
+  const contextCoach = buildContextCoach({ query, dealCard, financialProfile, responsePersona, sources });
+  return { answer: fallbackAnswer, sources, mode: "framework", retrievalMode: evidenceResult.mode, contextCoach };
 }
 
 async function readBody(req) {
@@ -8193,7 +8284,8 @@ async function router(req, res) {
       mode: result.mode,
       provider: result.provider || "",
       model: result.model || "",
-      sources: result.sources
+      sources: result.sources,
+      contextCoach: result.contextCoach || null
     };
     session.messages.push(jarvisMessage);
     session.updatedAt = jarvisMessage.createdAt;

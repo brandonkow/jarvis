@@ -142,6 +142,9 @@ test("production phase keeps evidence owner-only and completes the account lifec
   assert.equal(guidedChat.payload.mode, "framework");
   assert.match(guidedChat.payload.answer, /Plain-English read/i);
   assert.match(guidedChat.payload.answer, /Beginner trap/i);
+  assert.ok(guidedChat.payload.contextCoach.prompts.length >= 2);
+  assert.ok(guidedChat.payload.contextCoach.missing.includes("completed transaction comparables"));
+  assert.deepEqual(guidedChat.payload.message.contextCoach, guidedChat.payload.contextCoach);
 
   const registration = await request(baseUrl, "/api/auth/register", {
     method: "POST",

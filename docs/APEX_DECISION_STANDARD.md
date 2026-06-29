@@ -422,6 +422,16 @@ The v5.1 layer applies the Guidance card to normal chat replies, not only struct
 - Professional mode uses a tighter due-diligence format around evidence position, primary blocker, investor fit, and action.
 - The router must work in framework-only mode and must also pass the same persona instruction into any external reasoning prompt.
 
+## v5.2 Next-Move Context Coach
+
+The v5.2 layer makes Apex proactive after ordinary chat replies:
+
+- Return a compact next-move coach with missing context and suggested follow-up prompts.
+- Generate prompts from missing area/project, asking price, rent, installment/income, transaction comparables, site evidence, legal/title status, and guidance preferences.
+- Render the prompts in the frontend as clickable chips that load into the input box for editing or sending.
+- Persist the coach with chat messages so a refreshed session still shows the same next steps.
+- Keep prompts as user assistance only. They must not alter evidence standards, scoring, legal boundaries, or investment conclusions.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.
