@@ -1091,6 +1091,21 @@ button {
   display: none;
 }
 
+.billingGuardrail {
+  margin: 8px 0 0;
+  border: 1px solid rgba(103, 229, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #6f9ca6;
+  background: rgba(0, 10, 17, 0.34);
+  font-size: 0.58rem;
+  line-height: 1.4;
+}
+
+.billingGuardrail[hidden] {
+  display: none;
+}
+
 .billingSummary > span {
   display: grid;
   gap: 2px;
@@ -3209,6 +3224,159 @@ button {
 }
 
 .professionalReviewItem small {
+  color: #6f9ca6;
+  font-size: 0.58rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.35;
+}
+
+.analysisComplianceRefusal,
+.analysisCommercialGuardrail {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  border: 1px solid rgba(103, 229, 255, 0.14);
+  border-left: 2px solid rgba(103, 229, 255, 0.44);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(0, 11, 18, 0.4);
+}
+
+.analysisComplianceRefusal.refuse,
+.analysisCommercialGuardrail.blocked {
+  border-color: rgba(255, 126, 126, 0.22);
+  border-left-color: #e68e8e;
+  background: linear-gradient(135deg, rgba(255, 126, 126, 0.07), transparent 58%), rgba(0, 11, 18, 0.4);
+}
+
+.analysisComplianceRefusal.block,
+.analysisCommercialGuardrail.conditional {
+  border-color: rgba(255, 210, 116, 0.2);
+  border-left-color: #d0ad69;
+  background: linear-gradient(135deg, rgba(255, 210, 116, 0.06), transparent 58%), rgba(0, 11, 18, 0.4);
+}
+
+.analysisComplianceRefusal.clear,
+.analysisCommercialGuardrail.higher {
+  border-color: rgba(112, 230, 179, 0.18);
+  border-left-color: #6fd9a0;
+}
+
+.analysisComplianceRefusal header,
+.analysisCommercialGuardrail header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.analysisComplianceRefusal header span,
+.analysisCommercialGuardrail header span {
+  display: grid;
+  gap: 3px;
+}
+
+.analysisComplianceRefusal small,
+.analysisCommercialGuardrail small {
+  color: #67b7c7;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+}
+
+.analysisComplianceRefusal header b,
+.analysisCommercialGuardrail header b {
+  color: #d8fbff;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.analysisCommercialGuardrail header em {
+  flex: 0 0 auto;
+  border: 1px solid rgba(103, 229, 255, 0.14);
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #8fb8c1;
+  font-size: 0.45rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.analysisComplianceRefusal p,
+.analysisCommercialGuardrail p {
+  margin: 0;
+  color: #9fc8d0;
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+.analysisComplianceRefusal > div,
+.analysisCommercialGuardrail > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.complianceFlag,
+.commercialGuardrailItem {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid rgba(103, 229, 255, 0.09);
+  border-radius: 9px;
+  padding: 8px;
+  background: rgba(0, 10, 17, 0.3);
+}
+
+.complianceFlag {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+}
+
+.complianceFlag > i {
+  align-self: start;
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 999px;
+  padding: 3px 6px;
+  color: #8fb8c1;
+  font-size: 0.42rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.complianceFlag.refuse > i {
+  color: #ef9999;
+  border-color: rgba(255, 126, 126, 0.3);
+}
+
+.complianceFlag.block > i {
+  color: #d7b970;
+  border-color: rgba(255, 210, 116, 0.26);
+}
+
+.complianceFlag.clear > i {
+  color: #8ce0b0;
+  border-color: rgba(112, 230, 179, 0.24);
+}
+
+.complianceFlag span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.complianceFlag b,
+.commercialGuardrailItem b {
+  color: #a8d0d8;
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
+.complianceFlag small,
+.commercialGuardrailItem small {
   color: #6f9ca6;
   font-size: 0.58rem;
   font-weight: 400;
@@ -5966,6 +6134,13 @@ button {
     gap: 4px;
   }
 
+  .analysisComplianceRefusal header,
+  .analysisCommercialGuardrail header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
   .analysisTrustStamp div {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -5979,6 +6154,8 @@ button {
   .analysisEvidenceEngine > div,
   .analysisTransactionComps > div,
   .analysisProfessionalReview > div,
+  .analysisComplianceRefusal > div,
+  .analysisCommercialGuardrail > div,
   .analysisDiligence > div,
   .stressReadings,
   .stressAssumptions,
@@ -6286,6 +6463,19 @@ button {
   }
 
   body.printMode .professionalReviewItem {
+    border-color: #d6e3e7;
+    background: #fff;
+  }
+
+  body.printMode .analysisComplianceRefusal,
+  body.printMode .analysisCommercialGuardrail {
+    border-color: #d7e4e8;
+    border-left-color: #2b8fa3;
+    background: #f8fcfd;
+  }
+
+  body.printMode .complianceFlag,
+  body.printMode .commercialGuardrailItem {
     border-color: #d6e3e7;
     background: #fff;
   }

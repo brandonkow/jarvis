@@ -63,6 +63,7 @@ const billingSummary = document.querySelector("#billingSummary");
 const billingPlanName = document.querySelector("#billingPlanName");
 const billingUsage = document.querySelector("#billingUsage");
 const billingActions = document.querySelector("#billingActions");
+const billingGuardrail = document.querySelector("#billingGuardrail");
 const reportsToggle = document.querySelector("#reportsToggle");
 const reportsPanel = document.querySelector("#reportsPanel");
 const reportsClose = document.querySelector("#reportsClose");
@@ -483,6 +484,7 @@ function renderAuthState(user) {
   reportsToggle.hidden = !signedIn;
   journalToggle.hidden = !signedIn;
   billingSummary.hidden = !signedIn;
+  billingGuardrail.hidden = !signedIn;
   authTitle.textContent = signedIn ? "ACCOUNT" : authMode === "register" ? "CREATE ACCOUNT" : "SIGN IN";
   if (!signedIn) {
     closeMemoryPanel();
@@ -738,6 +740,167 @@ function professionalReviewText(analysis = {}) {
     "Professional review checklist:",
     `- ${pack.summary}`,
     ...pack.items.map((item) => `- ${item.role} / ${item.label} / ${item.status}: ${item.action}`)
+  ];
+}
+
+function textArray(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : value ? [value] : [];
+}
+
+function analysisRiskText(analysis = {}) {
+  return [
+    ...textArray(analysis.hardStops),
+    ...textArray(analysis.recommendationBlockers),
+    ...textArray(analysis.watchouts),
+    ...textArray(analysis.missingEvidence),
+    analysis.counterThesis,
+    analysis.challengeMode?.message,
+    analysis.legalTransactionEvidence?.summary,
+    analysis.legalTransactionEvidence?.transactionPosition,
+    analysis.financingValuationEvidence?.summary,
+    analysis.financingValuationEvidence?.affordabilityPosition,
+    analysis.siteManagementEvidence?.summary
+  ].filter(Boolean).join(" ").toLowerCase();
+}
+
+function unsafeEvidenceStatus(section = {}) {
+  const status = String(section.status || "").toLowerCase();
+  const score = Number(section.score || 0);
+  return /unsafe|danger|blocked|fail|reject/.test(status) || (score > 0 && score < 25);
+}
+
+function complianceRefusalMode(analysis = {}) {
+  const text = analysisRiskText(analysis);
+  const flags = [];
+  const add = (level, label, action) => {
+    if (!flags.some((item) => item.label === label)) flags.push({ level, label, action });
+  };
+
+  if (/marked.?up|mark.?up|hidden cashback|cashback|cash back|false document|fake document|mislead|lender deception|side agreement|side payment|direct payment|outside stakeholder|bypass/.test(text)) {
+    add("refuse", "Misleading financing or fund-flow risk", "Apex will not validate artificial pricing, hidden cashback, false documents, side agreements, or lender deception.");
+  }
+  if (unsafeEvidenceStatus(analysis.legalTransactionEvidence) || /caveat|title risk|seller authority|probate|bankrupt|litigation|restriction|consent|stakeholder/.test(text)) {
+    add("refuse", "Legal, title, or seller-authority stop", "Pause until the lawyer clears title, caveat, restrictions, seller authority, stakeholder flow, arrears, and completion path.");
+  }
+  if (unsafeEvidenceStatus(analysis.financingValuationEvidence) || /valuation mismatch|loan rejection|dsr|overleverage|bankability|loan margin/.test(text)) {
+    add("block", "Bankability or affordability risk", "Do not force the financing. Confirm valuation support, DSR, cash buffer, instalment stress, and clean document readiness.");
+  }
+  if (/bulk purchase|bulk-purchase|many auction|auction cases|investor concentration|airbnb|short.?stay/.test(text)) {
+    add("block", "Bulk-purchase or investor-concentration risk", "Treat the project as exit-sensitive until ownership mix, auction pressure, resident quality, and rental sustainability are proven.");
+  }
+  if (unsafeEvidenceStatus(analysis.siteManagementEvidence) || /management dispute|jmb|self interest|leak|defect|resident behaviour|poor management/.test(text)) {
+    add("block", "Project quality or management risk", "Do not let cheap entry override poor management, defects, resident issues, or weak site evidence.");
+  }
+  if (String(analysis.verdict || "").toUpperCase() === "REJECT" || textArray(analysis.hardStops).length) {
+    add("refuse", "Hard stop triggered", "Resolve or walk away from hard stops before paying, signing, or committing further capital.");
+  }
+
+  const refusalCount = flags.filter((item) => item.level === "refuse").length;
+  const status = refusalCount ? "refuse" : flags.length ? "block" : "clear";
+  return {
+    status,
+    label: status === "refuse" ? "APEX REFUSES VALIDATION" : status === "block" ? "VALIDATION BLOCKED" : "NO UNSAFE STRUCTURE DETECTED",
+    summary: status === "refuse"
+      ? "Apex will not validate this deal as structured. Independent legal, financing, and transaction review must clear the issue first."
+      : status === "block"
+        ? "Apex cannot support commitment yet. Clear the blocked compliance or evidence lane before treating the deal as investable."
+        : "No compliance-refusal pattern is detected from the supplied inputs. This is not legal clearance.",
+    flags: flags.length ? flags : [{
+      level: "clear",
+      label: "Boundary still applies",
+      action: "Continue to verify live evidence, professional review, and clean financing or legal structure before committing."
+    }]
+  };
+}
+
+function complianceRefusalMarkup(analysis = {}) {
+  const mode = complianceRefusalMode(analysis);
+  return `
+    <section class="analysisComplianceRefusal ${escapeHtml(mode.status)}" aria-label="Unsafe deal and compliance boundary">
+      <header><span><small>V6.4 UNSAFE DEAL BOUNDARY</small><b>${escapeHtml(mode.label)}</b></span></header>
+      <p>${escapeHtml(mode.summary)}</p>
+      <div>
+        ${mode.flags.map((item) => `
+          <article class="complianceFlag ${escapeHtml(item.level)}">
+            <i>${escapeHtml(item.level)}</i>
+            <span><b>${escapeHtml(item.label)}</b><small>${escapeHtml(item.action)}</small></span>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function complianceRefusalText(analysis = {}) {
+  const mode = complianceRefusalMode(analysis);
+  return [
+    "Unsafe deal boundary:",
+    `- ${mode.label}: ${mode.summary}`,
+    ...mode.flags.map((item) => `- ${item.level}: ${item.label}. ${item.action}`)
+  ];
+}
+
+function commercialGuardrail(analysis = {}) {
+  const compliance = complianceRefusalMode(analysis);
+  const confidence = Number(analysis.confidence || 0);
+  const score = Number(analysis.averageScore || 0);
+  const paidPlan = Boolean(authenticatedUser && billingState?.plan?.id && billingState.plan.id !== "free");
+  const planName = authenticatedUser ? billingState?.plan?.name || "Signed-in plan" : "Guest / public";
+  const status = compliance.status === "refuse"
+    ? "blocked"
+    : compliance.status === "block" || confidence < 50 || score < 55
+      ? "conditional"
+      : confidence >= 75 && score >= 70
+        ? "higher"
+        : "moderate";
+  return {
+    status,
+    label: status === "blocked" ? "Do Not Market As Investable" : status === "conditional" ? "Conditional Public Confidence" : status === "higher" ? "Higher Confidence, Still Conditional" : "Moderate Public Confidence",
+    planName,
+    summary: status === "blocked"
+      ? "This report should be treated as a refusal or unresolved-risk record, not a sales or investment endorsement."
+      : "Public confidence is limited by evidence quality, hard-stop status, and professional review. Payment status never upgrades a verdict.",
+    items: [
+      {
+        label: "Payment boundary",
+        body: `${paidPlan ? `${planName} unlocks more workflow capacity.` : `${planName} access may be limited.`} Plans affect report access, saved history, and usage limits only; they never improve scores or remove hard stops.`
+      },
+      {
+        label: "Confidence source",
+        body: `Confidence is ${confidence || 0}% and decision score is ${score || 0}/100 because of supplied evidence, not because of account status or payment.`
+      },
+      {
+        label: "Public use",
+        body: "Do not present this report as guaranteed return, valuation, legal clearance, loan approval, or personalized licensed financial advice."
+      }
+    ]
+  };
+}
+
+function commercialGuardrailMarkup(analysis = {}) {
+  const guardrail = commercialGuardrail(analysis);
+  return `
+    <section class="analysisCommercialGuardrail ${escapeHtml(guardrail.status)}" aria-label="Public confidence and monetization guardrails">
+      <header><span><small>V6.5 PUBLIC CONFIDENCE</small><b>${escapeHtml(guardrail.label)}</b></span><em>${escapeHtml(guardrail.planName)}</em></header>
+      <p>${escapeHtml(guardrail.summary)}</p>
+      <div>
+        ${guardrail.items.map((item) => `
+          <article class="commercialGuardrailItem">
+            <b>${escapeHtml(item.label)}</b>
+            <small>${escapeHtml(item.body)}</small>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function commercialGuardrailText(analysis = {}) {
+  const guardrail = commercialGuardrail(analysis);
+  return [
+    "Public confidence and monetization guardrails:",
+    `- ${guardrail.label} / ${guardrail.planName}: ${guardrail.summary}`,
+    ...guardrail.items.map((item) => `- ${item.label}: ${item.body}`)
   ];
 }
 
@@ -1037,6 +1200,7 @@ function renderBillingStatus(status) {
     ? available.map((plan) => `<button type="button" data-checkout-plan="${escapeHtml(plan.id)}">${escapeHtml(plan.name.toUpperCase())} / RM${escapeHtml(plan.priceRm)}</button>`).join("")
     : '<small>UPGRADES READY AFTER CHECKOUT CONFIGURATION</small>';
   reportsUsageLabel.textContent = `${status.plan.name.toUpperCase()} / ${status.usage.remaining} LEFT`;
+  billingGuardrail.textContent = `${status.plan.name} controls report access, storage, and usage limits only. It never changes scores, hard stops, or recommendations.`;
 }
 
 async function loadBillingStatus() {
@@ -1595,7 +1759,11 @@ function analysisExportText(analysis) {
     "",
     ...trustStampText(),
     "",
+    ...complianceRefusalText(analysis),
+    "",
     ...professionalReviewText(analysis),
+    "",
+    ...commercialGuardrailText(analysis),
     "",
     `Summary: ${analysis.summary || ""}`
   ];
@@ -2776,6 +2944,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       <i><em style="width:${Math.max(0, Math.min(100, Number(dimension.score) || 0))}%"></em></i>
     </article>
   `).join("");
+  const complianceMode = complianceRefusalMode(analysis);
   const scenarioMarkup = (analysis.scenarios || []).map((scenario) => `
     <article class="analysisScenario ${escapeHtml(scenario.status)}">
       <span><b>${escapeHtml(scenario.label)}</b><small>${escapeHtml(scenario.assumption)}</small></span>
@@ -2811,7 +2980,9 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
     </div>
     ${trustStampMarkup()}
+    ${complianceRefusalMarkup(analysis)}
     ${professionalReviewMarkup(analysis)}
+    ${commercialGuardrailMarkup(analysis)}
     <div class="analysisOverview">
       ${readinessMarkup(analysis.investorReadiness)}
       ${dimensionMarkup ? `<section class="analysisDimensionSection"><h3>DEAL SCORECARD</h3><div class="analysisDimensions">${dimensionMarkup}</div></section>` : ""}
@@ -2858,7 +3029,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       <p>${escapeHtml(analysis.counterThesis)}</p>
     </section>
     <div class="analysisActions">
-      <button type="button" data-analysis-action="shortlist">SAVE TO SHORTLIST</button>
+      <button type="button" data-analysis-action="shortlist">${complianceMode.status === "refuse" ? "SAVE FOR REVIEW" : "SAVE TO SHORTLIST"}</button>
       ${authenticatedUser && analysis.savedReportId ? '<button type="button" data-analysis-action="journal">RECORD DECISION</button>' : ""}
       <button type="button" data-analysis-action="copy">COPY REPORT</button>
       <button type="button" data-analysis-action="report">PRINT REPORT</button>

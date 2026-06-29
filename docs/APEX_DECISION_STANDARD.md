@@ -545,6 +545,26 @@ The v6.3 layer converts the trust boundary into practical review lanes before mo
 - Include the checklist in on-screen reports, copied report exports, and print/PDF output.
 - Keep the checklist as a handoff guide. It must not certify legal title, bankability, valuation, rental demand, or personal affordability.
 
+## v6.4 Unsafe Deal / Compliance Refusal Mode
+
+The v6.4 layer makes refusal explicit when deal structure or evidence crosses Apex boundaries:
+
+- Detect unsafe patterns from existing hard stops, blockers, legal evidence, financing evidence, site evidence, and risk text.
+- Flag misleading financing, hidden cashback, false documents, side agreements, direct payment, stakeholder bypass, caveat/title risk, seller-authority risk, forced financing, bulk-purchase concentration, and unsafe management/project quality.
+- Show whether Apex refuses validation, blocks validation pending clearance, or detects no unsafe structure from supplied inputs.
+- Include the refusal boundary in on-screen reports, copied report exports, and print/PDF output.
+- Keep refusal mode above commercial incentives. No plan, payment, source, or user insistence may remove a serious legal, financing, title, or compliance boundary.
+
+## v6.5 Public Confidence And Monetization Guardrails
+
+The v6.5 layer closes the V6 trust path by separating confidence from monetization:
+
+- Show a public-confidence guardrail inside each formal report.
+- State that confidence comes from evidence quality, hard-stop status, scores, and professional review, not account status or payment.
+- State that paid plans affect report access, storage, history, usage limits, and workflow capacity only.
+- Prevent public users from treating Apex output as guaranteed return, valuation, legal clearance, loan approval, or licensed financial advice.
+- Keep monetization subordinate to the decision engine. Upgrades must never change verdicts, scores, hard stops, refusal mode, or required evidence.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

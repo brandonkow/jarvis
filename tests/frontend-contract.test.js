@@ -53,6 +53,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /id="shortlistPanel"[\s\S]*?DEAL SHORTLIST[\s\S]*?id="shortlistList"/, "Analysed properties need an inline comparison shortlist.");
   assert.match(html, /id="shortlistSummary"[\s\S]*?id="shortlistList"/, "The shortlist needs a comparison summary before the deal cards.");
   assert.match(html, /id="billingSummary"[\s\S]*?id="billingPlanName"[\s\S]*?id="billingActions"/, "Signed-in accounts need one compact plan and usage surface.");
+  assert.match(html, /id="billingGuardrail"[\s\S]*?Plan changes report access only/, "V6.5 needs an account-level monetization guardrail.");
   assert.match(html, /id="reportsPanel"[\s\S]*?DEAL REPORTS[\s\S]*?id="reportsList"/, "Signed-in accounts need private report history.");
   assert.match(html, /id="journalPanel"[\s\S]*?DECISION JOURNAL[\s\S]*?id="journalEditor"/, "Signed-in accounts need an inline decision journal.");
   assert.match(html, /id="ownerMarketToggle"[\s\S]*?MARKET/, "The owner market console must be reachable from the account surface.");
@@ -114,6 +115,13 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /function professionalReviewText[\s\S]*?Professional review checklist/, "V6.3 must include professional review handoff text in copied exports.");
   assert.match(app, /analysisExportText[\s\S]*?\.\.\.professionalReviewText\(analysis\)/, "Copied deal reports must carry the V6.3 professional review checklist.");
   assert.match(app, /trustStampMarkup\(\)[\s\S]*?professionalReviewMarkup\(analysis\)[\s\S]*?<div class="analysisOverview">/, "On-screen deal reports must show trust and professional review before detailed scoring.");
+  assert.match(app, /function complianceRefusalMode[\s\S]*?Misleading financing or fund-flow risk[\s\S]*?APEX REFUSES VALIDATION/, "V6.4 must derive unsafe deal refusal mode.");
+  assert.match(app, /function complianceRefusalMarkup[\s\S]*?V6\.4 UNSAFE DEAL BOUNDARY/, "V6.4 must render an unsafe deal boundary inside formal reports.");
+  assert.match(app, /function commercialGuardrail[\s\S]*?Payment boundary[\s\S]*?Public use/, "V6.5 must derive public confidence and monetization guardrails.");
+  assert.match(app, /function commercialGuardrailMarkup[\s\S]*?V6\.5 PUBLIC CONFIDENCE/, "V6.5 must render public confidence guardrails inside formal reports.");
+  assert.match(app, /analysisExportText[\s\S]*?\.\.\.complianceRefusalText\(analysis\)[\s\S]*?\.\.\.commercialGuardrailText\(analysis\)/, "Copied deal reports must carry V6.4 and V6.5 guardrails.");
+  assert.match(app, /complianceRefusalMarkup\(analysis\)[\s\S]*?professionalReviewMarkup\(analysis\)[\s\S]*?commercialGuardrailMarkup\(analysis\)[\s\S]*?<div class="analysisOverview">/, "On-screen deal reports must show V6.4 and V6.5 before detailed scoring.");
+  assert.match(app, /billingGuardrail\.textContent[\s\S]*?never changes scores, hard stops, or recommendations/, "Account billing must state that payment cannot change decisions.");
   assert.match(app, /\/api\/memory\/settings/, "Memory collection and reasoning must be controlled through explicit settings.");
   assert.match(app, /captureEnabled:\s*memoryCaptureEnabled\.checked/, "Memory capture must be opt-in from the UI.");
   assert.match(app, /reasoningEnabled:\s*memoryReasoningEnabled\.checked/, "Using approved memory in reasoning must be opt-in from the UI.");
@@ -223,6 +231,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /body\.printMode \.analysisTrustStamp[\s\S]*?background:\s*#f4fbfd;/, "V6.2 report trust stamp must stay readable in print.");
   assert.match(styles, /\.analysisProfessionalReview[\s\S]*?\.professionalReviewItem[\s\S]*?\.professionalReviewItem\.ready/, "V6.3 professional review checklist needs lane status styling.");
   assert.match(styles, /body\.printMode \.analysisProfessionalReview[\s\S]*?background:\s*#f8fcfd;/, "V6.3 professional review checklist must stay readable in print.");
+  assert.match(styles, /\.billingGuardrail[\s\S]*?Plan|\.billingGuardrail[\s\S]*?font-size/, "V6.5 account billing guardrail needs compact styling.");
+  assert.match(styles, /\.analysisComplianceRefusal[\s\S]*?\.complianceFlag\.refuse[\s\S]*?\.analysisCommercialGuardrail/, "V6.4 and V6.5 report guardrails need visible state styling.");
+  assert.match(styles, /body\.printMode \.analysisComplianceRefusal[\s\S]*?body\.printMode \.analysisCommercialGuardrail/, "V6.4 and V6.5 guardrails must stay readable in print.");
   assert.match(styles, /\.inputModeHint[\s\S]*?\.commandBar\[data-input-mode="voice"\]/, "V5.4 smart input mode needs styled command-bar states.");
   assert.match(styles, /\.voiceMuted[\s\S]*?#soundToggle/, "V5.5 needs a visible muted-voice state.");
   assert.match(styles, /\.responseFeedback[\s\S]*?button\.active/, "V5.6 response feedback controls need compact active-state styling.");
