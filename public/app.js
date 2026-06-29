@@ -157,6 +157,7 @@ const dealContextKey = "estatelab.jarvis.dealCard";
 const profileContextKey = "estatelab.jarvis.financialProfile";
 const contextPanelKey = "estatelab.jarvis.contextPanels";
 const shortlistKey = "apex.shortlist.v1";
+const responseFeedbackKey = "apex.responseFeedback.v1";
 const ownerMarketTokenKey = "apex.ownerMarket.token";
 const analysisRegistry = new Map();
 let voiceResponsesEnabled = true;
@@ -289,6 +290,84 @@ function voiceSafeText(value) {
     spoken = next;
   }
   return `${spoken || text.slice(0, 420)} Full answer is on screen.`;
+}
+
+const responseFeedbackOptions = [
+  { id: "useful", label: "Useful", note: "Keep this answer shape." },
+  { id: "shorter", label: "Shorter", note: "Make future answers shorter and lead with the decision." },
+  { id: "warmer", label: "Less formal", note: "Make future answers more natural and mentor-like." },
+  { id: "evidence", label: "More proof", note: "Add clearer missing evidence and verification steps." }
+];
+
+function readResponseFeedback() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(responseFeedbackKey) || "[]");
+    return Array.isArray(parsed) ? parsed.slice(0, 12) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeResponseFeedback(items = []) {
+  window.localStorage.setItem(responseFeedbackKey, JSON.stringify(items.slice(0, 12)));
+}
+
+function responseFeedbackSummary() {
+  const items = readResponseFeedback();
+  if (!items.length) return "";
+  const latest = items[0];
+  const counts = responseFeedbackOptions
+    .map((option) => {
+      const count = items.filter((item) => item.value === option.id).length;
+      return count ? `${option.label}: ${count}` : "";
+    })
+    .filter(Boolean)
+    .join(", ");
+  return [
+    latest?.note ? `Latest feedback: ${latest.note}` : "",
+    counts ? `Recent feedback pattern: ${counts}.` : ""
+  ].filter(Boolean).join(" ");
+}
+
+function responseFeedbackMarkup(messageId) {
+  if (!messageId) return "";
+  const selected = readResponseFeedback().find((item) => item.messageId === messageId)?.value || "";
+  return `
+    <section class="responseFeedback" data-feedback-message="${escapeHtml(messageId)}" aria-label="Answer feedback">
+      <span>Answer feel</span>
+      ${responseFeedbackOptions.map((option) => `
+        <button type="button" data-response-feedback="${escapeHtml(option.id)}" class="${selected === option.id ? "active" : ""}">
+          ${escapeHtml(option.label)}
+        </button>
+      `).join("")}
+    </section>
+  `;
+}
+
+function handleResponseFeedback(button) {
+  const panel = button.closest("[data-feedback-message]");
+  if (!panel) return;
+  const messageId = panel.getAttribute("data-feedback-message") || "";
+  const value = button.getAttribute("data-response-feedback") || "";
+  const option = responseFeedbackOptions.find((item) => item.id === value);
+  if (!messageId || !option) return;
+  const answer = panel.closest(".message")?.querySelector(".messageText")?.textContent || "";
+  const nextItems = [
+    {
+      messageId,
+      value,
+      label: option.label,
+      note: option.note,
+      answer: brandVisibleText(answer).replace(/\s+/g, " ").trim().slice(0, 180),
+      createdAt: new Date().toISOString()
+    },
+    ...readResponseFeedback().filter((item) => item.messageId !== messageId)
+  ];
+  writeResponseFeedback(nextItems);
+  panel.querySelectorAll("[data-response-feedback]").forEach((item) => {
+    item.classList.toggle("active", item === button);
+  });
+  setSystemState("System ready", `Feedback saved. ${option.note}`);
 }
 
 function setAuthMode(mode) {
@@ -463,6 +542,9 @@ function intelligenceMarkup({ mode = "", provider = "", model = "" } = {}) {
 function addMessage(role, text, sources = [], intelligence = {}) {
   document.body.classList.add("conversationActive");
   const message = document.createElement("article");
+  const messageId = role === "jarvis"
+    ? (intelligence?.message?.id || intelligence?.id || `local-${Date.now()}-${Math.random().toString(16).slice(2)}`)
+    : "";
   message.className = `message ${role}`;
   message.innerHTML = `
     <strong>${role === "jarvis" ? "APEX" : "YOU"}</strong>
@@ -470,6 +552,7 @@ function addMessage(role, text, sources = [], intelligence = {}) {
     <div class="messageText">${escapeHtml(text).replace(/\n/g, "<br>")}</div>
     ${role === "jarvis" ? sourcesMarkup(sources) : ""}
     ${role === "jarvis" ? contextCoachMarkup(intelligence.contextCoach) : ""}
+    ${role === "jarvis" ? responseFeedbackMarkup(messageId) : ""}
   `;
   transcript.append(message);
   transcript.scrollTop = transcript.scrollHeight;
@@ -2953,7 +3036,8 @@ async function askJarvis(question) {
       sessionId,
       clientId: clientId(),
       dealCard: collectDealCard(),
-      financialProfile: collectFinancialProfile()
+      financialProfile: collectFinancialProfile(),
+      responseFeedback: responseFeedbackSummary()
     })
   });
   sessionId = result.session.id;
@@ -3216,6 +3300,8 @@ for (const container of [transcript, memoryList]) {
     if (memoryButton) void handleMemoryAction(memoryButton);
     const analysisButton = event.target.closest("[data-analysis-action]");
     if (analysisButton) handleAnalysisAction(analysisButton);
+    const feedbackButton = event.target.closest("[data-response-feedback]");
+    if (feedbackButton) handleResponseFeedback(feedbackButton);
     const coachButton = event.target.closest("[data-coach-prompt]");
     if (coachButton) {
       chatInput.value = coachButton.getAttribute("data-coach-prompt") || "";

@@ -460,6 +460,15 @@ The v5.5 layer improves phone and earphone use:
 - Voice on/off state should be visible and stop controls should remain easy to reach.
 - Mobile command controls should stay compact without hiding the main send action.
 
+## v5.6 Response Feedback Loop
+
+The v5.6 layer lets users tune how Apex answers without changing the investment standard:
+
+- Show compact feedback controls under Apex replies: useful, shorter, less formal, and more proof.
+- Store recent feedback locally and summarize it into the next chat request.
+- Use feedback only to adjust response shape, warmth, length, and evidence emphasis.
+- Never let feedback change deterministic scores, hard stops, missing evidence, legal caution, or deal verdicts.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

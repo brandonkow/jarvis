@@ -2496,6 +2496,43 @@ button {
   background: rgba(42, 171, 199, 0.08);
 }
 
+.responseFeedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  border-top: 1px solid rgba(103, 229, 255, 0.1);
+  padding-top: 8px;
+}
+
+.responseFeedback span {
+  margin-right: 2px;
+  color: #668c95;
+  font-size: 0.48rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.responseFeedback button {
+  border: 1px solid rgba(103, 229, 255, 0.13);
+  border-radius: 999px;
+  padding: 4px 7px;
+  cursor: pointer;
+  color: #7fb9c4;
+  background: rgba(1, 10, 17, 0.5);
+  font-size: 0.48rem;
+  letter-spacing: 0.08em;
+}
+
+.responseFeedback button:hover,
+.responseFeedback button:focus-visible,
+.responseFeedback button.active {
+  border-color: rgba(103, 229, 255, 0.38);
+  color: var(--cyan);
+  background: rgba(42, 171, 199, 0.1);
+}
+
 .analysisMessage {
   width: 100%;
   max-width: 100%;
@@ -5713,7 +5750,8 @@ button {
   body.printMode .transcript > :not(.printTarget),
   body.printMode .analysisActions,
   body.printMode .intelligenceBadge,
-  body.printMode .sourceSummary {
+  body.printMode .sourceSummary,
+  body.printMode .responseFeedback {
     display: none !important;
   }
 

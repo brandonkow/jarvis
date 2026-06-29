@@ -7,10 +7,11 @@ import { fileURLToPath } from "node:url";
 const repoDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 test("frontend selectors and stylesheet structure stay valid", async () => {
-  const [html, app, styles] = await Promise.all([
+  const [html, app, styles, server] = await Promise.all([
     readFile(path.join(repoDir, "public", "index.html"), "utf8"),
     readFile(path.join(repoDir, "public", "app.js"), "utf8"),
-    readFile(path.join(repoDir, "public", "styles.css"), "utf8")
+    readFile(path.join(repoDir, "public", "styles.css"), "utf8"),
+    readFile(path.join(repoDir, "server.js"), "utf8")
   ]);
 
   const selectorIds = [...app.matchAll(/querySelector\("#([A-Za-z][\w-]*)"\)/g)].map((match) => match[1]);
@@ -69,6 +70,11 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /function detectInputMode[\s\S]*?compare[\s\S]*?offer[\s\S]*?checklist/, "V5.4 must detect smart input intent before send.");
   assert.match(app, /inputMode:\s*inputMode\.id/, "V5.4 must include detected input mode in chat requests.");
   assert.match(app, /function voiceSafeText[\s\S]*?Full answer is on screen/, "V5.5 must shorten spoken replies while preserving the written answer.");
+  assert.match(app, /function responseFeedbackMarkup[\s\S]*?data-response-feedback/, "V5.6 needs inline response feedback controls.");
+  assert.match(app, /function handleResponseFeedback[\s\S]*?writeResponseFeedback/, "V5.6 feedback controls must save recent answer-shape feedback locally.");
+  assert.match(app, /responseFeedback:\s*responseFeedbackSummary\(\)/, "V5.6 must send recent answer feedback into future chat requests.");
+  assert.match(server, /responseFeedback[\s\S]*?Recent answer feedback/, "V5.6 feedback must reach the server persona prompt.");
+  assert.match(server, /feedbackPrefersShort[\s\S]*?feedbackPrefersWarmer[\s\S]*?feedbackPrefersEvidence/, "V5.6 server persona must translate feedback into answer-shape instructions.");
   assert.match(app, /\/api\/memory\/settings/, "Memory collection and reasoning must be controlled through explicit settings.");
   assert.match(app, /captureEnabled:\s*memoryCaptureEnabled\.checked/, "Memory capture must be opt-in from the UI.");
   assert.match(app, /reasoningEnabled:\s*memoryReasoningEnabled\.checked/, "Using approved memory in reasoning must be opt-in from the UI.");
@@ -171,6 +177,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.accountOpen \.contextReadiness[\s\S]*?display:\s*none;/, "Context readiness must hide when workspace panels replace chat.");
   assert.match(styles, /\.inputModeHint[\s\S]*?\.commandBar\[data-input-mode="voice"\]/, "V5.4 smart input mode needs styled command-bar states.");
   assert.match(styles, /\.voiceMuted[\s\S]*?#soundToggle/, "V5.5 needs a visible muted-voice state.");
+  assert.match(styles, /\.responseFeedback[\s\S]*?button\.active/, "V5.6 response feedback controls need compact active-state styling.");
   assert.match(styles, /\.shortlistCompare[\s\S]*?adjusted|\.shortlistCompare[\s\S]*?grid-template-columns:/, "The v1.3 shortlist needs a styled comparison summary.");
   assert.match(styles, /\.shortlistItem\.blocked[\s\S]*?border-color/, "Blocked shortlist items need a visible comparison warning state.");
 

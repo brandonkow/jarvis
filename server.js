@@ -2252,12 +2252,27 @@ function responsePersonaFromProfile(financialProfile = {}) {
   const output = String(financialProfile.preferredOutput || "").toLowerCase();
   const comfort = String(financialProfile.confidenceComfort || "").toLowerCase();
   const notes = String(financialProfile.onboardingNotes || "").trim();
+  const responseFeedback = reportText(financialProfile.responseFeedback, 700);
+  const feedbackText = responseFeedback.toLowerCase();
   const guided = mode.includes("guided") || level.includes("beginner");
   const professional = mode.includes("professional") || level.includes("professional");
   const checklist = output.includes("checklist");
   const voice = output.includes("voice");
   const concise = mode.includes("concise") || output.includes("short") || voice;
-  const kind = guided ? "guided" : professional ? "professional" : checklist ? "checklist" : concise ? "concise" : "balanced";
+  const feedbackPrefersShort = feedbackText.includes("shorter") || feedbackText.includes("lead with the decision");
+  const feedbackPrefersWarmer = feedbackText.includes("less formal") || feedbackText.includes("mentor-like") || feedbackText.includes("natural");
+  const feedbackPrefersEvidence = feedbackText.includes("more proof") || feedbackText.includes("verification") || feedbackText.includes("evidence");
+  const kind = feedbackPrefersShort
+    ? "concise"
+    : guided
+      ? "guided"
+      : professional
+        ? "professional"
+        : checklist
+          ? "checklist"
+          : concise
+            ? "concise"
+            : "balanced";
   const label = {
     guided: "Guided beginner mode",
     professional: "Professional due-diligence mode",
@@ -2272,16 +2287,22 @@ function responsePersonaFromProfile(financialProfile = {}) {
     concise: "Give the verdict first, then only the strongest reason, main risk, and next action.",
     balanced: "Balance judgment, evidence, risk, and next action in a natural conversational answer."
   }[kind];
+  const feedbackInstructions = [
+    feedbackPrefersWarmer ? "Recent feedback asks for less formal, more mentor-like wording." : "",
+    feedbackPrefersEvidence ? "Recent feedback asks for clearer proof, missing evidence, and verification steps." : "",
+    feedbackPrefersShort ? "Recent feedback asks for shorter answers that lead with the decision." : ""
+  ].filter(Boolean).join(" ");
   return {
     kind,
     label,
-    instruction,
+    instruction: [instruction, feedbackInstructions].filter(Boolean).join(" "),
     level: financialProfile.experienceLevel || "Not stated",
     mode: financialProfile.guidanceMode || "Not stated",
     output: financialProfile.preferredOutput || "Not stated",
     comfort: financialProfile.confidenceComfort || "Not stated",
     conservative: comfort.includes("conservative"),
-    notes
+    notes,
+    responseFeedback
   };
 }
 
@@ -2292,7 +2313,8 @@ function responsePersonaForPrompt(persona = {}) {
     `Experience level: ${persona.level || "Not stated"}.`,
     `Preferred output: ${persona.output || "Not stated"}.`,
     `Confidence comfort: ${persona.comfort || "Not stated"}.`,
-    persona.notes ? `User notes: ${persona.notes}` : ""
+    persona.notes ? `User notes: ${persona.notes}` : "",
+    persona.responseFeedback ? `Recent answer feedback: ${persona.responseFeedback}` : ""
   ].filter(Boolean).join("\n");
 }
 
@@ -6727,6 +6749,8 @@ async function retrieveGuidance(query, property, brain, knowledge = emptyKnowled
 async function retrieveJarvisAnswer(query, brain, session, context = {}, knowledge = emptyKnowledge(), userMemories = [], userJournal = []) {
   const dealCard = cleanContextRecord(context.dealCard, dealContextLabels);
   const financialProfile = cleanContextRecord(context.financialProfile, profileContextLabels);
+  const responseFeedback = reportText(context.responseFeedback, 700);
+  if (responseFeedback) financialProfile.responseFeedback = responseFeedback;
   const responsePersona = responsePersonaFromProfile(financialProfile);
   const hasStructuredContext = hasContextData({ dealCard, financialProfile });
   const contextForSearch = [
@@ -8274,7 +8298,8 @@ async function router(req, res) {
     const retrievalStartedAt = Date.now();
     const result = await retrieveJarvisAnswer(query, db.brain, session, {
       dealCard: body.dealCard,
-      financialProfile: body.financialProfile
+      financialProfile: body.financialProfile,
+      responseFeedback: body.responseFeedback
     }, db.knowledge, approvedUserMemories(actor.user), lockedUserJournal(actor.user));
     const jarvisMessage = {
       id: randomUUID(),
