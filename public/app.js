@@ -107,6 +107,9 @@ const journalMessage = document.querySelector("#journalMessage");
 const ownerMarketToggle = document.querySelector("#ownerMarketToggle");
 const ownerMarketPanel = document.querySelector("#ownerMarketPanel");
 const ownerMarketClose = document.querySelector("#ownerMarketClose");
+const trustToggle = document.querySelector("#trustToggle");
+const trustPanel = document.querySelector("#trustPanel");
+const trustClose = document.querySelector("#trustClose");
 const ownerMarketAccess = document.querySelector("#ownerMarketAccess");
 const ownerMarketToken = document.querySelector("#ownerMarketToken");
 const ownerMarketClearToken = document.querySelector("#ownerMarketClearToken");
@@ -480,6 +483,7 @@ function renderAuthState(user) {
     closeReportsPanel();
     closeJournalPanel();
     closeOwnerMarketPanel();
+    closeTrustPanel();
     billingState = null;
   }
   if (signedIn) {
@@ -500,6 +504,7 @@ function openAuthPanel() {
   closeReportsPanel();
   closeJournalPanel();
   closeOwnerMarketPanel();
+  closeTrustPanel();
   closeShortlistPanel();
   collapseContextPanels();
   authPanel.hidden = false;
@@ -514,6 +519,25 @@ function closeAuthPanel() {
   accountToggle.setAttribute("aria-expanded", "false");
   document.body.classList.remove("accountOpen");
   authMessage.textContent = "";
+}
+
+function closeTrustPanel() {
+  trustPanel.hidden = true;
+  trustToggle.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("trustOpen");
+}
+
+function openTrustPanel() {
+  closeAuthPanel();
+  closeMemoryPanel();
+  closeReportsPanel();
+  closeJournalPanel();
+  closeOwnerMarketPanel();
+  closeShortlistPanel();
+  collapseContextPanels();
+  trustPanel.hidden = false;
+  trustToggle.setAttribute("aria-expanded", "true");
+  document.body.classList.add("trustOpen");
 }
 
 function sourceLabel(type) {
@@ -719,6 +743,7 @@ async function openMemoryPanel() {
   closeReportsPanel();
   closeJournalPanel();
   closeOwnerMarketPanel();
+  closeTrustPanel();
   closeShortlistPanel();
   collapseContextPanels();
   memoryPanel.hidden = false;
@@ -880,6 +905,7 @@ async function openReportsPanel() {
   closeMemoryPanel();
   closeJournalPanel();
   closeOwnerMarketPanel();
+  closeTrustPanel();
   closeShortlistPanel();
   collapseContextPanels();
   reportsPanel.hidden = false;
@@ -960,6 +986,7 @@ async function openJournalPanel(decisionId = "") {
   closeMemoryPanel();
   closeReportsPanel();
   closeOwnerMarketPanel();
+  closeTrustPanel();
   closeShortlistPanel();
   collapseContextPanels();
   journalPanel.hidden = false;
@@ -1253,6 +1280,7 @@ function openShortlistPanel() {
   closeReportsPanel();
   closeJournalPanel();
   closeOwnerMarketPanel();
+  closeTrustPanel();
   collapseContextPanels();
   renderShortlist();
   shortlistPanel.hidden = false;
@@ -1845,6 +1873,7 @@ async function openOwnerMarketPanel() {
   closeMemoryPanel();
   closeReportsPanel();
   closeJournalPanel();
+  closeTrustPanel();
   closeShortlistPanel();
   collapseContextPanels();
   ownerMarketPanel.hidden = false;
@@ -3410,6 +3439,11 @@ ownerMarketToggle.addEventListener("click", () => {
   else closeOwnerMarketPanel();
 });
 ownerMarketClose.addEventListener("click", closeOwnerMarketPanel);
+trustToggle.addEventListener("click", () => {
+  if (trustPanel.hidden) openTrustPanel();
+  else closeTrustPanel();
+});
+trustClose.addEventListener("click", closeTrustPanel);
 ownerMarketAccess.addEventListener("submit", (event) => {
   event.preventDefault();
   const token = ownerMarketToken.value.trim();
@@ -3537,6 +3571,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !reportsPanel.hidden) closeReportsPanel();
   if (event.key === "Escape" && !journalPanel.hidden) closeJournalPanel();
   if (event.key === "Escape" && !ownerMarketPanel.hidden) closeOwnerMarketPanel();
+  if (event.key === "Escape" && !trustPanel.hidden) closeTrustPanel();
   if (event.key === "Escape" && !shortlistPanel.hidden) closeShortlistPanel();
 });
 window.addEventListener("afterprint", finishPrinting);

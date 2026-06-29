@@ -710,7 +710,8 @@ button {
 }
 
 .authPanel[hidden],
-.memoryPanel[hidden] {
+.memoryPanel[hidden],
+.trustPanel[hidden] {
   display: none;
 }
 
@@ -737,6 +738,109 @@ button {
 .memoryOpen .commandBar,
 .memoryOpen .utilityBar {
   display: none;
+}
+
+.trustPanel {
+  display: grid;
+  width: min(760px, 100%);
+  max-height: min(74dvh, 640px);
+  margin: 0 auto;
+  gap: 12px;
+  overflow: hidden auto;
+  border: 1px solid rgba(103, 229, 255, 0.24);
+  border-radius: 12px;
+  padding: 13px;
+  background:
+    linear-gradient(135deg, rgba(90, 231, 255, 0.1), transparent 28%),
+    rgba(2, 13, 21, 0.91);
+  box-shadow: 0 0 38px rgba(28, 190, 221, 0.09), inset 0 0 28px rgba(28, 190, 221, 0.04);
+  backdrop-filter: blur(18px);
+}
+
+.trustOpen .transcript,
+.trustOpen .contextDeck,
+.trustOpen .contextReadiness,
+.trustOpen .experienceLock,
+.trustOpen .aiDisclosure,
+.trustOpen .commandBar,
+.trustOpen .utilityBar {
+  display: none;
+}
+
+.trustHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trustHeader > span {
+  display: grid;
+  gap: 3px;
+}
+
+.trustHeader small,
+.trustGrid small {
+  color: #5d8c97;
+  font-size: 0.47rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+}
+
+.trustHeader b {
+  color: var(--cyan-bright);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+}
+
+.trustHeader button {
+  border: 1px solid rgba(103, 229, 255, 0.18);
+  border-radius: 999px;
+  padding: 7px 10px;
+  cursor: pointer;
+  color: #85bec9;
+  background: rgba(0, 10, 17, 0.48);
+  font-size: 0.49rem;
+  letter-spacing: 0.11em;
+}
+
+.trustIntro {
+  margin: 0;
+  color: #a8d2db;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.trustGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.trustGrid article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid rgba(103, 229, 255, 0.14);
+  border-radius: 12px;
+  padding: 11px;
+  background: rgba(0, 12, 20, 0.52);
+}
+
+.trustGrid b {
+  color: #d8fbff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.trustGrid p {
+  margin: 0;
+  color: #8fb8c1;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .authHeader,
@@ -5223,7 +5327,8 @@ button {
   .memoryOpen .assistantStage,
   .reportsOpen .assistantStage,
   .journalOpen .assistantStage,
-  .ownerMarketOpen .assistantStage {
+  .ownerMarketOpen .assistantStage,
+  .trustOpen .assistantStage {
     transform: translateY(-28dvh) scale(0.5);
   }
 
@@ -5232,7 +5337,8 @@ button {
   .memoryOpen .identity,
   .reportsOpen .identity,
   .journalOpen .identity,
-  .ownerMarketOpen .identity {
+  .ownerMarketOpen .identity,
+  .trustOpen .identity {
     opacity: 0;
   }
 
@@ -5284,7 +5390,8 @@ button {
   .memoryPanel,
   .reportsPanel,
   .journalPanel,
-  .ownerMarketPanel {
+  .ownerMarketPanel,
+  .trustPanel {
     padding: 12px;
   }
 
@@ -5296,6 +5403,7 @@ button {
   .authHeader button,
   .memoryHeader button,
   .reportsHeader button,
+  .trustHeader button,
   .authUser button,
   .authActions button {
     min-height: 40px;
@@ -5387,6 +5495,14 @@ button {
 
   .ownerMarketPanel {
     max-height: calc(100dvh - 104px);
+  }
+
+  .trustPanel {
+    max-height: calc(100dvh - 104px);
+  }
+
+  .trustGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .ownerMarketAccess,

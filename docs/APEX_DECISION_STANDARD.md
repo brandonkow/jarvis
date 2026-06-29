@@ -505,6 +505,16 @@ The v5.10 layer closes the V5 path by making the experience state visible and co
 - Hide the lock when account, memory, report, journal, market, shortlist, print, or expanded context views replace the chat workspace.
 - Treat the lock as product-state feedback only. It must not approve a deal, change scoring, lower evidence gates, or replace the decision engine.
 
+## v6.0 Commercial Trust Boundary
+
+The v6.0 layer starts the commercial trust path by making Apex's role explicit before users treat it as professional advice:
+
+- Present one compact trust workspace that explains Apex as decision support, not legal, valuation, banking, tax, or financial-planning advice.
+- Keep owner-controlled knowledge clear: public users can submit chat and card context, but cannot change the shared Apex framework or knowledge base.
+- State that strong recommendations require live proof: completed transactions, achieved rent, financing precheck, legal/title review, site visit, and nearby supply evidence.
+- Warn that Apex can discuss financing risk but will not validate false documents, hidden cashback, misleading transaction prices, or lender deception.
+- Treat this trust surface as a commercial safety layer only. It must not lower evidence standards, remove hard stops, or replace professional review.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

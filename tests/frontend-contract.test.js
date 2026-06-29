@@ -56,6 +56,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /id="reportsPanel"[\s\S]*?DEAL REPORTS[\s\S]*?id="reportsList"/, "Signed-in accounts need private report history.");
   assert.match(html, /id="journalPanel"[\s\S]*?DECISION JOURNAL[\s\S]*?id="journalEditor"/, "Signed-in accounts need an inline decision journal.");
   assert.match(html, /id="ownerMarketToggle"[\s\S]*?MARKET/, "The owner market console must be reachable from the account surface.");
+  assert.match(html, /id="trustToggle"[\s\S]*?TRUST/, "The v6 trust boundary must be reachable from the account surface.");
+  assert.match(html, /id="trustPanel"[\s\S]*?V6\.0 TRUST BOUNDARY[\s\S]*?WHAT APEX CAN AND CANNOT DO/, "The v6 trust boundary needs an inline workspace.");
+  assert.match(html, /Normal users can submit chat and card context only[\s\S]*?cannot change the shared Apex knowledge base/, "The v6 trust boundary must preserve owner-controlled knowledge rules.");
   assert.match(html, /id="ownerMarketPanel"[\s\S]*?MARKET CONSOLE[\s\S]*?id="ownerMarketToken"/, "V2 needs an owner-token-gated market console.");
   assert.match(html, /id="ownerProjectForm"[\s\S]*?id="ownerObservationForm"[\s\S]*?id="ownerObservationList"/, "The market console needs project and observation entry surfaces.");
   assert.doesNotMatch(html, /ESTATELAB \/ JARVIS|<b>J<\/b>/, "Legacy visible branding must not return.");
@@ -94,6 +97,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /function renderExperienceLock[\s\S]*?voiceResponsesEnabled/, "V5.10 lock must summarize voice state.");
   assert.match(app, /function renderExperienceLock[\s\S]*?readResponseFeedback/, "V5.10 lock must summarize answer-style tuning.");
   assert.match(app, /renderContextReadiness[\s\S]*?renderExperienceLock\(\)/, "V5.10 experience lock must refresh with context readiness.");
+  assert.match(app, /function openTrustPanel[\s\S]*?classList\.add\("trustOpen"\)/, "V6.0 trust must open as a workspace state.");
+  assert.match(app, /function closeTrustPanel[\s\S]*?classList\.remove\("trustOpen"\)/, "V6.0 trust must close as a workspace state.");
+  assert.match(app, /trustToggle\.addEventListener\("click"/, "V6.0 trust action must be wired.");
   assert.match(app, /\/api\/memory\/settings/, "Memory collection and reasoning must be controlled through explicit settings.");
   assert.match(app, /captureEnabled:\s*memoryCaptureEnabled\.checked/, "Memory capture must be opt-in from the UI.");
   assert.match(app, /reasoningEnabled:\s*memoryReasoningEnabled\.checked/, "Using approved memory in reasoning must be opt-in from the UI.");
@@ -196,6 +202,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.accountOpen \.contextReadiness[\s\S]*?display:\s*none;/, "Context readiness must hide when workspace panels replace chat.");
   assert.match(styles, /\.experienceLock[\s\S]*?\.experienceLock\.thin span/, "V5.10 experience lock needs compact state styling.");
   assert.match(styles, /\.accountOpen \.experienceLock[\s\S]*?\.shortlistOpen \.experienceLock[\s\S]*?display:\s*none;/, "V5.10 experience lock must hide when workspace panels replace chat.");
+  assert.match(styles, /\.trustOpen \.transcript[\s\S]*?display:\s*none;/, "The v6 trust boundary must replace chat content instead of opening a popup.");
+  assert.match(styles, /\.trustPanel[\s\S]*?\.trustGrid[\s\S]*?grid-template-columns:/, "The v6 trust boundary needs a compact organized layout.");
   assert.match(styles, /\.inputModeHint[\s\S]*?\.commandBar\[data-input-mode="voice"\]/, "V5.4 smart input mode needs styled command-bar states.");
   assert.match(styles, /\.voiceMuted[\s\S]*?#soundToggle/, "V5.5 needs a visible muted-voice state.");
   assert.match(styles, /\.responseFeedback[\s\S]*?button\.active/, "V5.6 response feedback controls need compact active-state styling.");
