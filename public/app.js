@@ -344,6 +344,21 @@ function responseFeedbackMarkup(messageId) {
   `;
 }
 
+async function syncResponseFeedback(feedback) {
+  if (!authenticatedUser) return;
+  try {
+    const payload = await requestJson("/api/memory/answer-style", {
+      method: "POST",
+      body: JSON.stringify(feedback)
+    });
+    if (payload?.stored && !memoryPanel.hidden) {
+      renderMemorySettings(payload.settings || {});
+    }
+  } catch {
+    // Local response feedback still works if account memory is unavailable.
+  }
+}
+
 function handleResponseFeedback(button) {
   const panel = button.closest("[data-feedback-message]");
   if (!panel) return;
@@ -352,15 +367,16 @@ function handleResponseFeedback(button) {
   const option = responseFeedbackOptions.find((item) => item.id === value);
   if (!messageId || !option) return;
   const answer = panel.closest(".message")?.querySelector(".messageText")?.textContent || "";
+  const feedback = {
+    messageId,
+    value,
+    label: option.label,
+    note: option.note,
+    answer: brandVisibleText(answer).replace(/\s+/g, " ").trim().slice(0, 180),
+    createdAt: new Date().toISOString()
+  };
   const nextItems = [
-    {
-      messageId,
-      value,
-      label: option.label,
-      note: option.note,
-      answer: brandVisibleText(answer).replace(/\s+/g, " ").trim().slice(0, 180),
-      createdAt: new Date().toISOString()
-    },
+    feedback,
     ...readResponseFeedback().filter((item) => item.messageId !== messageId)
   ];
   writeResponseFeedback(nextItems);
@@ -368,6 +384,7 @@ function handleResponseFeedback(button) {
     item.classList.toggle("active", item === button);
   });
   setSystemState("System ready", `Feedback saved. ${option.note}`);
+  void syncResponseFeedback(feedback);
 }
 
 function setAuthMode(mode) {
@@ -602,13 +619,18 @@ function memoryItemMarkup(item) {
 function renderMemorySettings(settings = {}) {
   const captureEnabled = Boolean(settings.captureEnabled);
   const reasoningEnabled = Boolean(settings.reasoningEnabled);
+  const answerStyle = settings.answerStyle || {};
   memorySettingsLoading = true;
   memoryCaptureEnabled.checked = captureEnabled;
   memoryReasoningEnabled.checked = reasoningEnabled;
   memorySettingsLoading = false;
-  memoryModeNotice.textContent = captureEnabled || reasoningEnabled
+  const baseNotice = captureEnabled || reasoningEnabled
     ? `Memory ${captureEnabled ? "can suggest items from chat" : "will not suggest from chat"}; approved memory ${reasoningEnabled ? "can guide replies and reports" : "will not guide reasoning"}.`
     : "Memory engine ready. Collection is off.";
+  const styleNotice = answerStyle.feedbackCount
+    ? ` Answer style memory: ${answerStyle.latestLabel || "Learning"} (${answerStyle.feedbackCount} saved).`
+    : "";
+  memoryModeNotice.textContent = `${baseNotice}${styleNotice}`;
   memoryModeNotice.classList.toggle("active", captureEnabled || reasoningEnabled);
 }
 

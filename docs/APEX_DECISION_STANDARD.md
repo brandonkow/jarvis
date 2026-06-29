@@ -469,6 +469,15 @@ The v5.6 layer lets users tune how Apex answers without changing the investment 
 - Use feedback only to adjust response shape, warmth, length, and evidence emphasis.
 - Never let feedback change deterministic scores, hard stops, missing evidence, legal caution, or deal verdicts.
 
+## v5.7 Account-Level Answer Style Memory
+
+The v5.7 layer makes answer-style learning portable for signed-in users:
+
+- Keep browser-local feedback working for guests and unsigned sessions.
+- If a signed-in user has memory capture enabled, store compact answer-style feedback inside private account memory.
+- If memory reasoning is enabled, include the stored answer-style pattern in future response-persona routing.
+- Keep answer-style memory separate from investment memories. It may change tone, length, warmth, and evidence emphasis, but never property scoring, hard stops, legal warnings, or recommendations.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

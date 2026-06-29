@@ -26,7 +26,7 @@ const SCHEMA_SQL = `
     display_name TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'member',
-    memory JSONB NOT NULL DEFAULT '{"version":3,"settings":{"captureEnabled":false,"reasoningEnabled":false},"items":[]}'::jsonb,
+    memory JSONB NOT NULL DEFAULT '{"version":4,"settings":{"captureEnabled":false,"reasoningEnabled":false},"items":[],"answerStyle":{"version":1,"feedback":[]}}'::jsonb,
     billing JSONB NOT NULL DEFAULT '{"version":1,"plan":"free","status":"active","reportCredits":0,"usage":{"period":"","count":0},"processedEvents":[]}'::jsonb,
     reports JSONB NOT NULL DEFAULT '{"version":1,"items":[]}'::jsonb,
     journal JSONB NOT NULL DEFAULT '{"version":1,"items":[]}'::jsonb,
@@ -36,7 +36,7 @@ const SCHEMA_SQL = `
   );
 
   ALTER TABLE estatelab_users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member';
-  ALTER TABLE estatelab_users ADD COLUMN IF NOT EXISTS memory JSONB NOT NULL DEFAULT '{"version":3,"settings":{"captureEnabled":false,"reasoningEnabled":false},"items":[]}'::jsonb;
+  ALTER TABLE estatelab_users ADD COLUMN IF NOT EXISTS memory JSONB NOT NULL DEFAULT '{"version":4,"settings":{"captureEnabled":false,"reasoningEnabled":false},"items":[],"answerStyle":{"version":1,"feedback":[]}}'::jsonb;
   ALTER TABLE estatelab_users ADD COLUMN IF NOT EXISTS billing JSONB NOT NULL DEFAULT '{"version":1,"plan":"free","status":"active","reportCredits":0,"usage":{"period":"","count":0},"processedEvents":[]}'::jsonb;
   ALTER TABLE estatelab_users ADD COLUMN IF NOT EXISTS reports JSONB NOT NULL DEFAULT '{"version":1,"items":[]}'::jsonb;
   ALTER TABLE estatelab_users ADD COLUMN IF NOT EXISTS journal JSONB NOT NULL DEFAULT '{"version":1,"items":[]}'::jsonb;

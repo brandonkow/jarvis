@@ -7,11 +7,12 @@ import { fileURLToPath } from "node:url";
 const repoDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 test("frontend selectors and stylesheet structure stay valid", async () => {
-  const [html, app, styles, server] = await Promise.all([
+  const [html, app, styles, server, storage] = await Promise.all([
     readFile(path.join(repoDir, "public", "index.html"), "utf8"),
     readFile(path.join(repoDir, "public", "app.js"), "utf8"),
     readFile(path.join(repoDir, "public", "styles.css"), "utf8"),
-    readFile(path.join(repoDir, "server.js"), "utf8")
+    readFile(path.join(repoDir, "server.js"), "utf8"),
+    readFile(path.join(repoDir, "storage.js"), "utf8")
   ]);
 
   const selectorIds = [...app.matchAll(/querySelector\("#([A-Za-z][\w-]*)"\)/g)].map((match) => match[1]);
@@ -75,6 +76,12 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /responseFeedback:\s*responseFeedbackSummary\(\)/, "V5.6 must send recent answer feedback into future chat requests.");
   assert.match(server, /responseFeedback[\s\S]*?Recent answer feedback/, "V5.6 feedback must reach the server persona prompt.");
   assert.match(server, /feedbackPrefersShort[\s\S]*?feedbackPrefersWarmer[\s\S]*?feedbackPrefersEvidence/, "V5.6 server persona must translate feedback into answer-shape instructions.");
+  assert.match(app, /function syncResponseFeedback[\s\S]*?\/api\/memory\/answer-style/, "V5.7 must sync answer-style feedback for signed-in users.");
+  assert.match(app, /answerStyle\.feedbackCount/, "V5.7 memory settings must surface account-level answer-style learning.");
+  assert.match(server, /function normalizeAnswerStyle[\s\S]*?slice\(0, 40\)/, "V5.7 must keep account answer-style memory compact.");
+  assert.match(server, /POST" && url\.pathname === "\/api\/memory\/answer-style"/, "V5.7 needs a protected answer-style memory endpoint.");
+  assert.match(server, /approvedAnswerStyleFeedback\(actor\.user\)/, "V5.7 stored answer style must feed future response-persona routing.");
+  assert.match(storage, /"answerStyle":\{"version":1,"feedback":\[\]\}/, "V5.7 storage defaults need an empty answer-style memory profile.");
   assert.match(app, /\/api\/memory\/settings/, "Memory collection and reasoning must be controlled through explicit settings.");
   assert.match(app, /captureEnabled:\s*memoryCaptureEnabled\.checked/, "Memory capture must be opt-in from the UI.");
   assert.match(app, /reasoningEnabled:\s*memoryReasoningEnabled\.checked/, "Using approved memory in reasoning must be opt-in from the UI.");

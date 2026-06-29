@@ -253,6 +253,39 @@ function normalizeMemoryCategory(category, content = "") {
   return memoryCategory(content);
 }
 
+const ANSWER_STYLE_FEEDBACK = {
+  useful: { label: "Useful", note: "Keep this answer shape." },
+  shorter: { label: "Shorter", note: "Make future answers shorter and lead with the decision." },
+  warmer: { label: "Less formal", note: "Make future answers more natural and mentor-like." },
+  evidence: { label: "More proof", note: "Add clearer missing evidence and verification steps." }
+};
+
+function normalizeAnswerStyleFeedback(item = {}) {
+  const value = String(item.value || "").trim().toLowerCase();
+  const option = ANSWER_STYLE_FEEDBACK[value];
+  if (!option) return null;
+  return {
+    id: String(item.id || randomUUID()).slice(0, 100),
+    value,
+    label: reportText(item.label || option.label, 40),
+    note: reportText(item.note || option.note, 180),
+    messageId: String(item.messageId || "").slice(0, 100),
+    answer: reportText(item.answer, 220),
+    createdAt: String(item.createdAt || new Date().toISOString())
+  };
+}
+
+function normalizeAnswerStyle(answerStyle) {
+  const feedback = Array.isArray(answerStyle?.feedback)
+    ? answerStyle.feedback.map(normalizeAnswerStyleFeedback).filter(Boolean).slice(0, 40)
+    : [];
+  return {
+    version: 1,
+    feedback,
+    updatedAt: String(answerStyle?.updatedAt || feedback[0]?.createdAt || "")
+  };
+}
+
 function normalizeUserMemory(memory) {
   const validStatuses = new Set(["pending", "approved", "dismissed"]);
   const items = Array.isArray(memory?.items)
@@ -267,7 +300,7 @@ function normalizeUserMemory(memory) {
       reviewedAt: String(item.reviewedAt || "")
     })).filter((item) => item.content).slice(0, 200)
     : [];
-  return { version: 3, settings: normalizeMemorySettings(memory?.settings), items };
+  return { version: 4, settings: normalizeMemorySettings(memory?.settings), items, answerStyle: normalizeAnswerStyle(memory?.answerStyle) };
 }
 
 function billingPeriod(value = new Date()) {
@@ -1307,11 +1340,48 @@ function publicMemoryItem(item) {
   };
 }
 
+function answerStyleStats(answerStyle) {
+  const normalized = normalizeAnswerStyle(answerStyle);
+  return normalized.feedback.reduce((stats, item) => {
+    stats[item.value] = (stats[item.value] || 0) + 1;
+    return stats;
+  }, {});
+}
+
+function answerStylePrompt(answerStyle) {
+  const normalized = normalizeAnswerStyle(answerStyle);
+  if (!normalized.feedback.length) return "";
+  const latest = normalized.feedback[0];
+  const stats = answerStyleStats(normalized);
+  const pattern = Object.entries(ANSWER_STYLE_FEEDBACK)
+    .map(([key, option]) => stats[key] ? `${option.label}: ${stats[key]}` : "")
+    .filter(Boolean)
+    .join(", ");
+  return [
+    latest?.note ? `Stored account answer-style feedback: ${latest.note}` : "",
+    pattern ? `Account feedback pattern: ${pattern}.` : ""
+  ].filter(Boolean).join(" ");
+}
+
+function publicAnswerStyle(answerStyle) {
+  const normalized = normalizeAnswerStyle(answerStyle);
+  const latest = normalized.feedback[0] || null;
+  return {
+    feedbackCount: normalized.feedback.length,
+    latestLabel: latest?.label || "",
+    latestNote: latest?.note || "",
+    summary: answerStylePrompt(normalized),
+    updatedAt: normalized.updatedAt
+  };
+}
+
 function publicMemorySettings(memory) {
-  const settings = normalizeUserMemory(memory).settings;
+  const normalized = normalizeUserMemory(memory);
+  const settings = normalized.settings;
   return {
     captureEnabled: settings.captureEnabled,
-    reasoningEnabled: settings.reasoningEnabled
+    reasoningEnabled: settings.reasoningEnabled,
+    answerStyle: publicAnswerStyle(normalized.answerStyle)
   };
 }
 
@@ -1424,8 +1494,15 @@ function memorySummary(memory) {
     approved: items.filter((item) => item.status === "approved").length,
     byCategory,
     captureEnabled: normalized.settings.captureEnabled,
-    reasoningEnabled: normalized.settings.reasoningEnabled
+    reasoningEnabled: normalized.settings.reasoningEnabled,
+    answerStyle: publicAnswerStyle(normalized.answerStyle)
   };
+}
+
+function approvedAnswerStyleFeedback(user) {
+  const memory = normalizeUserMemory(user?.memory);
+  if (!memory.settings.reasoningEnabled) return "";
+  return answerStylePrompt(memory.answerStyle);
 }
 
 function memoryCategory(content) {
@@ -7057,6 +7134,7 @@ function isPublicApiRoute(method, pathname) {
     || (["GET", "POST"].includes(method) && pathname === "/api/journal")
     || (["GET", "PATCH", "DELETE"].includes(method) && pathname.startsWith("/api/journal/"))
     || (["GET", "POST"].includes(method) && pathname === "/api/memory")
+    || (method === "POST" && pathname === "/api/memory/answer-style")
     || (method === "PATCH" && pathname === "/api/memory/settings")
     || (["PATCH", "DELETE"].includes(method) && pathname.startsWith("/api/memory/"))
     || (method === "GET" && pathname === "/api/jarvis/status")
@@ -7550,6 +7628,34 @@ async function router(req, res) {
     return send(res, 201, {
       item: publicMemoryItem(item),
       profile: buildInvestorMemoryProfile(actor.user.memory),
+      settings: publicMemorySettings(actor.user.memory),
+      summary: memorySummary(actor.user.memory)
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/memory/answer-style") {
+    if (!actor.user) return send(res, 401, { error: "Sign in to sync answer style." });
+    const body = await readBody(req);
+    actor.user.memory = normalizeUserMemory(actor.user.memory);
+    const feedback = normalizeAnswerStyleFeedback(body);
+    if (!feedback) return send(res, 400, { error: "Answer feedback must be useful, shorter, warmer, or evidence." });
+    if (!actor.user.memory.settings.captureEnabled) {
+      return send(res, 202, {
+        stored: false,
+        reason: "memory_capture_disabled",
+        answerStyle: publicAnswerStyle(actor.user.memory.answerStyle),
+        settings: publicMemorySettings(actor.user.memory)
+      });
+    }
+    const existing = actor.user.memory.answerStyle.feedback.filter((item) => item.messageId !== feedback.messageId || !feedback.messageId);
+    actor.user.memory.answerStyle = normalizeAnswerStyle({
+      feedback: [feedback, ...existing],
+      updatedAt: feedback.createdAt
+    });
+    await writeDb(db);
+    return send(res, 200, {
+      stored: true,
+      answerStyle: publicAnswerStyle(actor.user.memory.answerStyle),
       settings: publicMemorySettings(actor.user.memory),
       summary: memorySummary(actor.user.memory)
     });
@@ -8296,10 +8402,11 @@ async function router(req, res) {
     }
 
     const retrievalStartedAt = Date.now();
+    const storedResponseFeedback = approvedAnswerStyleFeedback(actor.user);
     const result = await retrieveJarvisAnswer(query, db.brain, session, {
       dealCard: body.dealCard,
       financialProfile: body.financialProfile,
-      responseFeedback: body.responseFeedback
+      responseFeedback: [body.responseFeedback, storedResponseFeedback].filter(Boolean).join(" ")
     }, db.knowledge, approvedUserMemories(actor.user), lockedUserJournal(actor.user));
     const jarvisMessage = {
       id: randomUUID(),
