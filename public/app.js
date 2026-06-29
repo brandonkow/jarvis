@@ -647,6 +647,100 @@ function trustStampText() {
   ];
 }
 
+function reviewLaneStatus(section = {}, riskText = "", keywords = []) {
+  const score = Number(section.score || 0);
+  const status = String(section.status || "").toLowerCase();
+  const hasRisk = keywords.some((keyword) => riskText.includes(keyword));
+  if (hasRisk || !score || score < 55 || /missing|weak|danger|fail|reject/.test(status)) return "required";
+  if (score < 75 || /watch|review|partial|unknown/.test(status)) return "verify";
+  return "ready";
+}
+
+function professionalReviewPack(analysis = {}) {
+  const list = (value) => Array.isArray(value) ? value : value ? [value] : [];
+  const riskText = [
+    ...list(analysis.hardStops),
+    ...list(analysis.recommendationBlockers),
+    ...list(analysis.missingEvidence),
+    analysis.counterThesis || ""
+  ].join(" ").toLowerCase();
+  const readinessScore = Number(analysis.investorReadiness?.score || 0);
+  const items = [
+    {
+      role: "Lawyer",
+      label: "Title and transaction",
+      status: reviewLaneStatus(analysis.legalTransactionEvidence, riskText, ["title", "caveat", "consent", "restriction", "spa", "mot", "legal"]),
+      action: "Check title, caveat, restrictions, consent timeline, SPA conditions, outstanding charges, and transaction authority."
+    },
+    {
+      role: "Banker",
+      label: "Financing and valuation",
+      status: reviewLaneStatus(analysis.financingValuationEvidence, riskText, ["loan", "valuation", "financing", "dsr", "bank", "cashback", "cash out"]),
+      action: "Confirm valuation support, loan margin, DSR, disbursement timing, and that the structure does not mislead the lender."
+    },
+    {
+      role: "Valuer / comparable proof",
+      label: "Entry price evidence",
+      status: reviewLaneStatus(analysis.transactionComparableEvidence, riskText, ["transaction", "comparable", "auction", "price", "value"]),
+      action: "Verify completed subsale and successful auction comparables. Listing prices should not be treated as proof."
+    },
+    {
+      role: "Management / JMB",
+      label: "Site and building quality",
+      status: reviewLaneStatus(analysis.siteManagementEvidence, riskText, ["management", "jmb", "lift", "leak", "defect", "resident", "site"]),
+      action: "Check arrears, lift waiting time, cleanliness, defect pattern, management response, resident behaviour, and site feel."
+    },
+    {
+      role: "Rental agent / property manager",
+      label: "Achieved rent and tenant demand",
+      status: reviewLaneStatus(analysis.achievedRentalEvidence, riskText, ["rent", "tenant", "vacancy", "furnishing", "rental"]),
+      action: "Verify achieved rent, tenant profile, vacancy pressure, furnishing scope, and whether rent can cover recurring holding cost."
+    },
+    {
+      role: "Owner / licensed adviser",
+      label: "Personal affordability",
+      status: readinessScore >= 75 ? "ready" : readinessScore >= 55 ? "verify" : "required",
+      action: "Stress-test cash reserve, instalment comfort, life commitments, tax and transaction costs, renovation budget, and holding period."
+    }
+  ];
+  const required = items.filter((item) => item.status === "required").length;
+  const verify = items.filter((item) => item.status === "verify").length;
+  return {
+    status: required ? "required" : verify ? "verify" : "ready",
+    summary: required
+      ? `${required} professional review lane${required === 1 ? "" : "s"} need attention before commitment.`
+      : verify ? `${verify} review lane${verify === 1 ? "" : "s"} should be verified before money moves.`
+        : "Core professional review lanes look ready, subject to live evidence.",
+    items
+  };
+}
+
+function professionalReviewMarkup(analysis = {}) {
+  const pack = professionalReviewPack(analysis);
+  return `
+    <section class="analysisProfessionalReview ${escapeHtml(pack.status)}" aria-label="Professional review checklist">
+      <header><span><small>V6.3 PROFESSIONAL REVIEW</small><b>${escapeHtml(pack.summary)}</b></span></header>
+      <div>
+        ${pack.items.map((item) => `
+          <article class="professionalReviewItem ${escapeHtml(item.status)}">
+            <i>${escapeHtml(item.status)}</i>
+            <span><b>${escapeHtml(item.role)} / ${escapeHtml(item.label)}</b><small>${escapeHtml(item.action)}</small></span>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function professionalReviewText(analysis = {}) {
+  const pack = professionalReviewPack(analysis);
+  return [
+    "Professional review checklist:",
+    `- ${pack.summary}`,
+    ...pack.items.map((item) => `- ${item.role} / ${item.label} / ${item.status}: ${item.action}`)
+  ];
+}
+
 function sourceLabel(type) {
   if (type === "memory") return "MEMORY";
   if (type === "journal") return "JOURNAL";
@@ -1500,6 +1594,8 @@ function analysisExportText(analysis) {
     `Reasoning: ${analysis.reasoningMode || "Framework only"}`,
     "",
     ...trustStampText(),
+    "",
+    ...professionalReviewText(analysis),
     "",
     `Summary: ${analysis.summary || ""}`
   ];
@@ -2715,6 +2811,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
     </div>
     ${trustStampMarkup()}
+    ${professionalReviewMarkup(analysis)}
     <div class="analysisOverview">
       ${readinessMarkup(analysis.investorReadiness)}
       ${dimensionMarkup ? `<section class="analysisDimensionSection"><h3>DEAL SCORECARD</h3><div class="analysisDimensions">${dimensionMarkup}</div></section>` : ""}

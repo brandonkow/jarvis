@@ -535,6 +535,16 @@ The v6.2 layer makes the trust boundary travel with each formal report:
 - Remind users that Apex is decision support only and that professional review and live evidence still apply.
 - Keep the stamp visible in print/PDF output without turning it into a separate legal document.
 
+## v6.3 Professional Review Checklist
+
+The v6.3 layer converts the trust boundary into practical review lanes before money moves:
+
+- Derive a compact professional-review checklist from the report's existing evidence sections.
+- Name the review owner: lawyer, banker, valuer/comparable proof, management/JMB, rental agent/property manager, and owner/licensed adviser.
+- Mark each lane as required, verify, or ready based on evidence score, missing proof, and red-flag language.
+- Include the checklist in on-screen reports, copied report exports, and print/PDF output.
+- Keep the checklist as a handoff guide. It must not certify legal title, bankability, valuation, rental demand, or personal affordability.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

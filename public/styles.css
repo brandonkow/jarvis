@@ -3112,6 +3112,110 @@ button {
   overflow-wrap: anywhere;
 }
 
+.analysisProfessionalReview {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  border: 1px solid rgba(103, 229, 255, 0.14);
+  border-left: 2px solid rgba(103, 229, 255, 0.44);
+  border-radius: 10px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(255, 210, 116, 0.055), transparent 52%), rgba(0, 11, 18, 0.38);
+}
+
+.analysisProfessionalReview.required {
+  border-left-color: #e68e8e;
+}
+
+.analysisProfessionalReview.verify {
+  border-left-color: #d0ad69;
+}
+
+.analysisProfessionalReview.ready {
+  border-left-color: #6fd9a0;
+}
+
+.analysisProfessionalReview header span {
+  display: grid;
+  gap: 3px;
+}
+
+.analysisProfessionalReview small {
+  color: #67b7c7;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+}
+
+.analysisProfessionalReview header b {
+  color: #c9e6eb;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.analysisProfessionalReview > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.professionalReviewItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  border: 1px solid rgba(103, 229, 255, 0.09);
+  border-radius: 9px;
+  padding: 8px;
+  background: rgba(0, 10, 17, 0.3);
+}
+
+.professionalReviewItem > i {
+  align-self: start;
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 999px;
+  padding: 3px 6px;
+  color: #8fb8c1;
+  font-size: 0.42rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.professionalReviewItem.required > i {
+  color: #ef9999;
+  border-color: rgba(255, 126, 126, 0.3);
+}
+
+.professionalReviewItem.verify > i {
+  color: #d7b970;
+  border-color: rgba(255, 210, 116, 0.26);
+}
+
+.professionalReviewItem.ready > i {
+  color: #8ce0b0;
+  border-color: rgba(112, 230, 179, 0.24);
+}
+
+.professionalReviewItem span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.professionalReviewItem b {
+  color: #a8d0d8;
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
+.professionalReviewItem small {
+  color: #6f9ca6;
+  font-size: 0.58rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.35;
+}
+
 .analysisOverview {
   display: grid;
   grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.2fr);
@@ -5874,6 +5978,7 @@ button {
   .analysisEvidence > div,
   .analysisEvidenceEngine > div,
   .analysisTransactionComps > div,
+  .analysisProfessionalReview > div,
   .analysisDiligence > div,
   .stressReadings,
   .stressAssumptions,
@@ -6171,6 +6276,17 @@ button {
 
   body.printMode .analysisTrustStamp span {
     border-color: #c8dce2;
+    background: #fff;
+  }
+
+  body.printMode .analysisProfessionalReview {
+    border-color: #d7e4e8;
+    border-left-color: #2b8fa3;
+    background: #f8fcfd;
+  }
+
+  body.printMode .professionalReviewItem {
+    border-color: #d6e3e7;
     background: #fff;
   }
 

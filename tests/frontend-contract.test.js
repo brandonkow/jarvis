@@ -109,6 +109,11 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /function trustStampText[\s\S]*?Report trust boundary/, "V6.2 must include trust boundary text in copied exports.");
   assert.match(app, /analysisExportText[\s\S]*?\.\.\.trustStampText\(\)/, "Copied deal reports must carry the trust stamp.");
   assert.match(app, /trustStampMarkup\(\)[\s\S]*?<div class="analysisOverview">/, "On-screen deal reports must show the trust stamp before detailed scoring.");
+  assert.match(app, /function professionalReviewPack[\s\S]*?Lawyer[\s\S]*?Banker[\s\S]*?Management \/ JMB/, "V6.3 must derive named professional review lanes.");
+  assert.match(app, /function professionalReviewMarkup[\s\S]*?V6\.3 PROFESSIONAL REVIEW/, "V6.3 must render a professional review checklist inside formal reports.");
+  assert.match(app, /function professionalReviewText[\s\S]*?Professional review checklist/, "V6.3 must include professional review handoff text in copied exports.");
+  assert.match(app, /analysisExportText[\s\S]*?\.\.\.professionalReviewText\(analysis\)/, "Copied deal reports must carry the V6.3 professional review checklist.");
+  assert.match(app, /trustStampMarkup\(\)[\s\S]*?professionalReviewMarkup\(analysis\)[\s\S]*?<div class="analysisOverview">/, "On-screen deal reports must show trust and professional review before detailed scoring.");
   assert.match(app, /\/api\/memory\/settings/, "Memory collection and reasoning must be controlled through explicit settings.");
   assert.match(app, /captureEnabled:\s*memoryCaptureEnabled\.checked/, "Memory capture must be opt-in from the UI.");
   assert.match(app, /reasoningEnabled:\s*memoryReasoningEnabled\.checked/, "Using approved memory in reasoning must be opt-in from the UI.");
@@ -216,6 +221,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.trustAcceptance[\s\S]*?data-state="accepted"[\s\S]*?border-color/, "V6.1 acknowledgement needs visible accepted and pending states.");
   assert.match(styles, /\.analysisTrustStamp[\s\S]*?\.analysisTrustStamp\.accepted[\s\S]*?\.analysisTrustStamp\.pending/, "V6.2 report trust stamps need accepted and pending styles.");
   assert.match(styles, /body\.printMode \.analysisTrustStamp[\s\S]*?background:\s*#f4fbfd;/, "V6.2 report trust stamp must stay readable in print.");
+  assert.match(styles, /\.analysisProfessionalReview[\s\S]*?\.professionalReviewItem[\s\S]*?\.professionalReviewItem\.ready/, "V6.3 professional review checklist needs lane status styling.");
+  assert.match(styles, /body\.printMode \.analysisProfessionalReview[\s\S]*?background:\s*#f8fcfd;/, "V6.3 professional review checklist must stay readable in print.");
   assert.match(styles, /\.inputModeHint[\s\S]*?\.commandBar\[data-input-mode="voice"\]/, "V5.4 smart input mode needs styled command-bar states.");
   assert.match(styles, /\.voiceMuted[\s\S]*?#soundToggle/, "V5.5 needs a visible muted-voice state.");
   assert.match(styles, /\.responseFeedback[\s\S]*?button\.active/, "V5.6 response feedback controls need compact active-state styling.");
