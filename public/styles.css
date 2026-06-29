@@ -2533,6 +2533,24 @@ button {
   background: rgba(42, 171, 199, 0.1);
 }
 
+.responseFeedback [data-response-refine] {
+  margin-left: auto;
+  border-color: rgba(208, 173, 105, 0.28);
+  color: #d0ad69;
+  background: rgba(208, 173, 105, 0.08);
+}
+
+.responseFeedback [data-response-refine]:hover,
+.responseFeedback [data-response-refine]:focus-visible {
+  border-color: rgba(208, 173, 105, 0.54);
+  color: #f0d48f;
+  background: rgba(208, 173, 105, 0.13);
+}
+
+.responseFeedback [data-response-refine][hidden] {
+  display: none;
+}
+
 .analysisMessage {
   width: 100%;
   max-width: 100%;

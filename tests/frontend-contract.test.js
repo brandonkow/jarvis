@@ -82,6 +82,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(server, /POST" && url\.pathname === "\/api\/memory\/answer-style"/, "V5.7 needs a protected answer-style memory endpoint.");
   assert.match(server, /approvedAnswerStyleFeedback\(actor\.user\)/, "V5.7 stored answer style must feed future response-persona routing.");
   assert.match(storage, /"answerStyle":\{"version":1,"feedback":\[\]\}/, "V5.7 storage defaults need an empty answer-style memory profile.");
+  assert.match(app, /data-response-refine/, "V5.8 needs an inline answer refinement action.");
+  assert.match(app, /function responseRefinementPrompt[\s\S]*?Keep the same investment judgment[\s\S]*?Do not change the verdict/, "V5.8 refinement prompts must preserve the original investment judgment.");
+  assert.match(app, /function handleResponseRefine[\s\S]*?submitQuestion\(prompt\)/, "V5.8 refinement actions must send a prepared follow-up prompt.");
   assert.match(app, /\/api\/memory\/settings/, "Memory collection and reasoning must be controlled through explicit settings.");
   assert.match(app, /captureEnabled:\s*memoryCaptureEnabled\.checked/, "Memory capture must be opt-in from the UI.");
   assert.match(app, /reasoningEnabled:\s*memoryReasoningEnabled\.checked/, "Using approved memory in reasoning must be opt-in from the UI.");
@@ -185,6 +188,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.inputModeHint[\s\S]*?\.commandBar\[data-input-mode="voice"\]/, "V5.4 smart input mode needs styled command-bar states.");
   assert.match(styles, /\.voiceMuted[\s\S]*?#soundToggle/, "V5.5 needs a visible muted-voice state.");
   assert.match(styles, /\.responseFeedback[\s\S]*?button\.active/, "V5.6 response feedback controls need compact active-state styling.");
+  assert.match(styles, /\.responseFeedback \[data-response-refine\][\s\S]*?display:\s*none;/, "V5.8 refinement action needs compact styling and a hidden state.");
   assert.match(styles, /\.shortlistCompare[\s\S]*?adjusted|\.shortlistCompare[\s\S]*?grid-template-columns:/, "The v1.3 shortlist needs a styled comparison summary.");
   assert.match(styles, /\.shortlistItem\.blocked[\s\S]*?border-color/, "Blocked shortlist items need a visible comparison warning state.");
 

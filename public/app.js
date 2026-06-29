@@ -340,8 +340,42 @@ function responseFeedbackMarkup(messageId) {
           ${escapeHtml(option.label)}
         </button>
       `).join("")}
+      <button type="button" data-response-refine hidden>REFINE NOW</button>
     </section>
   `;
+}
+
+function responseRefinementPrompt(feedback = {}) {
+  const answer = brandVisibleText(feedback.refinementSource || feedback.answer || "").replace(/\s+/g, " ").trim();
+  if (!answer || feedback.value === "useful") return "";
+  if (feedback.value === "shorter") {
+    return `Rewrite your previous answer into a short Apex answer: verdict, strongest reason, main risk, and next action only. Keep the same investment judgment unless new evidence is provided. Previous answer: ${answer}`;
+  }
+  if (feedback.value === "warmer") {
+    return `Rewrite your previous answer in a more natural mentor-like tone. Keep it human, direct, and calm. Do not weaken the evidence standard or change the verdict. Previous answer: ${answer}`;
+  }
+  if (feedback.value === "evidence") {
+    return `For your previous answer, give me the missing-proof checklist only. Separate hard stop, verify next, and optional evidence. Do not change the verdict without new evidence. Previous answer: ${answer}`;
+  }
+  return "";
+}
+
+function setResponseRefinement(panel, feedback) {
+  const refineButton = panel?.querySelector("[data-response-refine]");
+  if (!refineButton) return;
+  const prompt = responseRefinementPrompt(feedback);
+  refineButton.hidden = !prompt;
+  refineButton.disabled = false;
+  refineButton.setAttribute("data-refinement-prompt", prompt);
+  refineButton.textContent = feedback?.value === "evidence" ? "PROOF CHECK" : "REFINE NOW";
+}
+
+function hydrateResponseFeedback(message) {
+  message.querySelectorAll("[data-feedback-message]").forEach((panel) => {
+    const messageId = panel.getAttribute("data-feedback-message") || "";
+    const feedback = readResponseFeedback().find((item) => item.messageId === messageId);
+    if (feedback) setResponseRefinement(panel, feedback);
+  });
 }
 
 async function syncResponseFeedback(feedback) {
@@ -366,13 +400,14 @@ function handleResponseFeedback(button) {
   const value = button.getAttribute("data-response-feedback") || "";
   const option = responseFeedbackOptions.find((item) => item.id === value);
   if (!messageId || !option) return;
-  const answer = panel.closest(".message")?.querySelector(".messageText")?.textContent || "";
+  const answer = brandVisibleText(panel.closest(".message")?.querySelector(".messageText")?.textContent || "").replace(/\s+/g, " ").trim();
   const feedback = {
     messageId,
     value,
     label: option.label,
     note: option.note,
-    answer: brandVisibleText(answer).replace(/\s+/g, " ").trim().slice(0, 180),
+    answer: answer.slice(0, 180),
+    refinementSource: answer.slice(0, 900),
     createdAt: new Date().toISOString()
   };
   const nextItems = [
@@ -383,8 +418,20 @@ function handleResponseFeedback(button) {
   panel.querySelectorAll("[data-response-feedback]").forEach((item) => {
     item.classList.toggle("active", item === button);
   });
+  setResponseRefinement(panel, feedback);
   setSystemState("System ready", `Feedback saved. ${option.note}`);
   void syncResponseFeedback(feedback);
+}
+
+async function handleResponseRefine(button) {
+  const prompt = button.getAttribute("data-refinement-prompt") || "";
+  if (!prompt) return;
+  button.disabled = true;
+  try {
+    await submitQuestion(prompt);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function setAuthMode(mode) {
@@ -572,6 +619,7 @@ function addMessage(role, text, sources = [], intelligence = {}) {
     ${role === "jarvis" ? responseFeedbackMarkup(messageId) : ""}
   `;
   transcript.append(message);
+  if (role === "jarvis") hydrateResponseFeedback(message);
   transcript.scrollTop = transcript.scrollHeight;
 }
 
@@ -3324,6 +3372,8 @@ for (const container of [transcript, memoryList]) {
     if (analysisButton) handleAnalysisAction(analysisButton);
     const feedbackButton = event.target.closest("[data-response-feedback]");
     if (feedbackButton) handleResponseFeedback(feedbackButton);
+    const refineButton = event.target.closest("[data-response-refine]");
+    if (refineButton) void handleResponseRefine(refineButton);
     const coachButton = event.target.closest("[data-coach-prompt]");
     if (coachButton) {
       chatInput.value = coachButton.getAttribute("data-coach-prompt") || "";

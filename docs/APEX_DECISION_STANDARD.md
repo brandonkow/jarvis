@@ -478,6 +478,15 @@ The v5.7 layer makes answer-style learning portable for signed-in users:
 - If memory reasoning is enabled, include the stored answer-style pattern in future response-persona routing.
 - Keep answer-style memory separate from investment memories. It may change tone, length, warmth, and evidence emphasis, but never property scoring, hard stops, legal warnings, or recommendations.
 
+## v5.8 One-Tap Answer Refinement
+
+The v5.8 layer turns feedback into immediate user control:
+
+- After a user marks an answer as shorter, less formal, or needing more proof, show a compact refinement action on that answer.
+- The refinement action should ask Apex to rewrite, humanize, or extract missing-proof checks from the exact answer the user reacted to.
+- Refinement may change format, tone, and evidence organization only.
+- It must preserve the previous investment judgment unless the user provides new facts or evidence.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.
