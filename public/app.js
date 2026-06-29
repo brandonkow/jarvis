@@ -110,6 +110,10 @@ const ownerMarketClose = document.querySelector("#ownerMarketClose");
 const trustToggle = document.querySelector("#trustToggle");
 const trustPanel = document.querySelector("#trustPanel");
 const trustClose = document.querySelector("#trustClose");
+const trustAcceptance = document.querySelector("#trustAcceptance");
+const trustAcceptanceTitle = document.querySelector("#trustAcceptanceTitle");
+const trustAcceptanceDetail = document.querySelector("#trustAcceptanceDetail");
+const trustAccept = document.querySelector("#trustAccept");
 const ownerMarketAccess = document.querySelector("#ownerMarketAccess");
 const ownerMarketToken = document.querySelector("#ownerMarketToken");
 const ownerMarketClearToken = document.querySelector("#ownerMarketClearToken");
@@ -164,6 +168,7 @@ const contextPanelKey = "estatelab.jarvis.contextPanels";
 const shortlistKey = "apex.shortlist.v1";
 const responseFeedbackKey = "apex.responseFeedback.v1";
 const ownerMarketTokenKey = "apex.ownerMarket.token";
+const trustBoundaryKey = "apex.trustBoundary.accepted.v1";
 const analysisRegistry = new Map();
 let voiceResponsesEnabled = true;
 let listening = false;
@@ -188,6 +193,7 @@ let billingPlans = [];
 let ownerMarketEnabled = false;
 let ownerMarketProjects = [];
 let memorySettingsLoading = false;
+let pendingTrustAction = "";
 
 function clientId() {
   const existing = window.localStorage.getItem(clientKey);
@@ -525,9 +531,12 @@ function closeTrustPanel() {
   trustPanel.hidden = true;
   trustToggle.setAttribute("aria-expanded", "false");
   document.body.classList.remove("trustOpen");
+  pendingTrustAction = "";
+  renderTrustAcceptance();
 }
 
-function openTrustPanel() {
+function openTrustPanel(action = "") {
+  pendingTrustAction = action;
   closeAuthPanel();
   closeMemoryPanel();
   closeReportsPanel();
@@ -538,6 +547,59 @@ function openTrustPanel() {
   trustPanel.hidden = false;
   trustToggle.setAttribute("aria-expanded", "true");
   document.body.classList.add("trustOpen");
+  renderTrustAcceptance();
+}
+
+function readTrustBoundary() {
+  try {
+    return JSON.parse(window.localStorage.getItem(trustBoundaryKey) || "null") || null;
+  } catch {
+    window.localStorage.removeItem(trustBoundaryKey);
+    return null;
+  }
+}
+
+function hasAcceptedTrustBoundary() {
+  return readTrustBoundary()?.version === "v6.1";
+}
+
+function renderTrustAcceptance() {
+  const accepted = hasAcceptedTrustBoundary();
+  trustAcceptance.dataset.state = accepted ? "accepted" : "pending";
+  trustAcceptanceTitle.textContent = accepted ? "Boundary acknowledged" : "Acknowledgement required";
+  trustAcceptanceDetail.textContent = accepted
+    ? "Formal deal reports can run on this device. Professional review and live evidence still apply."
+    : pendingTrustAction === "deal-analysis"
+      ? "Accept this boundary to continue with the formal deal report."
+      : "You can chat freely. Deal reports require this boundary to be accepted first.";
+  trustAccept.textContent = accepted
+    ? "ACKNOWLEDGED"
+    : pendingTrustAction === "deal-analysis" ? "ACCEPT & ANALYSE" : "I UNDERSTAND";
+  trustAccept.disabled = accepted && !pendingTrustAction;
+}
+
+function acceptTrustBoundary() {
+  window.localStorage.setItem(trustBoundaryKey, JSON.stringify({
+    version: "v6.1",
+    acceptedAt: new Date().toISOString(),
+    scope: "formal-deal-reports"
+  }));
+  const action = pendingTrustAction;
+  pendingTrustAction = "";
+  renderTrustAcceptance();
+  renderExperienceLock();
+  setSystemState("System ready", "Trust boundary acknowledged.");
+  if (action === "deal-analysis") {
+    closeTrustPanel();
+    void runDealAnalysis();
+  }
+}
+
+function requireTrustBoundary(action) {
+  if (hasAcceptedTrustBoundary()) return true;
+  openTrustPanel(action);
+  setSystemState("Trust boundary", "Acknowledge Apex's role before generating a formal report.");
+  return false;
 }
 
 function sourceLabel(type) {
@@ -2783,6 +2845,7 @@ function renderExperienceLock() {
     <span><b>CONTEXT</b><small>${escapeHtml(`${average}% / ${panels.map((item) => `${item.label}${item.percent}`).join(" ")}`)}</small></span>
     <span><b>VOICE</b><small>${voiceResponsesEnabled ? "ON" : "OFF"}</small></span>
     <span><b>STYLE</b><small>${escapeHtml(feedback.length ? `${latestFeedback || "TUNED"} ${feedback.length}` : "NEUTRAL")}</small></span>
+    <span><b>TRUST</b><small>${hasAcceptedTrustBoundary() ? "ACCEPTED" : "PENDING"}</small></span>
   `;
 }
 
@@ -3306,6 +3369,7 @@ async function runDealAnalysis() {
     firstMissing?.focus();
     return;
   }
+  if (!requireTrustBoundary("deal-analysis")) return;
 
   collapseContextPanels();
   await ensureSession();
@@ -3444,6 +3508,7 @@ trustToggle.addEventListener("click", () => {
   else closeTrustPanel();
 });
 trustClose.addEventListener("click", closeTrustPanel);
+trustAccept.addEventListener("click", acceptTrustBoundary);
 ownerMarketAccess.addEventListener("submit", (event) => {
   event.preventDefault();
   const token = ownerMarketToken.value.trim();
@@ -3605,6 +3670,7 @@ for (const field of profileFields) {
 async function bootJarvis() {
   restoreContext(dealFields, "data-deal-field", dealContextKey);
   restoreContext(profileFields, "data-profile-field", profileContextKey);
+  renderTrustAcceptance();
   updateInputModeHint();
   renderContextReadiness();
   renderShortlist();

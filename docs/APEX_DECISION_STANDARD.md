@@ -515,6 +515,16 @@ The v6.0 layer starts the commercial trust path by making Apex's role explicit b
 - Warn that Apex can discuss financing risk but will not validate false documents, hidden cashback, misleading transaction prices, or lender deception.
 - Treat this trust surface as a commercial safety layer only. It must not lower evidence standards, remove hard stops, or replace professional review.
 
+## v6.1 Trust Acknowledgement Gate
+
+The v6.1 layer turns the trust boundary into a practical onboarding checkpoint:
+
+- Let users continue normal chat without friction.
+- Require one explicit acknowledgement before generating a formal Deal Report through the Analyse action.
+- Store the acknowledgement locally for the device so users are not repeatedly interrupted.
+- If acknowledgement is missing, open the inline trust workspace and let the user continue the report after accepting.
+- Keep this as a disclosure and consent checkpoint only. It must not imply approval, change legal responsibility, or reduce the evidence required for a strong recommendation.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

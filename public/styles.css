@@ -843,6 +843,68 @@ button {
   overflow-wrap: anywhere;
 }
 
+.trustAcceptance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 12px;
+  padding: 11px;
+  background: rgba(0, 10, 17, 0.54);
+}
+
+.trustAcceptance[data-state="accepted"] {
+  border-color: rgba(112, 230, 179, 0.24);
+  background: rgba(57, 176, 125, 0.07);
+}
+
+.trustAcceptance > span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.trustAcceptance small {
+  color: #5d8c97;
+  font-size: 0.46rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+}
+
+.trustAcceptance b {
+  color: #d8fbff;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.trustAcceptance em {
+  color: #83adb7;
+  font-size: 0.65rem;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.trustAcceptance button {
+  flex: 0 0 auto;
+  border: 1px solid rgba(103, 229, 255, 0.28);
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--cyan-bright);
+  background: rgba(41, 158, 181, 0.11);
+  font-size: 0.51rem;
+  letter-spacing: 0.12em;
+}
+
+.trustAcceptance button:disabled {
+  cursor: default;
+  color: #6f99a3;
+  border-color: rgba(112, 230, 179, 0.18);
+  background: rgba(57, 176, 125, 0.05);
+}
+
 .authHeader,
 .memoryHeader,
 .authUser {
@@ -5503,6 +5565,15 @@ button {
 
   .trustGrid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trustAcceptance {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .trustAcceptance button {
+    min-height: 40px;
   }
 
   .ownerMarketAccess,
