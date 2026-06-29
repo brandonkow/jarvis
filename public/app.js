@@ -1041,6 +1041,7 @@ function saveAnalysisToShortlist(analysis) {
     memoryConflicts: analysis.memoryConflicts || null,
     personalOperatingRules: analysis.personalOperatingRules || null,
     investorReadiness: analysis.investorReadiness || null,
+    productExperience: analysis.productExperience || null,
     learningLoop: analysis.learningLoop || null,
     evidenceEngine: analysis.evidenceEngine || null,
     transactionComparableEvidence: analysis.transactionComparableEvidence || null,
@@ -1117,6 +1118,16 @@ function analysisExportText(analysis) {
     lines.push("", `Investor readiness: ${analysis.investorReadiness.label} (${analysis.investorReadiness.score || 0}/100)`);
     if (analysis.investorReadiness.summary) lines.push(analysis.investorReadiness.summary);
     for (const flag of analysis.investorReadiness.flags || []) lines.push(`- ${flag}`);
+  }
+  if (analysis.productExperience?.summary) {
+    lines.push(
+      "",
+      "V5 product experience",
+      `${analysis.productExperience.mode || "Balanced investor review"} (${analysis.productExperience.onboardingCompleteness || 0}% guidance complete): ${analysis.productExperience.summary}`,
+      `Style: ${analysis.productExperience.explanationStyle || "Balanced explanation"}`,
+      `Next best action: ${analysis.productExperience.nextBestAction || "Complete the missing guidance fields before relying on the report format."}`
+    );
+    for (const item of analysis.productExperience.checks || []) lines.push(`- ${item.label}: ${item.status}. ${item.action}`);
   }
   if (analysis.dimensions?.length) {
     lines.push("", "Scorecard");
@@ -1703,6 +1714,34 @@ function readinessMarkup(readiness = {}) {
   `;
 }
 
+function productExperienceMarkup(experience = {}) {
+  if (!experience.summary) return "";
+  const checks = Array.isArray(experience.checks) ? experience.checks : [];
+  return `
+    <section class="analysisProductExperience">
+      <header>
+        <span><small>V5 PRODUCT EXPERIENCE</small><b>${escapeHtml(experience.summary)}</b></span>
+        <em>${escapeHtml(experience.onboardingCompleteness || 0)}%</em>
+      </header>
+      <div class="productExperienceMeta">
+        <span><small>MODE</small><b>${escapeHtml(experience.mode || "Balanced investor review")}</b></span>
+        <span><small>STYLE</small><b>${escapeHtml(experience.explanationStyle || "Balanced explanation")}</b></span>
+        <span><small>NEXT</small><b>${escapeHtml(experience.nextBestAction || "Clarify the user job before relying on format.")}</b></span>
+      </div>
+      ${checks.length ? `
+        <div class="productExperienceChecks">
+          ${checks.map((item) => `
+            <article class="productExperienceCheck ${escapeHtml(item.status || "missing")}">
+              <i>${escapeHtml(item.status || "missing")}</i>
+              <span><b>${escapeHtml(item.label)}</b><em>${escapeHtml(item.action)}</em></span>
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
 function evidenceChecklistMarkup(items = []) {
   if (!items.length) return "";
   return `
@@ -2177,6 +2216,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     </div>
     <p class="analysisSummary">${escapeHtml(analysis.summary)}</p>
     ${decisionFocusMarkup(analysis)}
+    ${productExperienceMarkup(analysis.productExperience)}
     ${personalizedChallengeMarkup(analysis.personalizedChallenge)}
     ${analysis.aiCommentary ? `
       <section class="analysisJarvisTake">
@@ -2185,7 +2225,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       </section>
     ` : ""}
     <div class="analysisMeta">
-      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v4.6")}</b></span>
+      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v5.0")}</b></span>
       <span>REASONING <b>${escapeHtml(analysis.reasoningMode || (analysis.aiCommentary ? "Framework + AI" : "Framework only"))}</b></span>
       <span>DECISION SCORE <b>${escapeHtml(analysis.averageScore)}/100</b></span>
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
@@ -2300,11 +2340,19 @@ function restoreContext(fields, attributeName, storageKey) {
 
 function resetContextCard(panelName) {
   const isDeal = panelName === "deal";
-  const fields = isDeal ? dealFields : profileFields;
+  const fields = Array.from(document.querySelectorAll(`[data-context-body="${panelName}"] [data-deal-field], [data-context-body="${panelName}"] [data-profile-field]`));
+  const allFields = isDeal ? dealFields : profileFields;
+  const attributeName = isDeal ? "data-deal-field" : "data-profile-field";
   const storageKey = isDeal ? dealContextKey : profileContextKey;
   for (const field of fields) field.value = "";
-  window.localStorage.removeItem(storageKey);
-  setSystemState("System ready", `${isDeal ? "Deal" : "Profile"} details cleared.`);
+  const context = collectContext(allFields, attributeName);
+  if (Object.keys(context).length) {
+    window.localStorage.setItem(storageKey, JSON.stringify(context));
+  } else {
+    window.localStorage.removeItem(storageKey);
+  }
+  const label = panelName === "guidance" ? "Guidance" : isDeal ? "Deal" : "Profile";
+  setSystemState("System ready", `${label} details cleared.`);
 }
 
 function savedContextPanelState() {

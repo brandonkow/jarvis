@@ -364,7 +364,7 @@ function normalizeReportMarketIntelligence(market = {}) {
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v4.6", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v5.0", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -480,6 +480,22 @@ function normalizeReportAnalysis(analysis = {}) {
       checks: objectList(analysis?.exitStrategy?.checks, 10, (item) => ({
         label: reportText(item?.label, 140),
         status: ["clear", "prepare", "risk"].includes(item?.status) ? item.status : "prepare",
+        action: reportText(item?.action, 420)
+      }))
+    },
+    productExperience: {
+      mode: reportText(analysis?.productExperience?.mode, 120),
+      level: reportText(analysis?.productExperience?.level, 80),
+      intent: reportText(analysis?.productExperience?.intent, 120),
+      preferredOutput: reportText(analysis?.productExperience?.preferredOutput, 120),
+      confidenceComfort: reportText(analysis?.productExperience?.confidenceComfort, 120),
+      summary: reportText(analysis?.productExperience?.summary, 700),
+      explanationStyle: reportText(analysis?.productExperience?.explanationStyle, 240),
+      nextBestAction: reportText(analysis?.productExperience?.nextBestAction, 500),
+      onboardingCompleteness: Math.max(0, Math.min(100, Number(analysis?.productExperience?.onboardingCompleteness || 0))),
+      checks: objectList(analysis?.productExperience?.checks, 8, (item) => ({
+        label: reportText(item?.label, 140),
+        status: ["clear", "missing", "watch"].includes(item?.status) ? item.status : "missing",
         action: reportText(item?.action, 420)
       }))
     },
@@ -2346,7 +2362,13 @@ const profileContextLabels = {
   concentrationRisk: "Concentration risk",
   nextPurchaseReason: "Next purchase reason",
   nearTermCommitment: "Near-term commitment",
-  financialConcern: "Financial concern"
+  financialConcern: "Financial concern",
+  experienceLevel: "Experience level",
+  guidanceMode: "Guidance mode",
+  decisionIntent: "Decision intent",
+  preferredOutput: "Preferred output",
+  confidenceComfort: "Confidence comfort",
+  onboardingNotes: "Guidance notes"
 };
 
 function cleanContextRecord(record, labels) {
@@ -2493,6 +2515,12 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const existingPortfolioHealth = String(financialProfile.existingPortfolioHealth || "").toLowerCase();
   const concentrationRiskInput = String(financialProfile.concentrationRisk || "").toLowerCase();
   const nextPurchaseReason = String(financialProfile.nextPurchaseReason || "").toLowerCase();
+  const experienceLevel = String(financialProfile.experienceLevel || "").toLowerCase();
+  const guidanceMode = String(financialProfile.guidanceMode || "").toLowerCase();
+  const decisionIntent = String(financialProfile.decisionIntent || "").toLowerCase();
+  const preferredOutput = String(financialProfile.preferredOutput || "").toLowerCase();
+  const confidenceComfort = String(financialProfile.confidenceComfort || "").toLowerCase();
+  const onboardingNotes = String(financialProfile.onboardingNotes || "");
   const tenure = String(dealCard.tenure || "").toLowerCase();
   const comparableSource = String(dealCard.comparableSource || "").toLowerCase();
   const comparableRecency = String(dealCard.comparableRecency || "").toLowerCase();
@@ -2587,7 +2615,16 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     dealCard.exitStrategyPlan,
     dealCard.resalePreparation
   );
-  const profileNarrative = signalText(financialProfile.financialConcern, financialProfile.nearTermCommitment);
+  const profileNarrative = signalText(
+    financialProfile.financialConcern,
+    financialProfile.nearTermCommitment,
+    financialProfile.experienceLevel,
+    financialProfile.guidanceMode,
+    financialProfile.decisionIntent,
+    financialProfile.preferredOutput,
+    financialProfile.confidenceComfort,
+    financialProfile.onboardingNotes
+  );
   const allNarrative = signalText(dealNarrative, profileNarrative, tenure, dealCard.legalCheck);
   const isHighRise = /(condo|apartment|flat|serviced|high.?rise)/.test(propertyType);
   const isLanded = /(landed|terrace|semi|bungalow|townhouse)/.test(propertyType);
@@ -5225,9 +5262,109 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       : "Exit can be planned, but the resale story must be prepared around buyer emotion, evidence, and objections.",
     checks: exitChecks
   };
+  const guidanceChecks = [
+    {
+      label: "Experience level",
+      value: financialProfile.experienceLevel,
+      action: financialProfile.experienceLevel
+        ? `Use ${financialProfile.experienceLevel} pacing.`
+        : "State whether the user is beginner, intermediate, seasoned, or professional."
+    },
+    {
+      label: "Guidance mode",
+      value: financialProfile.guidanceMode,
+      action: financialProfile.guidanceMode
+        ? `Answer in ${financialProfile.guidanceMode} mode.`
+        : "Choose guided, balanced, concise, or professional mode."
+    },
+    {
+      label: "Decision intent",
+      value: financialProfile.decisionIntent,
+      action: financialProfile.decisionIntent
+        ? `Focus on: ${financialProfile.decisionIntent}.`
+        : "Clarify whether Apex is teaching, screening, preparing an offer, comparing deals, or reviewing a portfolio."
+    },
+    {
+      label: "Preferred output",
+      value: financialProfile.preferredOutput,
+      action: financialProfile.preferredOutput
+        ? `Format as: ${financialProfile.preferredOutput}.`
+        : "Choose short answer, full report, checklist, or voice summary."
+    },
+    {
+      label: "Confidence comfort",
+      value: financialProfile.confidenceComfort,
+      action: financialProfile.confidenceComfort
+        ? `Challenge with ${financialProfile.confidenceComfort} confidence tolerance.`
+        : "Tell Apex how conservative to be when evidence is incomplete."
+    },
+    {
+      label: "Guidance notes",
+      value: onboardingNotes,
+      action: onboardingNotes
+        ? "Apply the user's extra explanation preference."
+        : "Optional: add any personal preference about tone, detail, or directness."
+    }
+  ].map((item) => ({
+    label: item.label,
+    status: item.value ? "clear" : item.label === "Guidance notes" ? "watch" : "missing",
+    action: item.action
+  }));
+  const completedGuidanceChecks = guidanceChecks.filter((item) => item.status === "clear").length;
+  const onboardingCompleteness = clampScore((completedGuidanceChecks / guidanceChecks.length) * 100);
+  const guidedMode = guidanceMode.includes("guided") || experienceLevel.includes("beginner");
+  const professionalMode = guidanceMode.includes("professional") || experienceLevel.includes("professional");
+  const conciseMode = guidanceMode.includes("concise") || preferredOutput.includes("short") || preferredOutput.includes("voice");
+  const checklistMode = preferredOutput.includes("checklist");
+  const productMode = guidedMode
+    ? "Guided beginner review"
+    : professionalMode
+      ? "Professional due-diligence review"
+      : conciseMode
+        ? "Concise decision review"
+        : checklistMode
+          ? "Checklist-led review"
+          : "Balanced investor review";
+  const explanationStyle = guidedMode
+    ? "Plain-language mentor mode with reasons, missing proof, and next action."
+    : professionalMode
+      ? "Due-diligence format with concise evidence gates and decision blockers."
+      : conciseMode
+        ? "Short executive answer with only the strongest reason, blocker, and next step."
+        : checklistMode
+          ? "Checklist format that converts the report into tasks."
+          : "Balanced explanation that keeps judgment, evidence, and action together.";
+  const guidanceSummary = guidedMode
+    ? "Apex should slow down, explain the why, and challenge beginner mistakes without weakening the evidence standard."
+    : professionalMode
+      ? "Apex can be sharper and more compact, but every conclusion still needs transaction, rental, financing, site, and legal support."
+      : conciseMode
+        ? "Apex should answer tighter, with the main verdict first and supporting detail only where it changes the decision."
+        : "Apex should balance teaching, decision discipline, and action steps for this user.";
+  const productNextAction = guidanceChecks.some((item) => item.status === "missing")
+    ? "Complete the missing guidance fields so Apex can match the explanation style to the user."
+    : hardStops.length
+      ? "Use the selected guidance mode to explain the hard stop without making the user rationalize it away."
+      : blockers.length
+        ? "Use the selected guidance mode to clear the strongest blocker before discussing upside."
+        : verdict === "SHORTLIST"
+          ? "Convert the report into a due-diligence checklist before any booking or offer."
+          : "Keep the next response focused on the cheapest evidence that can change the decision.";
+  const productExperience = {
+    mode: productMode,
+    level: financialProfile.experienceLevel || "Not stated",
+    intent: financialProfile.decisionIntent || "Not stated",
+    preferredOutput: financialProfile.preferredOutput || "Not stated",
+    confidenceComfort: financialProfile.confidenceComfort || "Not stated",
+    summary: guidanceSummary,
+    explanationStyle,
+    nextBestAction: productNextAction,
+    onboardingCompleteness,
+    checks: guidanceChecks
+  };
 
   return {
-    engineVersion: "Apex v4.6",
+    engineVersion: "Apex v5.0",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -5256,6 +5393,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
     sourcingProfessional,
     tenantRentalPlan,
     exitStrategy,
+    productExperience,
     challengeMode,
     decisionFocus,
     investorReadiness,
@@ -5290,6 +5428,15 @@ function dealAnalysisText(analysis) {
   if (analysis.investorReadiness?.label) {
     lines.push("", "Investor readiness", `- ${analysis.investorReadiness.label}: ${analysis.investorReadiness.summary || ""}`);
     if (analysis.investorReadiness.flags?.length) lines.push(...analysis.investorReadiness.flags.map((item) => `- ${item}`));
+  }
+  if (analysis.productExperience?.summary) {
+    lines.push(
+      "",
+      "V5 product experience",
+      `- ${analysis.productExperience.mode || "Balanced investor review"}: ${analysis.productExperience.summary}`,
+      `- Style: ${analysis.productExperience.explanationStyle || "Balanced explanation"}`,
+      `- Next: ${analysis.productExperience.nextBestAction || "Complete the guidance fields before relying on report format."}`
+    );
   }
   if (analysis.dimensions?.length) {
     lines.push("", "Four-part decision read", ...analysis.dimensions.map((item) => `- ${item.label}: ${item.score}/100 (${item.status}).`));

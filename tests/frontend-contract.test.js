@@ -30,7 +30,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /class="orbCore"><b>A<\/b>/, "The orb must use only the Apex A mark.");
   assert.doesNotMatch(html, /<h1>APEX<\/h1>|class="productSuffix"/, "The central Apex Analytic wordmark must stay removed.");
   assert.match(html, /<form id="chatForm"[\s\S]*?id="analyzeDealBtn"[\s\S]*?<\/form>/, "Deal analysis must remain visible inside the message bar.");
-  assert.equal((html.match(/data-context-reset="(?:deal|profile)"/g) || []).length, 2, "Each context card needs its own reset button.");
+  assert.equal((html.match(/data-context-reset="(?:deal|profile|guidance)"/g) || []).length, 3, "Each context card needs its own reset button.");
   assert.match(html, /id="memoryPanel"[\s\S]*?PRIVATE TO YOUR ACCOUNT[\s\S]*?id="memoryList"/, "Signed-in users need a private memory review screen.");
   assert.match(html, /id="memoryCaptureEnabled"[\s\S]*?id="memoryReasoningEnabled"[\s\S]*?id="memoryModeNotice"/, "V3 memory must expose opt-in capture and reasoning controls.");
   assert.match(html, /id="memoryProfile"[\s\S]*?id="memoryProfileTitle"[\s\S]*?id="memoryProfileDetails"/, "V3.1 needs a structured investor memory profile card.");
@@ -43,6 +43,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /data-deal-field="siteVisitEvidence"[\s\S]*?data-deal-field="siteManagementNotes"/, "Deal card needs v4.5 site and management fields.");
   assert.match(html, /data-deal-field="legalTitleType"[\s\S]*?data-deal-field="legalTransactionNotes"/, "Deal card needs v4.6 legal and transaction fields.");
   assert.match(html, /data-profile-field="portfolioRole"[\s\S]*?data-profile-field="nextPurchaseReason"/, "Profile card needs optional v1.7 portfolio gate fields.");
+  assert.match(html, /data-context-toggle="guidance"[\s\S]*?data-profile-field="experienceLevel"[\s\S]*?data-profile-field="onboardingNotes"/, "V5 needs a dedicated guidance card for answer style and onboarding context.");
   assert.match(html, /id="shortlistPanel"[\s\S]*?DEAL SHORTLIST[\s\S]*?id="shortlistList"/, "Analysed properties need an inline comparison shortlist.");
   assert.match(html, /id="shortlistSummary"[\s\S]*?id="shortlistList"/, "The shortlist needs a comparison summary before the deal cards.");
   assert.match(html, /id="billingSummary"[\s\S]*?id="billingPlanName"[\s\S]*?id="billingActions"/, "Signed-in accounts need one compact plan and usage surface.");
@@ -71,6 +72,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /decisionFocusMarkup\(analysis\)/, "Deal reports need a single decision-focus explanation.");
   assert.match(app, /personalizedChallengeMarkup\(analysis\.personalizedChallenge\)/, "V3.3 deal reports need a separate personalized challenge card.");
   assert.match(app, /readinessMarkup\(analysis\.investorReadiness\)/, "Deal reports need an investor readiness summary.");
+  assert.match(app, /productExperienceMarkup\(analysis\.productExperience\)/, "Deal reports need the v5 product-experience guidance summary.");
   assert.match(app, /evidenceChecklistMarkup\(analysis\.evidenceChecklist/, "Deal reports need an evidence checklist.");
   assert.match(app, /evidenceEngineMarkup\(analysis\.evidenceEngine\)/, "Deal reports need v4.0 evidence engine.");
   assert.match(app, /transactionComparableMarkup\(analysis\.transactionComparableEvidence\)/, "Deal reports need v4.1 transaction comparable evidence.");
@@ -101,6 +103,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /recommendationBlockers: analysis\.recommendationBlockers/, "Shortlisted deals must preserve decision blockers for comparison.");
   assert.match(app, /decisionFocus: analysis\.decisionFocus/, "Shortlisted deals must preserve decision focus for comparison.");
   assert.match(app, /personalizedChallenge: analysis\.personalizedChallenge/, "Shortlisted deals must preserve V3.3 personalized challenge context.");
+  assert.match(app, /productExperience: analysis\.productExperience/, "Shortlisted deals must preserve V5 product-experience context.");
   assert.match(app, /learningLoop: analysis\.learningLoop/, "Shortlisted deals must preserve learning signals for comparison.");
   assert.match(app, /evidenceEngine: analysis\.evidenceEngine/, "Shortlisted deals must preserve V4.0 evidence engine.");
   assert.match(app, /transactionComparableEvidence: analysis\.transactionComparableEvidence/, "Shortlisted deals must preserve V4.1 transaction comparable evidence.");
@@ -127,6 +130,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /ownerMarketEnabled\s*=\s*Boolean\(status\.ownerMarket\?\.enabled\)/, "The frontend must detect whether the owner market API is enabled.");
   assert.match(app, /data-analysis-action="journal"/, "Saved reports need a direct decision-record action.");
   assert.match(app, /function resetContextCard[\s\S]*?localStorage\.removeItem\(storageKey\)/, "Card reset must clear both visible fields and saved browser context.");
+  assert.match(app, /data-context-body="\$\{panelName\}"[\s\S]*?\[data-profile-field\]/, "Resetting Guidance must only clear its own visible fields while preserving the rest of the profile context.");
   assert.match(styles, /\.memoryOpen \.transcript[\s\S]*?display:\s*none;/, "The memory screen must replace chat content instead of opening a popup.");
   assert.match(styles, /\.memorySettings[\s\S]*?grid-template-columns:/, "V3 memory consent controls need a compact settings layout.");
   assert.match(styles, /\.memoryProfile[\s\S]*?\.memoryProfileDetails/, "V3.1 memory profile needs a styled summary card.");
@@ -152,6 +156,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.analysisExecution[\s\S]*?\.executionAction/, "The v1.5 report needs a styled execution calibration pack.");
   assert.match(styles, /\.analysisLearning[\s\S]*?\.learningSignal/, "The v1.2 report needs styled memory and journal learning signals.");
   assert.match(styles, /\.analysisV3Insight[\s\S]*?\.v3InsightItem/, "The v3 memory-path report sections need styled compact cards.");
+  assert.match(styles, /\.analysisProductExperience[\s\S]*?\.productExperienceCheck/, "The v5 product-experience report section needs styled compact cards.");
   assert.match(styles, /\.shortlistCompare[\s\S]*?adjusted|\.shortlistCompare[\s\S]*?grid-template-columns:/, "The v1.3 shortlist needs a styled comparison summary.");
   assert.match(styles, /\.shortlistItem\.blocked[\s\S]*?border-color/, "Blocked shortlist items need a visible comparison warning state.");
 

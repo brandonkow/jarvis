@@ -402,6 +402,16 @@ The v2.4 layer forces saleability planning before purchase:
 - Decide the likely sale mode before holding: vacant after renovation, tenanted investor sale, long-term hold, or refinance and hold.
 - Treat profit as insufficient proof of a good decision unless the process, execution, outcome, and luck review also make sense.
 
+## v5.0 Product Experience Layer
+
+The v5.0 layer makes Apex easier for normal users to operate without changing the decision standard:
+
+- Add a Guidance card for experience level, guidance mode, decision intent, preferred output, confidence comfort, and optional tone notes.
+- Treat guidance as presentation context, not investment evidence. Beginner mode gets clearer explanation; professional mode gets tighter reports; neither mode lowers hard stops or evidence gates.
+- Show a V5 product-experience block in Deal Reports so users know whether the answer is guided, balanced, concise, checklist-led, or professional.
+- Use onboarding completeness to show whether Apex has enough user-experience context to choose the right answer shape.
+- Preserve the same transaction, rental, financing, supply, site, management, legal, stress, portfolio, and exit requirements regardless of user confidence or preferred format.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

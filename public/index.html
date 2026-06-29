@@ -934,6 +934,64 @@
               <label class="contextWide">Financial Concern<input data-profile-field="financialConcern" placeholder="What financial risk worries you most?" /></label>
             </div>
           </section>
+
+          <section class="contextPanel">
+            <header class="contextHeader">
+              <button class="contextToggle" type="button" data-context-toggle="guidance" aria-expanded="false" aria-controls="guidanceContextFields">
+                <span>Guidance</span>
+                <b class="contextAction">OPEN</b>
+              </button>
+              <button class="contextReset" type="button" data-context-reset="guidance" aria-label="Clear all Guidance card details">RESET</button>
+            </header>
+            <div id="guidanceContextFields" class="contextGrid" data-context-body="guidance" hidden>
+              <label>Experience Level
+                <select data-profile-field="experienceLevel">
+                  <option value="">Select</option>
+                  <option>Beginner</option>
+                  <option>Intermediate</option>
+                  <option>Seasoned investor</option>
+                  <option>Professional</option>
+                </select>
+              </label>
+              <label>Guidance Mode
+                <select data-profile-field="guidanceMode">
+                  <option value="">Select</option>
+                  <option>Guided</option>
+                  <option>Balanced</option>
+                  <option>Concise</option>
+                  <option>Professional</option>
+                </select>
+              </label>
+              <label>Decision Intent
+                <select data-profile-field="decisionIntent">
+                  <option value="">Select</option>
+                  <option>Learn the framework</option>
+                  <option>Screen a deal</option>
+                  <option>Prepare an offer</option>
+                  <option>Compare deals</option>
+                  <option>Portfolio review</option>
+                </select>
+              </label>
+              <label>Preferred Output
+                <select data-profile-field="preferredOutput">
+                  <option value="">Select</option>
+                  <option>Short answer</option>
+                  <option>Full report</option>
+                  <option>Checklist</option>
+                  <option>Voice summary</option>
+                </select>
+              </label>
+              <label>Confidence Comfort
+                <select data-profile-field="confidenceComfort">
+                  <option value="">Select</option>
+                  <option>Conservative</option>
+                  <option>Normal</option>
+                  <option>Comfortable with uncertainty</option>
+                </select>
+              </label>
+              <label class="contextWide">Guidance Notes<input data-profile-field="onboardingNotes" placeholder="Tell Apex how direct, detailed, or beginner-friendly to be." /></label>
+            </div>
+          </section>
         </section>
 
         <p id="aiDisclosure" class="aiDisclosure" hidden>AI uses submitted chat and context. Apex Analytic knowledge remains owner-controlled.</p>

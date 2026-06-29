@@ -158,7 +158,13 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
     portfolioRole: "Cash-flow base",
     existingPortfolioHealth: "Stable rent and costs",
     concentrationRisk: "Low",
-    nextPurchaseReason: "Build a cash-flow base before larger appreciation plays."
+    nextPurchaseReason: "Build a cash-flow base before larger appreciation plays.",
+    experienceLevel: "Beginner",
+    guidanceMode: "Guided",
+    decisionIntent: "Screen a deal",
+    preferredOutput: "Full report",
+    confidenceComfort: "Conservative",
+    onboardingNotes: "Explain blockers in plain language."
   };
 
   const result = await post(baseUrl, "/api/jarvis/analyze-deal", {
@@ -206,13 +212,17 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.exitStrategy.checks.some((item) => item.label === "Resale emotion" && item.status === "clear"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v4.6");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v5.0");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");
   assert.equal(result.payload.analysis.decisionFocus.label, "Shortlist, not buy yet");
   assert.equal(result.payload.analysis.investorReadiness.label, "Ready");
   assert.ok(result.payload.analysis.investorReadiness.score >= 80);
+  assert.equal(result.payload.analysis.productExperience.mode, "Guided beginner review");
+  assert.equal(result.payload.analysis.productExperience.onboardingCompleteness, 100);
+  assert.equal(result.payload.analysis.productExperience.checks.length, 6);
+  assert.ok(result.payload.analysis.productExperience.summary.includes("explain the why"));
   assert.equal(result.payload.analysis.evidenceChecklist.length, 8);
   assert.ok(result.payload.analysis.evidenceChecklist.some((item) => item.label === "Completed value evidence" && item.status === "done"));
   assert.equal(result.payload.analysis.evidenceEngine.status, "proven");
