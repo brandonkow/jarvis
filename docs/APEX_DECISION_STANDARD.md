@@ -610,6 +610,23 @@ The V8 path turns the owner evidence store into an auditable proof layer. It ans
 
 V8 does not train itself from public users. Normal users can submit chat and card context, but only owner-controlled evidence can enter the shared vault. If no matching document exists, Apex may still reason from the framework, but the report must show that document backing is thin.
 
+## v9.1 - v9.10 Portfolio Command And Capital Allocation Stack
+
+The V9 path asks whether a deal belongs in the user's portfolio sequence. A property can pass asset screening and still fail portfolio command if the buyer's cash, debt, reserve runway, concentration, or timing is not ready.
+
+- **v9.1 Capital base map**: Apex maps cash available, all-in outlay, emergency reserve, renovation/furnishing budget, and post-purchase cash.
+- **v9.2 Reserve runway**: Apex checks whether six-month reserve discipline and stress survival remain intact after the purchase.
+- **v9.3 Debt service capacity**: Apex treats post-deal DSR as a stress signal, not a permission slip from the bank.
+- **v9.4 Holding power floor**: Apex checks base and stressed monthly holding before treating rent coverage as real.
+- **v9.5 Concentration risk**: Apex reviews whether the user is overexposed to the same area, tenant pool, supply cycle, price segment, title type, or refinancing window.
+- **v9.6 Acquisition sequence**: Apex checks whether the deal fits the user's current property count, portfolio role, and next-purchase reason.
+- **v9.7 Refinance and cash-out discipline**: Apex allows refinancing logic only when equity is real and rent still supports the higher instalment.
+- **v9.8 Opportunity cost and liquidity**: Apex flags life commitments, business cash needs, weak resale liquidity, or market saturation before capital is trapped.
+- **v9.9 Scale readiness gate**: Apex combines evidence quality, document backing, stress survival, clean legal/financing path, and defined portfolio role before green-lighting scale.
+- **v9.10 Portfolio command seal**: Apex summarizes the weakest V9 lane and states whether the next move is advance, hold, repair, or pause.
+
+V9 must not turn an unsafe deal into an acceptable one. It only decides whether the investor should allocate capital now, hold for more proof, repair missing inputs, or pause. If V4 evidence, V6 trust, V8 document backing, or legal/financing checks fail, V9 should respect those limits.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

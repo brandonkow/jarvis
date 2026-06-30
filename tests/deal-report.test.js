@@ -212,11 +212,15 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.ok(result.payload.analysis.exitStrategy.checks.some((item) => item.label === "Resale emotion" && item.status === "clear"));
   assert.ok(result.payload.analysis.metrics.some((metric) => metric.label === "Operating yield"));
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
-  assert.equal(result.payload.analysis.engineVersion, "Apex v8.10");
+  assert.equal(result.payload.analysis.engineVersion, "Apex v9.10");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
   assert.equal(result.payload.analysis.documentIntelligence.version, "v8");
   assert.equal(result.payload.analysis.documentIntelligence.lanes.length, 10);
   assert.ok(result.payload.analysis.documentIntelligence.lanes.some((item) => item.version === "V8.10"));
+  assert.equal(result.payload.analysis.portfolioCommand.version, "v9");
+  assert.equal(result.payload.analysis.portfolioCommand.lanes.length, 10);
+  assert.ok(result.payload.analysis.portfolioCommand.lanes.some((item) => item.version === "V9.10"));
+  assert.ok(["advance", "hold", "repair", "pause"].includes(result.payload.analysis.portfolioCommand.status));
   assert.deepEqual(result.payload.analysis.recommendationBlockers, []);
   assert.equal(result.payload.analysis.challengeMode.label, "Mentor challenge");
   assert.equal(result.payload.analysis.decisionFocus.label, "Shortlist, not buy yet");

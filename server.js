@@ -471,10 +471,49 @@ function normalizeReportDocumentIntelligence(section = {}) {
   };
 }
 
+function normalizeReportPortfolioCommand(section = {}) {
+  const safeStatus = (value, fallback = "hold") => ["advance", "hold", "repair", "pause", "clear", "watch", "risk", "missing", "action"].includes(value) ? value : fallback;
+  const lanes = Array.isArray(section.lanes) ? section.lanes.slice(0, 12).map((item) => ({
+    version: reportText(item?.version, 20),
+    label: reportText(item?.label, 160),
+    status: safeStatus(item?.status, "watch"),
+    score: Math.max(0, Math.min(100, Number(item?.score || 0))),
+    reading: reportText(item?.reading, 700),
+    action: reportText(item?.action, 500)
+  })).filter((item) => item.version && item.label) : [];
+  return {
+    version: reportText(section.version || "v9", 20),
+    status: safeStatus(section.status, "hold"),
+    score: Math.max(0, Math.min(100, Number(section.score || 0))),
+    summary: reportText(section.summary, 900),
+    posture: reportText(section.posture, 240),
+    nextMove: reportText(section.nextMove, 500),
+    capitalMap: {
+      cashAvailable: reportText(section?.capitalMap?.cashAvailable, 80),
+      cashOutlay: reportText(section?.capitalMap?.cashOutlay, 80),
+      cashAfterPurchase: reportText(section?.capitalMap?.cashAfterPurchase, 80),
+      reserveMonths: reportText(section?.capitalMap?.reserveMonths, 80),
+      reserveSurvivalMonths: section?.capitalMap?.reserveSurvivalMonths === null ? null : Math.max(0, Number(section?.capitalMap?.reserveSurvivalMonths || 0)),
+      postDealDsr: reportText(section?.capitalMap?.postDealDsr, 80),
+      holdingCashFlow: reportText(section?.capitalMap?.holdingCashFlow, 80),
+      stressedHolding: reportText(section?.capitalMap?.stressedHolding, 80),
+      existingProperties: Math.max(0, Number(section?.capitalMap?.existingProperties || 0)),
+      portfolioRole: reportText(section?.capitalMap?.portfolioRole, 160)
+    },
+    lanes,
+    actionQueue: Array.isArray(section.actionQueue) ? section.actionQueue.slice(0, 8).map((item) => ({
+      version: reportText(item?.version, 20),
+      label: reportText(item?.label, 160),
+      status: safeStatus(item?.status, "watch"),
+      action: reportText(item?.action, 500)
+    })).filter((item) => item.version && item.label) : []
+  };
+}
+
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v8.10", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v9.10", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -855,6 +894,7 @@ function normalizeReportAnalysis(analysis = {}) {
     nextActions: reportList(analysis.nextActions),
     developmentIntelligence: normalizeReportDevelopmentIntelligence(analysis.developmentIntelligence),
     documentIntelligence: normalizeReportDocumentIntelligence(analysis.documentIntelligence),
+    portfolioCommand: normalizeReportPortfolioCommand(analysis.portfolioCommand),
     marketIntelligence: normalizeReportMarketIntelligence(analysis.marketIntelligence),
     context: normalizeReportContext(analysis.context)
   };
@@ -2753,6 +2793,205 @@ function documentEvidenceSources(documentIntelligence = {}) {
     tags: item.tags || [],
     status: item.status
   }));
+}
+
+function portfolioLane(version, label, status, reading, action) {
+  return {
+    version,
+    label,
+    status,
+    score: laneStatusScore(status),
+    reading,
+    action
+  };
+}
+
+function buildPortfolioCommand(analysis = {}) {
+  const deal = analysis.context?.dealCard || {};
+  const profile = analysis.context?.financialProfile || {};
+  const price = parseAmount(deal.askingPrice);
+  const rent = parseAmount(deal.expectedRent);
+  const maintenance = parseAmount(deal.maintenance);
+  const installment = parseAmount(deal.estimatedInstallment);
+  const cashOutlay = parseAmount(deal.cashOutlay);
+  const cashAvailable = parseAmount(profile.cashAvailable);
+  const income = parseAmount(profile.monthlyIncome);
+  const currentDebt = parseAmount(profile.currentDebt);
+  const reserveMonths = parsePlainNumber(profile.cashReserveMonths);
+  const existingProperties = parsePlainNumber(profile.existingProperties);
+  const cashAfterPurchase = cashAvailable && cashOutlay ? cashAvailable - cashOutlay : null;
+  const postDealDsr = income && installment ? ((currentDebt + installment) / income) * 100 : null;
+  const holdingCashFlow = rent && installment ? rent - installment - maintenance : null;
+  const stressedHolding = analysis.stressEnvelope?.stressedTrueHolding ? parsePlainNumber(analysis.stressEnvelope.stressedTrueHolding) : null;
+  const reserveSurvivalMonths = analysis.stressEnvelope?.reserveSurvivalMonths ?? null;
+  const portfolioRole = profile.portfolioRole || profile.investmentGoal || "Not stated";
+  const concentrationText = signalText(profile.concentrationRisk, profile.existingPortfolioHealth, deal.area, deal.propertyType);
+  const reasonText = signalText(profile.nextPurchaseReason, profile.nearTermCommitment, profile.financialConcern);
+  const fomoSignal = hasSignal(reasonText, [/fomo/, /afraid.*miss/, /everyone.*buy/, /hot deal/, /agent.*push/, /limited time/, /rush/, /quick profit/]);
+  const nearTermCommitment = hasStatedRisk(profile.nearTermCommitment);
+  const evidenceStrong = ["proven", "strong"].includes(analysis.evidenceEngine?.status);
+  const documentBacked = ["proven", "partial"].includes(analysis.documentIntelligence?.status);
+  const marketRisk = analysis.marketPulse?.status === "risk" || analysis.developmentIntelligence?.status === "risk";
+  const stressRisk = ["fragile", "unknown"].includes(analysis.stressEnvelope?.status);
+  const portfolioBlocked = analysis.portfolioGate?.status === "block";
+  const lanes = [
+    portfolioLane(
+      "V9.1",
+      "Capital base map",
+      !cashAvailable && !cashOutlay ? "missing" : cashAfterPurchase !== null && cashAfterPurchase < 0 ? "risk" : reserveMonths >= 6 ? "clear" : "watch",
+      cashAfterPurchase === null
+        ? "Cash available and total cash outlay are not both stated, so capital deployment cannot be mapped cleanly."
+        : `After stated outlay, declared cash would be ${formatRinggit(cashAfterPurchase)} with ${reserveMonths || 0} months reserve stated.`,
+      "Map cash available, all-in cash outlay, emergency reserve, renovation/furnishing, and repair allowance before treating loan approval as readiness."
+    ),
+    portfolioLane(
+      "V9.2",
+      "Reserve runway",
+      reserveMonths >= 6 && (reserveSurvivalMonths === null || reserveSurvivalMonths >= 12) ? "clear" : reserveMonths && reserveMonths < 6 ? "risk" : reserveSurvivalMonths !== null && reserveSurvivalMonths < 6 ? "risk" : "watch",
+      reserveSurvivalMonths === null
+        ? `Reserve month input is ${reserveMonths || 0}. Stress reserve survival is not applicable or not calculated.`
+        : `Stress reserve survival is about ${reserveSurvivalMonths} month${reserveSurvivalMonths === 1 ? "" : "s"}.`,
+      "Keep at least six months of emergency reserve after purchase and enough stress runway to survive vacancy, repair, lower rent, and higher instalment."
+    ),
+    portfolioLane(
+      "V9.3",
+      "Debt service capacity",
+      postDealDsr === null ? "missing" : postDealDsr >= 80 ? "risk" : postDealDsr >= 65 ? "watch" : "clear",
+      postDealDsr === null
+        ? "Post-deal DSR cannot be calculated without income and instalment."
+        : `Post-deal DSR is about ${money(postDealDsr)}% before banks apply their own policy filters.`,
+      "Use DSR as a stress signal, not a permission slip. Avoid forcing financing just to reduce upfront cash."
+    ),
+    portfolioLane(
+      "V9.4",
+      "Holding power floor",
+      holdingCashFlow === null ? "missing" : holdingCashFlow >= 0 && !stressRisk ? "clear" : holdingCashFlow >= -300 ? "watch" : "risk",
+      holdingCashFlow === null
+        ? "Rent, instalment, or maintenance is missing, so holding power is not proven."
+        : `Base monthly holding is ${formatRinggit(holdingCashFlow)}; stressed holding is ${analysis.stressEnvelope?.stressedTrueHolding || "not calculated"}.`,
+      "For normal retail investors, rental should cover instalment and recurring charges unless the user has cash-rich appreciation strategy capacity."
+    ),
+    portfolioLane(
+      "V9.5",
+      "Concentration risk",
+      existingProperties > 5 ? "risk" : hasSignal(concentrationText, [/same/, /unclear/, /concentrat/, /one area/, /same tenant/, /same township/]) ? "watch" : existingProperties || profile.concentrationRisk ? "clear" : "missing",
+      existingProperties
+        ? `User states ${existingProperties} existing propert${existingProperties === 1 ? "y" : "ies"}. Concentration note: ${profile.concentrationRisk || "not stated"}.`
+        : "Existing property count or concentration risk is not clearly stated.",
+      "Check whether the portfolio is relying on the same state, township, tenant pool, supply cycle, price segment, title type, or refinancing window."
+    ),
+    portfolioLane(
+      "V9.6",
+      "Acquisition sequence",
+      fomoSignal ? "risk" : portfolioBlocked ? "risk" : analysis.portfolioGate?.status === "allow" ? "clear" : analysis.portfolioGate?.status === "review" ? "watch" : "missing",
+      fomoSignal
+        ? "The stated next-purchase reason contains FOMO or pressure language."
+        : analysis.portfolioGate?.summary || "Portfolio expansion gate is not available.",
+      "Sequence matters: prove the current asset, preserve reserve, and define the job of this property before moving from first deal to next deal."
+    ),
+    portfolioLane(
+      "V9.7",
+      "Refinance and cash-out discipline",
+      analysis.holdExitPlan?.action === "refinance" && holdingCashFlow !== null && holdingCashFlow >= 0 ? "clear" : analysis.holdExitPlan?.action === "pause" || stressRisk ? "risk" : "watch",
+      analysis.holdExitPlan?.summary || "Refinancing logic is not yet explicit.",
+      "Cash-out is healthy only when equity is real, rental still covers the new instalment, and the property remains competitive against substitutes."
+    ),
+    portfolioLane(
+      "V9.8",
+      "Opportunity cost and liquidity",
+      nearTermCommitment || marketRisk ? "risk" : analysis.marketPulse?.status === "opportunity" ? "clear" : "watch",
+      nearTermCommitment
+        ? `Near-term commitment stated: ${profile.nearTermCommitment}.`
+        : analysis.marketPulse?.summary || "Liquidity and opportunity cost need clearer market-cycle evidence.",
+      "Do not trap cash in a property if life planning, business needs, weak resale liquidity, or market saturation may need ready capital."
+    ),
+    portfolioLane(
+      "V9.9",
+      "Scale readiness gate",
+      portfolioBlocked ? "risk" : evidenceStrong && documentBacked && analysis.portfolioGate?.status === "allow" ? "clear" : evidenceStrong && analysis.portfolioGate?.status !== "block" ? "watch" : "action",
+      documentBacked
+        ? "Evidence and document backing are strong enough to discuss portfolio fit, subject to the weakest V9 lane."
+        : "Portfolio scaling should not rely on framework judgement alone while document backing is thin.",
+      "Before scaling, require evidence quality, document backing, stress survival, clean legal/financing path, and a defined portfolio role."
+    ),
+    portfolioLane(
+      "V9.10",
+      "Portfolio command seal",
+      "watch",
+      "The V9 command seal depends on the weakest capital, debt, holding, concentration, and sequence lane.",
+      "Use the weakest V9 lane as the capital-allocation task before booking, refinancing, or buying the next property."
+    )
+  ];
+  const riskCount = lanes.filter((lane) => lane.status === "risk").length;
+  const missingCount = lanes.filter((lane) => lane.status === "missing").length;
+  const actionCount = lanes.filter((lane) => lane.status === "action").length;
+  const scoreWithoutSeal = clampScore(lanes.slice(0, -1).reduce((sum, lane) => sum + lane.score, 0) / Math.max(1, lanes.length - 1));
+  const sealStatus = riskCount >= 2 || portfolioBlocked || postDealDsr >= 80 || cashAfterPurchase !== null && cashAfterPurchase < 0
+    ? "risk"
+    : missingCount >= 3 || actionCount
+      ? "action"
+      : scoreWithoutSeal >= 78
+        ? "clear"
+        : "watch";
+  lanes[lanes.length - 1] = {
+    ...lanes[lanes.length - 1],
+    status: sealStatus,
+    score: laneStatusScore(sealStatus),
+    reading: sealStatus === "clear"
+      ? "The V9 seal allows controlled portfolio advancement, subject to professional checks and live evidence."
+      : sealStatus === "risk"
+        ? "The V9 seal says pause; portfolio stress, debt, cash, concentration, or sequencing risk is too high."
+        : sealStatus === "action"
+          ? "The V9 seal needs action because too many portfolio inputs or scaling proof points are missing."
+          : "The V9 seal says hold and verify; the deal may be interesting, but capital allocation is not fully proven."
+  };
+  const score = clampScore(lanes.reduce((sum, lane) => sum + lane.score, 0) / lanes.length);
+  const status = sealStatus === "risk"
+    ? "pause"
+    : sealStatus === "action"
+      ? "repair"
+      : score >= 78 && analysis.portfolioGate?.status === "allow"
+        ? "advance"
+        : "hold";
+  const nextMove = status === "advance"
+    ? "Proceed only with controlled negotiation and preserve the defined reserve after purchase."
+    : status === "pause"
+      ? "Pause capital deployment until the risk-level portfolio lane is cleared."
+      : status === "repair"
+        ? "Complete the missing portfolio inputs and proof before treating this as a scalable move."
+        : "Keep the deal under review, but do not treat it as a next-property green light yet.";
+  return {
+    version: "v9",
+    status,
+    score,
+    summary: status === "advance"
+      ? "The deal can fit the portfolio command path if execution remains disciplined."
+      : status === "pause"
+        ? "The deal may still be attractive, but portfolio readiness is not safe enough for capital deployment."
+        : status === "repair"
+          ? "Portfolio command is incomplete; Apex needs more capital, debt, concentration, or proof inputs."
+          : "Portfolio command is conditional. Hold the decision until the weakest V9 lane improves.",
+    posture: status === "advance" ? "Controlled allocation" : status === "pause" ? "Pause capital" : status === "repair" ? "Repair inputs" : "Hold and verify",
+    nextMove,
+    capitalMap: {
+      cashAvailable: cashAvailable ? formatRinggit(cashAvailable) : "Not stated",
+      cashOutlay: cashOutlay ? formatRinggit(cashOutlay) : "Not stated",
+      cashAfterPurchase: cashAfterPurchase === null ? "Not calculated" : formatRinggit(cashAfterPurchase),
+      reserveMonths: profile.cashReserveMonths || "Not stated",
+      reserveSurvivalMonths,
+      postDealDsr: postDealDsr === null ? "Not calculated" : `${money(postDealDsr)}%`,
+      holdingCashFlow: holdingCashFlow === null ? "Not calculated" : formatRinggit(holdingCashFlow),
+      stressedHolding: analysis.stressEnvelope?.stressedTrueHolding || "Not calculated",
+      existingProperties,
+      portfolioRole
+    },
+    lanes,
+    actionQueue: lanes
+      .filter((lane) => !["clear"].includes(lane.status) && lane.version !== "V9.10")
+      .sort((left, right) => laneStatusScore(left.status) - laneStatusScore(right.status))
+      .slice(0, 5)
+      .map((lane) => ({ version: lane.version, label: lane.label, status: lane.status, action: lane.action }))
+  };
 }
 
 function marketInputError(message, statusCode = 400) {
@@ -6217,7 +6456,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   };
 
   return {
-    engineVersion: "Apex v8.10",
+    engineVersion: "Apex v9.10",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -6428,6 +6667,21 @@ function dealAnalysisText(analysis) {
     }
     if (analysis.documentIntelligence.actionQueue?.length) {
       lines.push("V8 action queue", ...analysis.documentIntelligence.actionQueue.map((item) => `- ${item.version} ${item.label}: ${item.action}`));
+    }
+  }
+  if (analysis.portfolioCommand?.summary) {
+    lines.push(
+      "",
+      "V9 portfolio command stack",
+      `- ${analysis.portfolioCommand.status || "hold"} (${analysis.portfolioCommand.score || 0}/100): ${analysis.portfolioCommand.summary}`,
+      `- Posture: ${analysis.portfolioCommand.posture || "Hold and verify"}.`,
+      `- Next move: ${analysis.portfolioCommand.nextMove || "Clear the weakest portfolio lane."}`
+    );
+    const map = analysis.portfolioCommand.capitalMap || {};
+    lines.push(`- Capital map: cash ${map.cashAvailable || "n/a"}, outlay ${map.cashOutlay || "n/a"}, after purchase ${map.cashAfterPurchase || "n/a"}, DSR ${map.postDealDsr || "n/a"}, holding ${map.holdingCashFlow || "n/a"}.`);
+    lines.push(...(analysis.portfolioCommand.lanes || []).map((item) => `- ${item.version} ${item.label}: ${item.status}, ${item.score}/100. ${item.reading} Action: ${item.action}`));
+    if (analysis.portfolioCommand.actionQueue?.length) {
+      lines.push("V9 action queue", ...analysis.portfolioCommand.actionQueue.map((item) => `- ${item.version} ${item.label}: ${item.action}`));
     }
   }
   if (analysis.holdExitPlan?.summary) {
@@ -8431,6 +8685,7 @@ async function router(req, res) {
     analysis.developmentIntelligence = buildDevelopmentIntelligence(analysis);
     const documentEvidenceResult = await knowledgeService.retrieve(learningQuery, db.knowledge.chunks, 8);
     analysis.documentIntelligence = buildDocumentIntelligence(analysis, db.knowledge, documentEvidenceResult);
+    analysis.portfolioCommand = buildPortfolioCommand(analysis);
     const sources = [
       ...documentEvidenceSources(analysis.documentIntelligence),
       ...marketSources(analysis.marketIntelligence),

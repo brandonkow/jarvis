@@ -1188,6 +1188,76 @@ function documentIntelligenceText(section = {}) {
   return lines;
 }
 
+function portfolioCommandMarkup(section = {}) {
+  if (!section.summary) return "";
+  const lanes = Array.isArray(section.lanes) ? section.lanes : [];
+  const actions = Array.isArray(section.actionQueue) ? section.actionQueue : [];
+  const capital = section.capitalMap || {};
+  return `
+    <section class="analysisPortfolioCommand ${escapeHtml(section.status || "hold")}" aria-label="V9 portfolio command stack">
+      <header>
+        <span><small>V9.1 - V9.10 PORTFOLIO COMMAND</small><b>${escapeHtml(section.summary)}</b></span>
+        <em>${escapeHtml(section.score || 0)}/100</em>
+      </header>
+      <div class="portfolioCommandMeta">
+        <span><small>POSTURE</small><b>${escapeHtml(section.posture || "Hold and verify")}</b></span>
+        <span><small>NEXT MOVE</small><b>${escapeHtml(section.nextMove || "Clear weakest lane")}</b></span>
+        <span><small>ROLE</small><b>${escapeHtml(capital.portfolioRole || "Not stated")}</b></span>
+      </div>
+      <div class="portfolioCapitalMap">
+        <span><small>CASH</small><b>${escapeHtml(capital.cashAvailable || "Not stated")}</b></span>
+        <span><small>OUTLAY</small><b>${escapeHtml(capital.cashOutlay || "Not stated")}</b></span>
+        <span><small>AFTER PURCHASE</small><b>${escapeHtml(capital.cashAfterPurchase || "Not calculated")}</b></span>
+        <span><small>DSR</small><b>${escapeHtml(capital.postDealDsr || "Not calculated")}</b></span>
+        <span><small>HOLDING</small><b>${escapeHtml(capital.holdingCashFlow || "Not calculated")}</b></span>
+        <span><small>STRESS</small><b>${escapeHtml(capital.stressedHolding || "Not calculated")}</b></span>
+      </div>
+      ${lanes.length ? `
+        <div class="portfolioCommandLanes">
+          ${lanes.map((item) => `
+            <article class="portfolioCommandLane ${escapeHtml(item.status || "watch")}">
+              <i>${escapeHtml(item.version || "V9")}</i>
+              <span>
+                <b>${escapeHtml(item.label)} <small>${escapeHtml(item.score || 0)}/100</small></b>
+                <small>${escapeHtml(item.reading)}</small>
+                <em>${escapeHtml(item.action)}</em>
+              </span>
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
+      ${actions.length ? `
+        <div class="portfolioCommandQueue">
+          <h3>V9 ACTION QUEUE</h3>
+          ${actions.map((item) => `
+            <p><b>${escapeHtml(item.version)} ${escapeHtml(item.label)}</b><span>${escapeHtml(item.action)}</span></p>
+          `).join("")}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
+function portfolioCommandText(section = {}) {
+  if (!section.summary) return [];
+  const capital = section.capitalMap || {};
+  const lines = [
+    "V9 portfolio command stack:",
+    `- ${section.status || "hold"} (${section.score || 0}/100): ${section.summary}`,
+    `- Posture: ${section.posture || "Hold and verify"}.`,
+    `- Next move: ${section.nextMove || "Clear the weakest portfolio lane."}`,
+    `- Capital map: cash ${capital.cashAvailable || "n/a"}, outlay ${capital.cashOutlay || "n/a"}, after purchase ${capital.cashAfterPurchase || "n/a"}, reserve ${capital.reserveMonths || "n/a"}, DSR ${capital.postDealDsr || "n/a"}, holding ${capital.holdingCashFlow || "n/a"}, stress ${capital.stressedHolding || "n/a"}.`
+  ];
+  for (const item of section.lanes || []) {
+    lines.push(`- ${item.version} ${item.label}: ${item.status}, ${item.score}/100. ${item.reading} Action: ${item.action}`);
+  }
+  if (section.actionQueue?.length) {
+    lines.push("V9 action queue:");
+    for (const item of section.actionQueue) lines.push(`- ${item.version} ${item.label}: ${item.action}`);
+  }
+  return lines;
+}
+
 function sourceLabel(type) {
   if (type === "memory") return "MEMORY";
   if (type === "journal") return "JOURNAL";
@@ -1986,6 +2056,7 @@ function saveAnalysisToShortlist(analysis) {
     legalTransactionEvidence: analysis.legalTransactionEvidence || null,
     developmentIntelligence: analysis.developmentIntelligence || null,
     documentIntelligence: analysis.documentIntelligence || null,
+    portfolioCommand: analysis.portfolioCommand || null,
     marketIntelligence: analysis.marketIntelligence || null,
     counterThesis: analysis.counterThesis,
     context: analysis.context || {}
@@ -2061,6 +2132,8 @@ function analysisExportText(analysis) {
     ...developmentIntelligenceText(analysis.developmentIntelligence),
     "",
     ...documentIntelligenceText(analysis.documentIntelligence),
+    "",
+    ...portfolioCommandText(analysis.portfolioCommand),
     "",
     `Summary: ${analysis.summary || ""}`
   ];
@@ -3411,7 +3484,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       </section>
     ` : ""}
     <div class="analysisMeta">
-      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v8.10")}</b></span>
+      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v9.10")}</b></span>
       <span>REASONING <b>${escapeHtml(analysis.reasoningMode || (analysis.aiCommentary ? "Framework + AI" : "Framework only"))}</b></span>
       <span>DECISION SCORE <b>${escapeHtml(analysis.averageScore)}/100</b></span>
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
@@ -3423,6 +3496,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     ${developmentProfileMarkup(analysis)}
     ${developmentIntelligenceMarkup(analysis.developmentIntelligence)}
     ${documentIntelligenceMarkup(analysis.documentIntelligence)}
+    ${portfolioCommandMarkup(analysis.portfolioCommand)}
     <div class="analysisOverview">
       ${readinessMarkup(analysis.investorReadiness)}
       ${dimensionMarkup ? `<section class="analysisDimensionSection"><h3>DEAL SCORECARD</h3><div class="analysisDimensions">${dimensionMarkup}</div></section>` : ""}

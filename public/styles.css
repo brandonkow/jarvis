@@ -4302,6 +4302,188 @@ button {
   grid-template-columns: minmax(120px, 0.32fr) minmax(0, 1fr) minmax(90px, 0.2fr);
 }
 
+.analysisPortfolioCommand {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  border: 1px solid rgba(103, 229, 255, 0.12);
+  border-left: 2px solid rgba(103, 229, 255, 0.58);
+  border-radius: 8px;
+  padding: 9px;
+  background: linear-gradient(135deg, rgba(103, 229, 255, 0.055), transparent 48%), rgba(0, 11, 18, 0.4);
+  overflow-wrap: anywhere;
+}
+
+.analysisPortfolioCommand.advance {
+  border-left-color: #6fd9a0;
+}
+
+.analysisPortfolioCommand.pause {
+  border-left-color: #e68e8e;
+}
+
+.analysisPortfolioCommand.hold,
+.analysisPortfolioCommand.repair {
+  border-left-color: #d0ad69;
+}
+
+.analysisPortfolioCommand header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.analysisPortfolioCommand header span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.analysisPortfolioCommand small {
+  color: #67b7c7;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.analysisPortfolioCommand header b {
+  color: #d8fbff;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.analysisPortfolioCommand header em {
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #8fdde8;
+  font-size: 0.46rem;
+  font-style: normal;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.portfolioCommandMeta,
+.portfolioCapitalMap {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.portfolioCapitalMap {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.portfolioCommandMeta span,
+.portfolioCapitalMap span,
+.portfolioCommandLane,
+.portfolioCommandQueue {
+  border: 1px solid rgba(103, 229, 255, 0.08);
+  border-radius: 8px;
+  padding: 7px;
+  background: rgba(0, 10, 17, 0.28);
+}
+
+.portfolioCommandMeta span,
+.portfolioCapitalMap span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.portfolioCommandMeta b,
+.portfolioCapitalMap b {
+  color: #a8d0d8;
+  font-size: 0.58rem;
+  font-weight: 500;
+}
+
+.portfolioCommandLanes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.portfolioCommandLane {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+}
+
+.portfolioCommandLane i {
+  align-self: start;
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 999px;
+  padding: 3px 6px;
+  color: #8fb8c1;
+  font-size: 0.42rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.portfolioCommandLane.clear i { color: #7bdca9; border-color: rgba(112, 255, 191, 0.26); }
+.portfolioCommandLane.watch i,
+.portfolioCommandLane.missing i,
+.portfolioCommandLane.action i { color: #d7b970; border-color: rgba(255, 210, 116, 0.26); }
+.portfolioCommandLane.risk i { color: #ef9999; border-color: rgba(255, 126, 126, 0.3); }
+
+.portfolioCommandLane span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.portfolioCommandLane b,
+.portfolioCommandQueue b {
+  color: #a8d0d8;
+  font-size: 0.59rem;
+  font-weight: 500;
+}
+
+.portfolioCommandLane b small {
+  color: #6f9ca6;
+  font-size: 0.46rem;
+  letter-spacing: 0.08em;
+}
+
+.portfolioCommandLane span > small,
+.portfolioCommandLane em,
+.portfolioCommandQueue span {
+  color: #638f99;
+  font-size: 0.49rem;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.portfolioCommandLane em {
+  color: #7faeb8;
+}
+
+.portfolioCommandQueue {
+  display: grid;
+  gap: 5px;
+}
+
+.portfolioCommandQueue h3 {
+  margin: 0;
+  color: #67b7c7;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+}
+
+.portfolioCommandQueue p {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.38fr) minmax(0, 1fr);
+  gap: 7px;
+  margin: 0;
+  border-top: 1px solid rgba(103, 229, 255, 0.07);
+  padding-top: 5px;
+}
+
 .analysisMarketPulse {
   display: grid;
   gap: 7px;
@@ -6825,6 +7007,9 @@ button {
   .documentStackMeta,
   .documentStackLanes,
   .documentMatchedEvidence p,
+  .portfolioCommandMeta,
+  .portfolioCapitalMap,
+  .portfolioCommandLanes,
   .executionOffer,
   .executionActions,
   .shortlistList {
@@ -6857,28 +7042,35 @@ button {
   .analysisDevelopmentProfile header,
   .analysisDevelopmentStack header,
   .analysisDocumentStack header,
+  .analysisPortfolioCommand header,
   .analysisMarketPulse li {
     align-items: flex-start;
   }
 
   .analysisDevelopmentStack header,
   .analysisDocumentStack header,
+  .analysisPortfolioCommand header,
   .analysisDevelopmentProfile header {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .analysisDevelopmentStack header em,
   .analysisDocumentStack header em,
+  .analysisPortfolioCommand header em,
   .analysisDevelopmentProfile header em {
     justify-self: start;
   }
 
   .analysisDevelopmentStack header b,
   .analysisDocumentStack header b,
+  .analysisPortfolioCommand header b,
   .developmentStackMeta b,
   .documentStackMeta b,
+  .portfolioCommandMeta b,
+  .portfolioCapitalMap b,
   .developmentStackLane b,
   .documentStackLane b,
+  .portfolioCommandLane b,
   .analysisDevelopmentProfile header b,
   .developmentIdentity b,
   .developmentProfileSignal b {
@@ -6893,6 +7085,9 @@ button {
   .documentMatchedEvidence span,
   .documentMatchedEvidence em,
   .documentActionQueue span,
+  .portfolioCommandLane span > small,
+  .portfolioCommandLane em,
+  .portfolioCommandQueue span,
   .analysisDevelopmentProfile p,
   .developmentProfileSignal small,
   .developmentProfileSignal em {
@@ -6901,7 +7096,8 @@ button {
   }
 
   .developmentActionQueue p,
-  .documentActionQueue p {
+  .documentActionQueue p,
+  .portfolioCommandQueue p {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -7175,7 +7371,8 @@ button {
   body.printMode .analysisCommercialGuardrail,
   body.printMode .analysisDevelopmentProfile,
   body.printMode .analysisDevelopmentStack,
-  body.printMode .analysisDocumentStack {
+  body.printMode .analysisDocumentStack,
+  body.printMode .analysisPortfolioCommand {
     border-color: #d7e4e8;
     border-left-color: #2b8fa3;
     background: #f8fcfd;
@@ -7191,7 +7388,11 @@ button {
   body.printMode .documentStackMeta span,
   body.printMode .documentStackLane,
   body.printMode .documentMatchedEvidence,
-  body.printMode .documentActionQueue {
+  body.printMode .documentActionQueue,
+  body.printMode .portfolioCommandMeta span,
+  body.printMode .portfolioCapitalMap span,
+  body.printMode .portfolioCommandLane,
+  body.printMode .portfolioCommandQueue {
     border-color: #d6e3e7;
     background: #fff;
   }
@@ -7230,6 +7431,14 @@ button {
   body.printMode .documentMatchedEvidence em,
   body.printMode .documentActionQueue b,
   body.printMode .documentActionQueue span,
+  body.printMode .analysisPortfolioCommand header b,
+  body.printMode .portfolioCommandMeta b,
+  body.printMode .portfolioCapitalMap b,
+  body.printMode .portfolioCommandLane b,
+  body.printMode .portfolioCommandLane span > small,
+  body.printMode .portfolioCommandLane em,
+  body.printMode .portfolioCommandQueue b,
+  body.printMode .portfolioCommandQueue span,
   body.printMode .analysisReadiness p,
   body.printMode .analysisReadiness li,
   body.printMode .evidenceItem b,
@@ -7285,6 +7494,7 @@ button {
   body.printMode .analysisDevelopmentProfile,
   body.printMode .analysisDevelopmentStack,
   body.printMode .analysisDocumentStack,
+  body.printMode .analysisPortfolioCommand,
   body.printMode .analysisDecisionFocus,
   body.printMode .analysisPersonalChallenge,
   body.printMode .personalChallengeCheck,
@@ -7325,6 +7535,7 @@ button {
   body.printMode .analysisDevelopmentProfile,
   body.printMode .analysisDevelopmentStack,
   body.printMode .analysisDocumentStack,
+  body.printMode .analysisPortfolioCommand,
   body.printMode .analysisOverview,
   body.printMode .analysisEvidence,
   body.printMode .analysisPersonalChallenge,
