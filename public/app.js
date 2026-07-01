@@ -11,6 +11,7 @@ const stopVoiceBtn = document.querySelector("#stopVoiceBtn");
 const resetChatBtn = document.querySelector("#resetChatBtn");
 const sessionBriefBtn = document.querySelector("#sessionBriefBtn");
 const analyzeDealBtn = document.querySelector("#analyzeDealBtn");
+const screenDealBtn = document.querySelector("#screenDealBtn");
 const aiDisclosure = document.querySelector("#aiDisclosure");
 const contextReadiness = document.querySelector("#contextReadiness");
 const experienceLock = document.querySelector("#experienceLock");
@@ -3872,6 +3873,78 @@ function learningLoopMarkup(loop = {}) {
   `;
 }
 
+function scoreTone(score) {
+  const value = Number(score || 0);
+  if (value >= 75) return "strong";
+  if (value >= 55) return "watch";
+  return "weak";
+}
+
+function scoreByKey(analysis = {}, key, fallback = 0) {
+  const dimension = (analysis.dimensions || []).find((item) => item.key === key);
+  return Number(dimension?.score ?? fallback ?? 0);
+}
+
+function stageScoreByName(analysis = {}, pattern, fallback = 0) {
+  const stage = (analysis.stages || []).find((item) => pattern.test(String(item.name || "")));
+  return Number(stage?.score ?? fallback ?? 0);
+}
+
+function dealSnapshot(analysis = {}) {
+  const blockers = textArray(analysis.recommendationBlockers);
+  const watchouts = textArray(analysis.watchouts);
+  const missing = textArray(analysis.missingEvidence);
+  const nextActions = textArray(analysis.nextActions);
+  const risk = blockers[0] || watchouts[0] || analysis.counterThesis || "No single dominant risk is proven yet; keep checking the weak evidence lane.";
+  const missingProof = missing[0] || "No urgent proof gap listed, but live transaction, rent, site, financing, and legal checks still matter.";
+  const nextAction = nextActions[0] || missingProof;
+  const propertyScore = scoreByKey(analysis, "property");
+  const rentalScore = stageScoreByName(analysis, /holding/i, Number(analysis.achievedRentalEvidence?.score || analysis.investorReadiness?.score || 0));
+  const exitScore = scoreByKey(analysis, "exit");
+  const evidenceScore = scoreByKey(analysis, "evidence", analysis.confidence);
+  return {
+    verdict: analysis.verdict || "INVESTIGATE",
+    score: Number(analysis.averageScore || 0),
+    confidence: Number(analysis.confidence || 0),
+    reason: analysis.decisionFocus?.body || analysis.summary || "Apex needs more proof before upgrading the decision.",
+    risk,
+    missingProof,
+    nextAction,
+    scores: [
+      { label: "Property Quality", value: propertyScore, status: scoreTone(propertyScore) },
+      { label: "Rental Safety", value: rentalScore, status: scoreTone(rentalScore) },
+      { label: "Exit Liquidity", value: exitScore, status: scoreTone(exitScore) },
+      { label: "Evidence Confidence", value: evidenceScore, status: scoreTone(evidenceScore) }
+    ]
+  };
+}
+
+function dealSnapshotMarkup(analysis = {}) {
+  const snapshot = dealSnapshot(analysis);
+  return `
+    <section class="dealSnapshot ${escapeHtml(String(snapshot.verdict).toLowerCase())}" aria-label="Deal screening snapshot">
+      <header>
+        <span><small>DEAL SCREEN</small><b>${escapeHtml(snapshot.verdict)}</b></span>
+        <em>${escapeHtml(snapshot.score)}/100 / ${escapeHtml(snapshot.confidence)}% confidence</em>
+      </header>
+      <p>${escapeHtml(snapshot.reason)}</p>
+      <div class="dealSnapshotGrid">
+        <article><small>Main risk</small><b>${escapeHtml(snapshot.risk)}</b></article>
+        <article><small>Missing proof</small><b>${escapeHtml(snapshot.missingProof)}</b></article>
+        <article><small>Next action</small><b>${escapeHtml(snapshot.nextAction)}</b></article>
+      </div>
+      <div class="dealSnapshotScores">
+        ${snapshot.scores.map((item) => `
+          <article class="${escapeHtml(item.status)}">
+            <span><small>${escapeHtml(item.label)}</small><b>${escapeHtml(item.value)}/100</b></span>
+            <i><em style="width:${Math.max(0, Math.min(100, Number(item.value) || 0))}%"></em></i>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function addDealAnalysis(analysis, sources = [], intelligence = {}) {
   document.body.classList.add("conversationActive");
   const message = document.createElement("article");
@@ -3921,6 +3994,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       <i class="analysisVerdict ${escapeHtml(verdictClass)}">${escapeHtml(analysis.confidence)}% CONFIDENCE</i>
     </div>
     <p class="analysisSummary">${escapeHtml(analysis.summary)}</p>
+    ${dealSnapshotMarkup(analysis)}
     ${decisionFocusMarkup(analysis)}
     ${productExperienceMarkup(analysis.productExperience)}
     ${personalizedChallengeMarkup(analysis.personalizedChallenge)}
@@ -4139,6 +4213,97 @@ function focusFirstMissingContextField(panelName) {
   const selector = panelName === "deal" ? "data-deal-field" : "data-profile-field";
   const field = readiness.fields.find((item) => group?.keys.includes(item.getAttribute(selector)));
   field?.focus();
+}
+
+function compactContextList(context = {}, entries = []) {
+  return entries
+    .map(([key, label]) => {
+      const value = String(context[key] || "").trim();
+      return value ? `${label}: ${value}` : "";
+    })
+    .filter(Boolean)
+    .join("; ");
+}
+
+function hasScreenableDealContext(deal = {}) {
+  return Boolean(
+    deal.area
+    || deal.projectName
+    || deal.askingPrice
+    || deal.expectedRent
+    || deal.propertyType
+    || deal.mainConcern
+    || deal.investmentThesis
+  );
+}
+
+function dealScreeningPrompt() {
+  const deal = collectDealCard();
+  const profile = collectFinancialProfile();
+  const dealReadiness = contextPanelReadiness("deal");
+  const profileReadiness = contextPanelReadiness("profile");
+  const dealLine = compactContextList(deal, [
+    ["area", "area"],
+    ["projectName", "project"],
+    ["propertyType", "type"],
+    ["askingPrice", "price"],
+    ["conservativeFairValue", "fair value"],
+    ["expectedRent", "rent"],
+    ["estimatedInstallment", "installment"],
+    ["maintenance", "maintenance"],
+    ["ownStayAppeal", "own-stay"],
+    ["managementQuality", "management"],
+    ["exitBuyerPool", "exit pool"],
+    ["nearbySupply", "nearby supply"],
+    ["mainConcern", "concern"]
+  ]) || "not supplied";
+  const profileLine = compactContextList(profile, [
+    ["monthlyIncome", "income"],
+    ["cashReserveMonths", "reserve"],
+    ["cashAvailable", "cash available"],
+    ["currentDebt", "debt"],
+    ["riskStyle", "risk style"],
+    ["investmentGoal", "goal"],
+    ["holdingPeriod", "holding"]
+  ]) || "not supplied";
+  const missing = [
+    ...dealReadiness.missing.map((item) => `Deal: ${item}`),
+    ...profileReadiness.missing.map((item) => `Profile: ${item}`)
+  ].slice(0, 6).join("; ") || "no major card gap from the current quick screen";
+  return [
+    "Run Apex Deal Screening Mode as a first-pass mentor check, not a full formal report.",
+    "Use this exact structure: Verdict, Why, Main risk, Missing proof, Next questions.",
+    "Keep it short, human, and direct. Ask at most 3 next questions. Do not create a long report.",
+    `Deal card: ${dealLine}`,
+    `Profile card: ${profileLine}`,
+    `Known missing context: ${missing}`
+  ].join("\n");
+}
+
+async function runDealScreening() {
+  const deal = collectDealCard();
+  if (!hasScreenableDealContext(deal)) {
+    addMessage("jarvis", "Open the Deal card and give me at least the area/project, price, rent, or your main concern. Then I can screen it without turning the page into a full report.");
+    const dealToggle = contextToggles.find((toggle) => toggle.getAttribute("data-context-toggle") === "deal");
+    if (dealToggle) setContextPanelState(dealToggle, true);
+    focusFirstMissingContextField("deal");
+    return;
+  }
+  collapseContextPanels();
+  stopSpeaking("Screening the deal.");
+  if (screenDealBtn) {
+    screenDealBtn.disabled = true;
+    screenDealBtn.textContent = "SCREENING";
+  }
+  setSystemState("Screening", "Running a first-pass deal screen.");
+  try {
+    await submitQuestion(dealScreeningPrompt(), { displayText: "Screen this deal using my current Deal/Profile cards." });
+  } finally {
+    if (screenDealBtn) {
+      screenDealBtn.disabled = false;
+      screenDealBtn.textContent = "SCREEN";
+    }
+  }
 }
 
 function saveContext(fields, attributeName, storageKey) {
@@ -4610,10 +4775,11 @@ async function askJarvis(question) {
   return result;
 }
 
-async function submitQuestion(question) {
+async function submitQuestion(question, options = {}) {
   const cleanQuestion = String(question || "").trim();
   if (!cleanQuestion) return;
-  addMessage("user", cleanQuestion);
+  const displayText = String(options.displayText || cleanQuestion).trim();
+  addMessage("user", displayText);
   chatInput.value = "";
   updateInputModeHint("");
   setSystemState("Analyzing", "Reviewing your knowledge and prior decisions.");
@@ -4745,6 +4911,7 @@ stopVoiceBtn.addEventListener("click", () => stopSpeaking("Voice stopped."));
 resetChatBtn.addEventListener("click", resetChat);
 sessionBriefBtn.addEventListener("click", () => void copySessionBrief(sessionBriefBtn));
 analyzeDealBtn.addEventListener("click", runDealAnalysis);
+screenDealBtn?.addEventListener("click", () => void runDealScreening());
 accountToggle.addEventListener("click", () => {
   if (authPanel.hidden) openAuthPanel();
   else closeAuthPanel();

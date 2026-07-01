@@ -32,6 +32,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /class="orbCore"><b>A<\/b>/, "The orb must use only the Apex A mark.");
   assert.doesNotMatch(html, /<h1>APEX<\/h1>|class="productSuffix"/, "The central Apex Analytic wordmark must stay removed.");
   assert.match(html, /<form id="chatForm"[\s\S]*?id="analyzeDealBtn"[\s\S]*?<\/form>/, "Deal analysis must remain visible inside the message bar.");
+  assert.match(html, /id="screenDealBtn"[\s\S]*?>SCREEN<\/button>/, "The quick deal-screening action must stay available without opening the full report flow.");
   assert.match(html, /id="sessionBriefBtn"[\s\S]*?>BRIEF<\/button>/, "V5.9 needs a compact session-brief export action.");
   assert.match(html, /id="inputModeHint"[\s\S]*?class="inputModeHint"/, "V5.4 needs a compact smart-input mode chip in the command bar.");
   assert.match(html, /id="contextReadiness"[\s\S]*?aria-label="Context readiness"/, "V5.3 needs a compact context-readiness strip near the input box.");
@@ -80,6 +81,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /data-coach-prompt/, "V5.2 next-move prompts must be clickable from chat.");
   assert.match(app, /function renderContextReadiness[\s\S]*?data-readiness-panel/, "V5.3 must render clickable Deal, Profile, and Guidance readiness chips.");
   assert.match(app, /focusFirstMissingContextField\(panelName\)/, "V5.3 readiness chips must open the right card and focus missing context.");
+  assert.match(app, /function dealScreeningPrompt[\s\S]*?Run Apex Deal Screening Mode[\s\S]*?Ask at most 3 next questions/, "The quick screening path must generate a short mentor-style prompt from current cards.");
+  assert.match(app, /function runDealScreening[\s\S]*?submitQuestion\(dealScreeningPrompt\(\), \{ displayText: "Screen this deal using my current Deal\/Profile cards\." \}\)/, "The quick screening button must keep the displayed chat message clean.");
   assert.match(app, /function detectInputMode[\s\S]*?compare[\s\S]*?offer[\s\S]*?checklist/, "V5.4 must detect smart input intent before send.");
   assert.match(app, /inputMode:\s*inputMode\.id/, "V5.4 must include detected input mode in chat requests.");
   assert.match(app, /function voiceSafeText[\s\S]*?Full answer is on screen/, "V5.5 must shorten spoken replies while preserving the written answer.");
@@ -185,6 +188,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /data-analysis-action="report"/, "Every structured analysis needs a printable deal report.");
   assert.match(app, /data-analysis-action="copy"/, "Every structured analysis needs a text copy export.");
   assert.match(app, /decisionFocusMarkup\(analysis\)/, "Deal reports need a single decision-focus explanation.");
+  assert.match(app, /dealSnapshotMarkup\(analysis\)[\s\S]*?decisionFocusMarkup\(analysis\)/, "Formal reports must lead with a compact deal snapshot before detailed sections.");
   assert.match(app, /personalizedChallengeMarkup\(analysis\.personalizedChallenge\)/, "V3.3 deal reports need a separate personalized challenge card.");
   assert.match(app, /readinessMarkup\(analysis\.investorReadiness\)/, "Deal reports need an investor readiness summary.");
   assert.match(app, /productExperienceMarkup\(analysis\.productExperience\)/, "Deal reports need the v5 product-experience guidance summary.");
@@ -271,6 +275,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.analysisMarketPulse[\s\S]*?overflow-wrap:\s*anywhere;/, "Market observations must remain readable without overflowing the report.");
   assert.match(styles, /\.analysisCaseIntelligence[\s\S]*?\.caseIntelligenceCards[\s\S]*?\.caseActionQueue/, "Development case intelligence must have styled report cards.");
   assert.match(styles, /\.analysisOverview[\s\S]*?grid-template-columns:/, "The v1.1 report needs an organized readiness and scorecard overview.");
+  assert.match(styles, /\.dealSnapshot[\s\S]*?\.dealSnapshotScores[\s\S]*?Property Quality|\.dealSnapshot[\s\S]*?grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/, "The formal report needs a compact scorecard snapshot surface.");
   assert.match(styles, /\.analysisEvidence[\s\S]*?\.evidenceItem/, "The v1.1 report needs a styled evidence checklist.");
   assert.match(styles, /\.analysisEvidenceEngine[\s\S]*?\.evidenceGate/, "The v4.0 evidence engine needs styled evidence gates.");
   assert.match(styles, /\.analysisTransactionComps[\s\S]*?\.transactionCompCheck/, "The v4.1 comparable evidence card needs styled checks.");

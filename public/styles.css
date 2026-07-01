@@ -3271,6 +3271,125 @@ button {
   font-size: 0.84rem;
 }
 
+.dealSnapshot {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  border: 1px solid rgba(103, 229, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px;
+  background:
+    radial-gradient(circle at top left, rgba(103, 229, 255, 0.1), transparent 32%),
+    rgba(0, 11, 18, 0.48);
+}
+
+.dealSnapshot.shortlist {
+  border-color: rgba(112, 255, 191, 0.26);
+}
+
+.dealSnapshot.pause,
+.dealSnapshot.investigate {
+  border-color: rgba(255, 210, 116, 0.24);
+}
+
+.dealSnapshot.reject {
+  border-color: rgba(255, 126, 126, 0.3);
+}
+
+.dealSnapshot header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dealSnapshot header span {
+  display: grid;
+  gap: 3px;
+}
+
+.dealSnapshot small {
+  color: #67b7c7;
+  font-size: 0.48rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.dealSnapshot header b {
+  color: var(--cyan-bright);
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+.dealSnapshot header em {
+  color: #9dc8d0;
+  font-size: 0.55rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.dealSnapshot p {
+  margin: 0;
+  color: #b4d4db;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.dealSnapshotGrid,
+.dealSnapshotScores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.dealSnapshotScores {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dealSnapshotGrid article,
+.dealSnapshotScores article {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  border: 1px solid rgba(103, 229, 255, 0.1);
+  border-radius: 9px;
+  padding: 8px;
+  background: rgba(2, 13, 21, 0.42);
+}
+
+.dealSnapshotGrid b,
+.dealSnapshotScores b {
+  color: #a8d0d8;
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.dealSnapshotScores i {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(103, 229, 255, 0.08);
+}
+
+.dealSnapshotScores i em {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #d0ad69;
+}
+
+.dealSnapshotScores article.strong i em {
+  background: #70e6b3;
+}
+
+.dealSnapshotScores article.weak i em {
+  background: #e68e8e;
+}
+
 .analysisDecisionFocus {
   display: grid;
   gap: 7px;
@@ -6986,6 +7105,18 @@ button {
   background: rgba(41, 158, 181, 0.09);
 }
 
+#screenDealBtn {
+  border-color: rgba(208, 173, 105, 0.24);
+  color: #d0ad69;
+}
+
+#screenDealBtn:hover,
+#screenDealBtn:focus-visible {
+  border-color: rgba(208, 173, 105, 0.48);
+  color: #f0d48f;
+  background: rgba(208, 173, 105, 0.1);
+}
+
 .stopVoiceBtn {
   color: #ffd4d4 !important;
   text-shadow: 0 0 10px rgba(255, 121, 121, 0.2);
@@ -7620,6 +7751,17 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .dealSnapshot header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .dealSnapshotGrid,
+  .dealSnapshotScores {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .analysisTrustStamp header {
     align-items: flex-start;
     flex-direction: column;
@@ -8154,6 +8296,9 @@ button {
   body.printMode .finalCommandQueue span,
   body.printMode .analysisReadiness p,
   body.printMode .analysisReadiness li,
+  body.printMode .dealSnapshot p,
+  body.printMode .dealSnapshotGrid b,
+  body.printMode .dealSnapshotScores b,
   body.printMode .evidenceItem b,
   body.printMode .evidenceItem small,
   body.printMode .analysisDiligence header b,
@@ -8212,6 +8357,9 @@ button {
   body.printMode .caseActionQueue,
   body.printMode .analysisDocumentStack,
   body.printMode .analysisPortfolioCommand,
+  body.printMode .dealSnapshot,
+  body.printMode .dealSnapshotGrid article,
+  body.printMode .dealSnapshotScores article,
   body.printMode .analysisDecisionFocus,
   body.printMode .analysisPersonalChallenge,
   body.printMode .personalChallengeCheck,
@@ -8254,6 +8402,7 @@ button {
   body.printMode .analysisCaseIntelligence,
   body.printMode .analysisDocumentStack,
   body.printMode .analysisPortfolioCommand,
+  body.printMode .dealSnapshot,
   body.printMode .analysisOverview,
   body.printMode .analysisEvidence,
   body.printMode .analysisPersonalChallenge,
