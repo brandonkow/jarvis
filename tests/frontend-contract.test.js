@@ -50,6 +50,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /data-deal-field="legalTitleType"[\s\S]*?data-deal-field="legalTransactionNotes"/, "Deal card needs v4.6 legal and transaction fields.");
   assert.match(html, /data-profile-field="portfolioRole"[\s\S]*?data-profile-field="nextPurchaseReason"/, "Profile card needs optional v1.7 portfolio gate fields.");
   assert.match(html, /data-context-toggle="guidance"[\s\S]*?data-profile-field="experienceLevel"[\s\S]*?data-profile-field="onboardingNotes"/, "V5 needs a dedicated guidance card for answer style and onboarding context.");
+  assert.match(html, /class="contextPanel contextPanelSecondary"[\s\S]*?data-context-toggle="guidance"/, "Guidance context must stay available without crowding the default card row.");
   assert.match(html, /id="shortlistPanel"[\s\S]*?DEAL SHORTLIST[\s\S]*?id="shortlistList"/, "Analysed properties need an inline comparison shortlist.");
   assert.match(html, /id="shortlistSummary"[\s\S]*?id="shortlistList"/, "The shortlist needs a comparison summary before the deal cards.");
   assert.match(html, /id="billingSummary"[\s\S]*?id="billingPlanName"[\s\S]*?id="billingActions"/, "Signed-in accounts need one compact plan and usage surface.");
@@ -323,6 +324,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.shortlistItem\.blocked[\s\S]*?border-color/, "Blocked shortlist items need a visible comparison warning state.");
 
   assert.match(styles, /\.conversation:has\(\.contextPanel\.expanded\) \.transcript[\s\S]*?display:\s*none;/, "Expanded cards must replace the transcript instead of overflowing beneath it.");
+  assert.match(styles, /\.contextPanelSecondary:not\(\.expanded\)[\s\S]*?display:\s*none;/, "Secondary context cards must not crowd the collapsed default row.");
+  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.contextReadiness \{[\s\S]*?display:\s*none;[\s\S]*?\.experienceLock \{[\s\S]*?display:\s*none;/, "Mobile should hide secondary status strips under the orb.");
   assert.match(styles, /\.contextHeader[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto;/, "Card reset controls must fit beside the expandable header.");
   assert.match(styles, /\.contextPanel\.expanded \.contextGrid[\s\S]*?overflow-y:\s*auto|\.contextGrid[\s\S]*?overflow-y:\s*auto/, "Expanded card fields must remain scrollable.");
   assert.match(styles, /max-height:\s*calc\(100dvh - 260px\)/, "Mobile expanded cards need a viewport-bound field area.");
