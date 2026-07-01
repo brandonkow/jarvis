@@ -150,6 +150,52 @@ test("owner market observations add dated trends and freshness warnings to Apex 
   assert.equal(latestRent.trend.direction, "up");
   assert.equal(latestRent.trend.percentChange, 7.7);
 
+  const deniedCase = await request(baseUrl, "/api/owner/development-cases", {
+    method: "POST",
+    body: { projectName: "Evidence Residence", area: "Bayan Lepas" }
+  });
+  assert.equal(deniedCase.response.status, 403);
+
+  const createdCase = await request(baseUrl, "/api/owner/development-cases", {
+    method: "POST",
+    owner: true,
+    body: {
+      projectId,
+      projectName: "Evidence Residence",
+      area: "Bayan Lepas",
+      state: "Penang",
+      propertyType: "Condo",
+      developer: "Evidence Development",
+      priceSegment: "RM450k-RM550k mass-affluent high-rise",
+      targetBuyer: "Own-stay buyers and investors who still need rent coverage.",
+      targetTenant: "White-collar tenants working near Bayan Lepas.",
+      strengths: "Efficient family-friendly layout, good rent evidence, and broad buyer pool.",
+      weaknesses: "Future similar high-rise supply within 2.5km must be watched.",
+      managementView: "Management is responsive and common areas are clean.",
+      residentProfile: "Mix of owners, white-collar tenants, and families.",
+      supplyThreat: "Newer similar layout and pricing would be the main threat.",
+      rentalOutlook: "Rent appears defendable if achieved rent stays near RM2,800.",
+      resaleOutlook: "Broad enough because the unit can speak to both own-stay and investor buyers.",
+      ownerVerdict: "Shortlist only if current transactions and rent still support the entry price.",
+      verdict: "shortlist",
+      confidence: "high",
+      rating: 84,
+      sourceBasis: "Site visit, agent rent feedback, and owner market observation.",
+      observedAt: daysAgo(3),
+      tags: ["Penang", "Bayan Lepas", "rental", "family"]
+    }
+  });
+  assert.equal(createdCase.response.status, 201);
+  assert.equal(createdCase.payload.case.projectName, "Evidence Residence");
+
+  const cases = await request(baseUrl, "/api/owner/development-cases?q=Evidence", { owner: true });
+  assert.equal(cases.response.status, 200);
+  assert.equal(cases.payload.summary.matched, 1);
+  assert.equal(cases.payload.cases[0].verdict, "shortlist");
+
+  const caseStatus = await request(baseUrl, "/api/jarvis/status");
+  assert.equal(caseStatus.payload.ownerMarket.developmentCases, 1);
+
   const session = await request(baseUrl, "/api/jarvis/sessions", { method: "POST", body: {} });
   const deal = await request(baseUrl, "/api/jarvis/analyze-deal", {
     method: "POST",
@@ -220,9 +266,14 @@ test("owner market observations add dated trends and freshness warnings to Apex 
   assert.equal(deal.response.status, 200);
   assert.equal(deal.payload.analysis.marketIntelligence.summary.matched, 3);
   assert.equal(deal.payload.analysis.marketIntelligence.summary.stale, 1);
+  assert.equal(deal.payload.analysis.caseIntelligence.version, "case-v1");
+  assert.equal(deal.payload.analysis.caseIntelligence.status, "tracked");
+  assert.equal(deal.payload.analysis.caseIntelligence.matched, 1);
+  assert.equal(deal.payload.analysis.caseIntelligence.cases[0].projectName, "Evidence Residence");
   assert.ok(deal.payload.analysis.marketIntelligence.trends.some((trend) => trend.metricType === "rent" && trend.direction === "up"));
-  assert.match(deal.payload.analysis.stages.find((stage) => stage.number === 6).summary, /owner market observations match/i);
+  assert.match(deal.payload.analysis.stages.find((stage) => stage.number === 6).summary, /founder development case/i);
   assert.ok(deal.payload.sources.some((source) => source.type === "market" && source.freshness === "fresh"));
+  assert.ok(deal.payload.sources.some((source) => source.type === "case" && source.title.includes("Evidence Residence")));
   assert.equal(JSON.stringify(deal.payload).includes("private-agent@example.com"), false);
 
   const chat = await request(baseUrl, "/api/jarvis/query", {
@@ -234,8 +285,10 @@ test("owner market observations add dated trends and freshness warnings to Apex 
   });
   assert.equal(chat.response.status, 200);
   assert.match(chat.payload.answer, /Market intelligence/i);
+  assert.match(chat.payload.answer, /Owner case library/i);
   assert.match(chat.payload.answer, /stale and must be re-verified/i);
   assert.ok(chat.payload.sources.some((source) => source.type === "market"));
+  assert.ok(chat.payload.sources.some((source) => source.type === "case"));
 
   const batch = await request(baseUrl, "/api/owner/market/import", {
     method: "POST",

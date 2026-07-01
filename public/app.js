@@ -108,6 +108,9 @@ const journalMessage = document.querySelector("#journalMessage");
 const ownerMarketToggle = document.querySelector("#ownerMarketToggle");
 const ownerMarketPanel = document.querySelector("#ownerMarketPanel");
 const ownerMarketClose = document.querySelector("#ownerMarketClose");
+const ownerCaseToggle = document.querySelector("#ownerCaseToggle");
+const ownerCasePanel = document.querySelector("#ownerCasePanel");
+const ownerCaseClose = document.querySelector("#ownerCaseClose");
 const ownerEvidenceToggle = document.querySelector("#ownerEvidenceToggle");
 const ownerEvidencePanel = document.querySelector("#ownerEvidencePanel");
 const ownerEvidenceClose = document.querySelector("#ownerEvidenceClose");
@@ -122,6 +125,40 @@ const ownerMarketAccess = document.querySelector("#ownerMarketAccess");
 const ownerMarketToken = document.querySelector("#ownerMarketToken");
 const ownerMarketClearToken = document.querySelector("#ownerMarketClearToken");
 const ownerMarketSummary = document.querySelector("#ownerMarketSummary");
+const ownerCaseAccess = document.querySelector("#ownerCaseAccess");
+const ownerCaseToken = document.querySelector("#ownerCaseToken");
+const ownerCaseClearToken = document.querySelector("#ownerCaseClearToken");
+const ownerCaseSummary = document.querySelector("#ownerCaseSummary");
+const ownerCaseForm = document.querySelector("#ownerCaseForm");
+const ownerCaseProject = document.querySelector("#ownerCaseProject");
+const ownerCaseProjectName = document.querySelector("#ownerCaseProjectName");
+const ownerCaseArea = document.querySelector("#ownerCaseArea");
+const ownerCaseState = document.querySelector("#ownerCaseState");
+const ownerCaseType = document.querySelector("#ownerCaseType");
+const ownerCaseDeveloper = document.querySelector("#ownerCaseDeveloper");
+const ownerCasePriceSegment = document.querySelector("#ownerCasePriceSegment");
+const ownerCaseVerdict = document.querySelector("#ownerCaseVerdict");
+const ownerCaseConfidence = document.querySelector("#ownerCaseConfidence");
+const ownerCaseRating = document.querySelector("#ownerCaseRating");
+const ownerCaseObservedAt = document.querySelector("#ownerCaseObservedAt");
+const ownerCaseTags = document.querySelector("#ownerCaseTags");
+const ownerCaseTargetBuyer = document.querySelector("#ownerCaseTargetBuyer");
+const ownerCaseTargetTenant = document.querySelector("#ownerCaseTargetTenant");
+const ownerCaseStrengths = document.querySelector("#ownerCaseStrengths");
+const ownerCaseWeaknesses = document.querySelector("#ownerCaseWeaknesses");
+const ownerCaseManagement = document.querySelector("#ownerCaseManagement");
+const ownerCaseResident = document.querySelector("#ownerCaseResident");
+const ownerCaseSupply = document.querySelector("#ownerCaseSupply");
+const ownerCaseRental = document.querySelector("#ownerCaseRental");
+const ownerCaseResale = document.querySelector("#ownerCaseResale");
+const ownerCaseOwnerVerdict = document.querySelector("#ownerCaseOwnerVerdict");
+const ownerCaseSourceBasis = document.querySelector("#ownerCaseSourceBasis");
+const ownerCaseRefresh = document.querySelector("#ownerCaseRefresh");
+const ownerCaseFilter = document.querySelector("#ownerCaseFilter");
+const ownerCaseVerdictFilter = document.querySelector("#ownerCaseVerdictFilter");
+const ownerCaseList = document.querySelector("#ownerCaseList");
+const ownerCaseMetrics = document.querySelector("#ownerCaseMetrics");
+const ownerCaseMessage = document.querySelector("#ownerCaseMessage");
 const ownerEvidenceAccess = document.querySelector("#ownerEvidenceAccess");
 const ownerEvidenceToken = document.querySelector("#ownerEvidenceToken");
 const ownerEvidenceClearToken = document.querySelector("#ownerEvidenceClearToken");
@@ -508,6 +545,7 @@ function renderAuthState(user) {
     closeReportsPanel();
     closeJournalPanel();
     closeOwnerMarketPanel();
+    closeOwnerCasePanel();
     closeOwnerEvidencePanel();
     closeTrustPanel();
     billingState = null;
@@ -530,6 +568,7 @@ function openAuthPanel() {
   closeReportsPanel();
   closeJournalPanel();
   closeOwnerMarketPanel();
+  closeOwnerCasePanel();
   closeOwnerEvidencePanel();
   closeTrustPanel();
   closeShortlistPanel();
@@ -563,6 +602,7 @@ function openTrustPanel(action = "") {
   closeReportsPanel();
   closeJournalPanel();
   closeOwnerMarketPanel();
+  closeOwnerCasePanel();
   closeOwnerEvidencePanel();
   closeShortlistPanel();
   collapseContextPanels();
@@ -1115,6 +1155,59 @@ function developmentIntelligenceText(section = {}) {
   return lines;
 }
 
+function caseIntelligenceMarkup(section = {}) {
+  if (!section.summary) return "";
+  const cases = Array.isArray(section.cases) ? section.cases : [];
+  const actions = Array.isArray(section.actionQueue) ? section.actionQueue : [];
+  return `
+    <section class="analysisCaseIntelligence ${escapeHtml(section.status || "thin")}" aria-label="Development case library intelligence">
+      <header>
+        <span><small>CASE LIBRARY V1</small><b>${escapeHtml(section.summary)}</b></span>
+        <em>${escapeHtml(section.score || 0)}/100</em>
+      </header>
+      <p>${escapeHtml(section.posture || "Case-informed, verify live")}</p>
+      ${cases.length ? `
+        <div class="caseIntelligenceCards">
+          ${cases.map((item) => `
+            <article class="caseIntelligenceItem ${escapeHtml(item.verdict || "watch")}">
+              <header><span><small>${escapeHtml([item.area, item.propertyType].filter(Boolean).join(" / ") || "Development case")}</small><b>${escapeHtml(item.projectName)}</b></span><em>${escapeHtml(ownerCaseVerdictText(item.verdict))} / ${escapeHtml(item.confidence || "medium")}</em></header>
+              <p>${escapeHtml(item.ownerVerdict || item.summary || "No founder verdict recorded.")}</p>
+              <div>
+                <span><small>STRENGTH</small><b>${escapeHtml(item.strengths || "Not stated")}</b></span>
+                <span><small>WEAKNESS</small><b>${escapeHtml(item.weaknesses || "Not stated")}</b></span>
+                <span><small>SOURCE</small><b>${escapeHtml(item.sourceBasis || "Owner case note")}</b></span>
+              </div>
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
+      ${actions.length ? `
+        <div class="caseActionQueue">
+          <h3>CASE ACTION QUEUE</h3>
+          ${actions.map((item) => `<p><b>${escapeHtml(item.label)}</b><span>${escapeHtml(item.action)}</span></p>`).join("")}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
+function caseIntelligenceText(section = {}) {
+  if (!section.summary) return [];
+  const lines = [
+    "Development case library:",
+    `- ${section.status || "thin"} (${section.score || 0}/100): ${section.summary}`,
+    `- Posture: ${section.posture || "Case-informed, verify live"}.`
+  ];
+  for (const item of section.cases || []) {
+    lines.push(`- ${item.projectName}: ${ownerCaseVerdictText(item.verdict)} / ${item.confidence || "medium"} confidence / ${item.rating || 0}/100. ${item.ownerVerdict || item.summary || ""}`);
+  }
+  if (section.actionQueue?.length) {
+    lines.push("Case action queue:");
+    for (const item of section.actionQueue) lines.push(`- ${item.label}: ${item.action}`);
+  }
+  return lines;
+}
+
 function documentIntelligenceMarkup(section = {}) {
   if (!section.summary) return "";
   const lanes = Array.isArray(section.lanes) ? section.lanes : [];
@@ -1334,6 +1427,7 @@ function sourceLabel(type) {
   if (type === "memory") return "MEMORY";
   if (type === "journal") return "JOURNAL";
   if (type === "market") return "MARKET";
+  if (type === "case") return "CASE";
   if (type === "saved_report") return "SAVED DEAL";
   if (type === "belief") return "BELIEF";
   if (type === "decision") return "DECISION";
@@ -1345,6 +1439,7 @@ function sourceName(source) {
   if (source?.type === "memory") return "your approved memory";
   if (source?.type === "journal") return "your decision journal";
   if (source?.type === "market") return "dated market observation";
+  if (source?.type === "case") return "owner development case";
   if (source?.type === "saved_report") return "saved deal history";
   if (source?.type === "evidence") return "owner evidence";
   const title = String(source?.title || "").toLowerCase();
@@ -1533,6 +1628,7 @@ async function openMemoryPanel() {
   closeReportsPanel();
   closeJournalPanel();
   closeOwnerMarketPanel();
+  closeOwnerCasePanel();
   closeOwnerEvidencePanel();
   closeTrustPanel();
   closeShortlistPanel();
@@ -1697,6 +1793,7 @@ async function openReportsPanel() {
   closeMemoryPanel();
   closeJournalPanel();
   closeOwnerMarketPanel();
+  closeOwnerCasePanel();
   closeOwnerEvidencePanel();
   closeTrustPanel();
   closeShortlistPanel();
@@ -1779,6 +1876,7 @@ async function openJournalPanel(decisionId = "") {
   closeMemoryPanel();
   closeReportsPanel();
   closeOwnerMarketPanel();
+  closeOwnerCasePanel();
   closeOwnerEvidencePanel();
   closeTrustPanel();
   closeShortlistPanel();
@@ -2074,6 +2172,7 @@ function openShortlistPanel() {
   closeReportsPanel();
   closeJournalPanel();
   closeOwnerMarketPanel();
+  closeOwnerCasePanel();
   closeOwnerEvidencePanel();
   closeTrustPanel();
   collapseContextPanels();
@@ -2127,6 +2226,7 @@ function saveAnalysisToShortlist(analysis) {
     siteManagementEvidence: analysis.siteManagementEvidence || null,
     legalTransactionEvidence: analysis.legalTransactionEvidence || null,
     developmentIntelligence: analysis.developmentIntelligence || null,
+    caseIntelligence: analysis.caseIntelligence || null,
     documentIntelligence: analysis.documentIntelligence || null,
     portfolioCommand: analysis.portfolioCommand || null,
     finalCommand: analysis.finalCommand || null,
@@ -2203,6 +2303,8 @@ function analysisExportText(analysis) {
     ...developmentProfileText(analysis),
     "",
     ...developmentIntelligenceText(analysis.developmentIntelligence),
+    "",
+    ...caseIntelligenceText(analysis.caseIntelligence),
     "",
     ...documentIntelligenceText(analysis.documentIntelligence),
     "",
@@ -2566,9 +2668,18 @@ function ownerEvidenceTokenValue() {
   return ownerEvidenceToken.value.trim() || ownerMarketTokenValue();
 }
 
+function ownerCaseTokenValue() {
+  return ownerCaseToken.value.trim() || ownerMarketTokenValue();
+}
+
 function setOwnerMarketMessage(message, tone = "") {
   ownerMarketMessage.textContent = message || "";
   ownerMarketMessage.dataset.tone = tone;
+}
+
+function setOwnerCaseMessage(message, tone = "") {
+  ownerCaseMessage.textContent = message || "";
+  ownerCaseMessage.dataset.tone = tone;
 }
 
 function setOwnerEvidenceMessage(message, tone = "") {
@@ -2578,6 +2689,18 @@ function setOwnerEvidenceMessage(message, tone = "") {
 
 async function ownerMarketRequest(pathname, options = {}) {
   const token = ownerMarketTokenValue();
+  if (!token) throw new Error("Paste and save the owner token first.");
+  return requestJson(pathname, {
+    ...options,
+    headers: {
+      "x-estatelab-owner-token": token,
+      ...(options.headers || {})
+    }
+  });
+}
+
+async function ownerCaseRequest(pathname, options = {}) {
+  const token = ownerCaseTokenValue();
   if (!token) throw new Error("Paste and save the owner token first.");
   return requestJson(pathname, {
     ...options,
@@ -2691,6 +2814,145 @@ async function deleteOwnerEvidenceDocument(button) {
   }
 }
 
+function ownerCaseVerdictText(value) {
+  return {
+    strong_buy: "Strong buy",
+    shortlist: "Shortlist",
+    watch: "Watch",
+    avoid: "Avoid",
+    unknown: "Unknown"
+  }[value] || "Watch";
+}
+
+function renderOwnerCaseProjectOptions(projects = ownerMarketProjects) {
+  ownerCaseProject.innerHTML = '<option value="">No linked market project</option>'
+    + projects.map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.name)}${project.area ? ` / ${escapeHtml(project.area)}` : ""}</option>`).join("");
+}
+
+function ownerCaseMarkup(item) {
+  const detail = [item.area, item.state, item.propertyType, item.priceSegment].filter(Boolean).join(" / ") || "No project detail";
+  const summary = item.ownerVerdict || item.strengths || item.weaknesses || "No founder verdict recorded.";
+  return `
+    <article class="ownerCaseItem ${escapeHtml(item.verdict || "watch")}" data-owner-case="${escapeHtml(item.id)}">
+      <header>
+        <span><small>${escapeHtml(detail)}</small><b>${escapeHtml(item.projectName || "Development case")}</b></span>
+        <em>${escapeHtml(ownerCaseVerdictText(item.verdict))} / ${escapeHtml(item.confidence || "medium")}</em>
+      </header>
+      <p>${escapeHtml(summary)}</p>
+      <div class="ownerCaseMeta">
+        <span>${escapeHtml(item.rating || 0)}/100</span>
+        <span>${escapeHtml(item.sourceBasis || "No source basis")}</span>
+        <span>${escapeHtml(item.observedAt ? marketDateText(item.observedAt) : "No date")}</span>
+      </div>
+      <button type="button" data-owner-case-action="delete" data-owner-case-id="${escapeHtml(item.id)}">DELETE</button>
+    </article>
+  `;
+}
+
+function renderOwnerCases(payload = {}) {
+  const cases = Array.isArray(payload.cases) ? payload.cases : [];
+  const summary = payload.summary || {};
+  ownerCaseSummary.innerHTML = `
+    <span><b>${escapeHtml(summary.total ?? cases.length)}</b> CASES</span>
+    <span><b>${escapeHtml(summary.shortlist || 0)}</b> SHORTLIST</span>
+    <span><b>${escapeHtml(summary.strong_buy || 0)}</b> STRONG BUY</span>
+    <span><b>${escapeHtml(summary.avoid || 0)}</b> AVOID</span>
+  `;
+  ownerCaseMetrics.textContent = `${summary.matched ?? cases.length} matched case note${(summary.matched ?? cases.length) === 1 ? "" : "s"}`;
+  ownerCaseList.innerHTML = cases.length
+    ? cases.map(ownerCaseMarkup).join("")
+    : '<p class="ownerCaseEmpty">No development cases match this filter yet. Add the first project opinion above.</p>';
+}
+
+function ownerCaseQuery() {
+  const params = new URLSearchParams();
+  if (ownerCaseFilter.value.trim()) params.set("q", ownerCaseFilter.value.trim());
+  if (ownerCaseVerdictFilter.value) params.set("verdict", ownerCaseVerdictFilter.value);
+  params.set("limit", "120");
+  return params.toString();
+}
+
+async function loadOwnerCases() {
+  if (!ownerCaseTokenValue()) {
+    renderOwnerCases({});
+    setOwnerCaseMessage(ownerMarketEnabled ? "Owner API is enabled. Token required." : "Owner API may be disabled. Set the owner token on Render if this fails.", "warning");
+    return null;
+  }
+  setOwnerCaseMessage("Loading development case library...");
+  const [projects, cases] = await Promise.all([
+    ownerCaseRequest("/api/owner/market/projects"),
+    ownerCaseRequest(`/api/owner/development-cases?${ownerCaseQuery()}`)
+  ]);
+  ownerMarketProjects = Array.isArray(projects.projects) ? projects.projects : [];
+  renderOwnerCaseProjectOptions(ownerMarketProjects);
+  renderOwnerCases(cases);
+  setOwnerCaseMessage("Development case library loaded.");
+  return { projects, cases };
+}
+
+function selectedOwnerCaseProject() {
+  return ownerMarketProjects.find((project) => project.id === ownerCaseProject.value);
+}
+
+async function createOwnerCase() {
+  const linkedProject = selectedOwnerCaseProject();
+  const projectName = ownerCaseProjectName.value.trim() || linkedProject?.name || "";
+  if (!projectName) return ownerCaseProjectName.focus();
+  setOwnerCaseMessage("Adding development case...");
+  await ownerCaseRequest("/api/owner/development-cases", {
+    method: "POST",
+    body: JSON.stringify({
+      projectId: ownerCaseProject.value,
+      projectName,
+      area: ownerCaseArea.value.trim() || linkedProject?.area || "",
+      state: ownerCaseState.value.trim() || linkedProject?.state || "",
+      propertyType: ownerCaseType.value.trim() || linkedProject?.propertyType || "",
+      developer: ownerCaseDeveloper.value.trim() || linkedProject?.developer || "",
+      priceSegment: ownerCasePriceSegment.value.trim(),
+      targetBuyer: ownerCaseTargetBuyer.value.trim(),
+      targetTenant: ownerCaseTargetTenant.value.trim(),
+      strengths: ownerCaseStrengths.value.trim(),
+      weaknesses: ownerCaseWeaknesses.value.trim(),
+      managementView: ownerCaseManagement.value.trim(),
+      residentProfile: ownerCaseResident.value.trim(),
+      supplyThreat: ownerCaseSupply.value.trim(),
+      rentalOutlook: ownerCaseRental.value.trim(),
+      resaleOutlook: ownerCaseResale.value.trim(),
+      ownerVerdict: ownerCaseOwnerVerdict.value.trim(),
+      verdict: ownerCaseVerdict.value,
+      confidence: ownerCaseConfidence.value,
+      rating: ownerCaseRating.value.trim(),
+      observedAt: ownerCaseObservedAt.value || new Date().toISOString(),
+      sourceBasis: ownerCaseSourceBasis.value.trim(),
+      tags: ownerCaseTags.value.split(",").map((item) => item.trim()).filter(Boolean)
+    })
+  });
+  ownerCaseForm.reset();
+  ownerCaseObservedAt.value = new Date().toISOString().slice(0, 10);
+  await loadOwnerCases();
+  setOwnerCaseMessage("Development case added. Apex can now match it in answers and deal reports.");
+}
+
+async function deleteOwnerCase(button) {
+  const id = button.getAttribute("data-owner-case-id");
+  if (!id) return;
+  if (button.dataset.confirming !== "true") {
+    button.dataset.confirming = "true";
+    button.textContent = "CONFIRM";
+    setOwnerCaseMessage("Press CONFIRM to delete this development case.");
+    return;
+  }
+  button.disabled = true;
+  try {
+    await ownerCaseRequest(`/api/owner/development-cases/${encodeURIComponent(id)}`, { method: "DELETE" });
+    await loadOwnerCases();
+    setOwnerCaseMessage("Development case deleted.");
+  } catch (error) {
+    button.disabled = false;
+    setOwnerCaseMessage(error.message || "Development case could not be deleted.", "danger");
+  }
+}
+
 function marketMetricText(metricType) {
   return String(metricType || "other").replaceAll("_", " ");
 }
@@ -2798,10 +3060,40 @@ function closeOwnerMarketPanel() {
   document.body.classList.remove("ownerMarketOpen");
 }
 
+function closeOwnerCasePanel() {
+  ownerCasePanel.hidden = true;
+  ownerCaseToggle.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("ownerCaseOpen");
+}
+
 function closeOwnerEvidencePanel() {
   ownerEvidencePanel.hidden = true;
   ownerEvidenceToggle.setAttribute("aria-expanded", "false");
   document.body.classList.remove("ownerEvidenceOpen");
+}
+
+async function openOwnerCasePanel() {
+  closeAuthPanel();
+  closeMemoryPanel();
+  closeReportsPanel();
+  closeJournalPanel();
+  closeOwnerMarketPanel();
+  closeOwnerEvidencePanel();
+  closeTrustPanel();
+  closeShortlistPanel();
+  collapseContextPanels();
+  ownerCasePanel.hidden = false;
+  ownerCaseToggle.setAttribute("aria-expanded", "true");
+  document.body.classList.add("ownerCaseOpen");
+  ownerCaseToken.value = window.localStorage.getItem(ownerMarketTokenKey) || "";
+  ownerMarketToken.value = ownerCaseToken.value;
+  ownerEvidenceToken.value = ownerCaseToken.value;
+  ownerCaseObservedAt.value ||= new Date().toISOString().slice(0, 10);
+  try {
+    await loadOwnerCases();
+  } catch (error) {
+    setOwnerCaseMessage(error.message || "Development case library is unavailable.", "danger");
+  }
 }
 
 async function openOwnerEvidencePanel() {
@@ -2810,6 +3102,7 @@ async function openOwnerEvidencePanel() {
   closeReportsPanel();
   closeJournalPanel();
   closeOwnerMarketPanel();
+  closeOwnerCasePanel();
   closeTrustPanel();
   closeShortlistPanel();
   collapseContextPanels();
@@ -2830,6 +3123,7 @@ async function openOwnerMarketPanel() {
   closeMemoryPanel();
   closeReportsPanel();
   closeJournalPanel();
+  closeOwnerCasePanel();
   closeOwnerEvidencePanel();
   closeTrustPanel();
   closeShortlistPanel();
@@ -3570,6 +3864,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     ${commercialGuardrailMarkup(analysis)}
     ${developmentProfileMarkup(analysis)}
     ${developmentIntelligenceMarkup(analysis.developmentIntelligence)}
+    ${caseIntelligenceMarkup(analysis.caseIntelligence)}
     ${documentIntelligenceMarkup(analysis.documentIntelligence)}
     ${portfolioCommandMarkup(analysis.portfolioCommand)}
     ${finalCommandMarkup(analysis.finalCommand)}
@@ -4139,6 +4434,7 @@ async function logout() {
     closeReportsPanel();
     closeJournalPanel();
     closeOwnerMarketPanel();
+    closeOwnerCasePanel();
     closeOwnerEvidencePanel();
     await requestJson("/api/auth/logout", { method: "POST", body: "{}" });
     renderAuthState(null);
@@ -4410,6 +4706,11 @@ ownerMarketToggle.addEventListener("click", () => {
   else closeOwnerMarketPanel();
 });
 ownerMarketClose.addEventListener("click", closeOwnerMarketPanel);
+ownerCaseToggle.addEventListener("click", () => {
+  if (ownerCasePanel.hidden) void openOwnerCasePanel();
+  else closeOwnerCasePanel();
+});
+ownerCaseClose.addEventListener("click", closeOwnerCasePanel);
 ownerEvidenceToggle.addEventListener("click", () => {
   if (ownerEvidencePanel.hidden) void openOwnerEvidencePanel();
   else closeOwnerEvidencePanel();
@@ -4427,14 +4728,33 @@ ownerMarketAccess.addEventListener("submit", (event) => {
   if (!token) return ownerMarketToken.focus();
   window.localStorage.setItem(ownerMarketTokenKey, token);
   ownerEvidenceToken.value = token;
+  ownerCaseToken.value = token;
   void loadOwnerMarket();
 });
 ownerMarketClearToken.addEventListener("click", () => {
   window.localStorage.removeItem(ownerMarketTokenKey);
   ownerMarketToken.value = "";
   ownerEvidenceToken.value = "";
+  ownerCaseToken.value = "";
   renderOwnerMarket({}, {});
   setOwnerMarketMessage("Owner token cleared from this device.");
+});
+ownerCaseAccess.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const token = ownerCaseToken.value.trim();
+  if (!token) return ownerCaseToken.focus();
+  window.localStorage.setItem(ownerMarketTokenKey, token);
+  ownerMarketToken.value = token;
+  ownerEvidenceToken.value = token;
+  void loadOwnerCases();
+});
+ownerCaseClearToken.addEventListener("click", () => {
+  window.localStorage.removeItem(ownerMarketTokenKey);
+  ownerCaseToken.value = "";
+  ownerMarketToken.value = "";
+  ownerEvidenceToken.value = "";
+  renderOwnerCases({});
+  setOwnerCaseMessage("Owner token cleared from this device.");
 });
 ownerEvidenceAccess.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -4442,14 +4762,40 @@ ownerEvidenceAccess.addEventListener("submit", (event) => {
   if (!token) return ownerEvidenceToken.focus();
   window.localStorage.setItem(ownerMarketTokenKey, token);
   ownerMarketToken.value = token;
+  ownerCaseToken.value = token;
   void loadOwnerEvidence();
 });
 ownerEvidenceClearToken.addEventListener("click", () => {
   window.localStorage.removeItem(ownerMarketTokenKey);
   ownerEvidenceToken.value = "";
   ownerMarketToken.value = "";
+  ownerCaseToken.value = "";
   renderOwnerEvidence({});
   setOwnerEvidenceMessage("Owner token cleared from this device.");
+});
+ownerCaseForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const button = ownerCaseForm.querySelector("button[type='submit']");
+  button.disabled = true;
+  createOwnerCase().catch((error) => setOwnerCaseMessage(error.message || "Development case could not be added.", "danger")).finally(() => {
+    button.disabled = false;
+  });
+});
+ownerCaseProject.addEventListener("change", () => {
+  const project = selectedOwnerCaseProject();
+  if (!project) return;
+  if (!ownerCaseProjectName.value) ownerCaseProjectName.value = project.name || "";
+  if (!ownerCaseArea.value) ownerCaseArea.value = project.area || "";
+  if (!ownerCaseState.value) ownerCaseState.value = project.state || "";
+  if (!ownerCaseType.value) ownerCaseType.value = project.propertyType || "";
+  if (!ownerCaseDeveloper.value) ownerCaseDeveloper.value = project.developer || "";
+});
+ownerCaseRefresh.addEventListener("click", () => void loadOwnerCases().catch((error) => setOwnerCaseMessage(error.message || "Development case library could not be loaded.", "danger")));
+ownerCaseFilter.addEventListener("input", () => void loadOwnerCases().catch(() => {}));
+ownerCaseVerdictFilter.addEventListener("change", () => void loadOwnerCases().catch((error) => setOwnerCaseMessage(error.message || "Development case library could not be loaded.", "danger")));
+ownerCaseList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-owner-case-action='delete']");
+  if (button) void deleteOwnerCase(button);
 });
 ownerEvidenceForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -4578,6 +4924,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !reportsPanel.hidden) closeReportsPanel();
   if (event.key === "Escape" && !journalPanel.hidden) closeJournalPanel();
   if (event.key === "Escape" && !ownerMarketPanel.hidden) closeOwnerMarketPanel();
+  if (event.key === "Escape" && !ownerCasePanel.hidden) closeOwnerCasePanel();
   if (event.key === "Escape" && !ownerEvidencePanel.hidden) closeOwnerEvidencePanel();
   if (event.key === "Escape" && !trustPanel.hidden) closeTrustPanel();
   if (event.key === "Escape" && !shortlistPanel.hidden) closeShortlistPanel();

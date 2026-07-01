@@ -1906,6 +1906,27 @@ button {
   display: none;
 }
 
+.ownerCasePanel {
+  display: grid;
+  min-height: 0;
+  max-height: min(82dvh, 780px);
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  gap: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(103, 229, 255, 0.24);
+  border-radius: 12px;
+  padding: 13px;
+  background: linear-gradient(135deg, rgba(90, 231, 255, 0.09), transparent 28%), rgba(2, 13, 21, 0.93);
+  box-shadow: 0 0 38px rgba(28, 190, 221, 0.09), inset 0 0 28px rgba(28, 190, 221, 0.04);
+  backdrop-filter: blur(18px);
+}
+
+.ownerCasePanel[hidden] {
+  display: none;
+}
+
 .ownerMarketOpen .transcript,
 .ownerMarketOpen .contextDeck,
 .ownerMarketOpen .contextReadiness,
@@ -1923,6 +1944,16 @@ button {
 .ownerEvidenceOpen .aiDisclosure,
 .ownerEvidenceOpen .commandBar,
 .ownerEvidenceOpen .utilityBar {
+  display: none;
+}
+
+.ownerCaseOpen .transcript,
+.ownerCaseOpen .contextDeck,
+.ownerCaseOpen .contextReadiness,
+.ownerCaseOpen .experienceLock,
+.ownerCaseOpen .aiDisclosure,
+.ownerCaseOpen .commandBar,
+.ownerCaseOpen .utilityBar {
   display: none;
 }
 
@@ -2251,6 +2282,237 @@ button {
 
 .ownerMarketItem button,
 .ownerEvidenceItem button {
+  justify-self: start;
+}
+
+.ownerCaseHeader,
+.ownerCaseForm header,
+.ownerCaseListWrap > header,
+.ownerCaseItem header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ownerCaseHeader > span,
+.ownerCaseItem header > span,
+.ownerCaseListWrap > header > span {
+  display: grid;
+  gap: 3px;
+}
+
+.ownerCaseHeader small,
+.ownerCaseForm small,
+.ownerCaseListWrap small,
+.ownerCaseItem small {
+  color: #5d8c97;
+  font-size: 0.47rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ownerCaseHeader b,
+.ownerCaseForm header b,
+.ownerCaseListWrap header b,
+.ownerCaseItem header b {
+  color: var(--cyan-bright);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+}
+
+.ownerCaseHeader button,
+.ownerCaseAccess button,
+.ownerCaseForm button,
+.ownerCaseListWrap button,
+.ownerCaseItem button {
+  border: 1px solid rgba(103, 229, 255, 0.18);
+  border-radius: 999px;
+  padding: 7px 10px;
+  cursor: pointer;
+  color: #85bec9;
+  background: rgba(0, 10, 17, 0.48);
+  font-size: 0.49rem;
+  letter-spacing: 0.11em;
+}
+
+.ownerCasePrimary,
+.ownerCaseAccess button[type="submit"] {
+  border-color: rgba(103, 229, 255, 0.36) !important;
+  color: var(--cyan) !important;
+}
+
+.ownerCaseHeader button:hover,
+.ownerCaseAccess button:hover,
+.ownerCaseForm button:hover,
+.ownerCaseListWrap button:hover,
+.ownerCaseItem button:hover {
+  border-color: rgba(103, 229, 255, 0.42);
+  color: var(--cyan);
+}
+
+.ownerCaseIntro,
+.ownerCaseMessage,
+.ownerCaseEmpty,
+.ownerCaseItem p {
+  margin: 0;
+  color: #729ca6;
+  font-size: 0.61rem;
+  line-height: 1.45;
+}
+
+.ownerCaseMessage[data-tone="danger"] {
+  color: #ef9999;
+}
+
+.ownerCaseMessage[data-tone="warning"] {
+  color: #d7b970;
+}
+
+.ownerCaseAccess,
+.ownerCaseFilters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.ownerCaseAccess label,
+.ownerCaseGrid label {
+  display: grid;
+  gap: 4px;
+  color: #6e9fab;
+  font-size: 0.54rem;
+  letter-spacing: 0.08em;
+}
+
+.ownerCaseAccess input,
+.ownerCaseFilters input,
+.ownerCaseFilters select,
+.ownerCaseGrid input,
+.ownerCaseGrid select,
+.ownerCaseGrid textarea {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgba(103, 229, 255, 0.15);
+  border-radius: 9px;
+  outline: 0;
+  padding: 8px 10px;
+  color: var(--text);
+  background: rgba(0, 10, 17, 0.58);
+  font-size: 0.72rem;
+}
+
+.ownerCaseGrid textarea {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.ownerCaseAccess input:focus,
+.ownerCaseFilters input:focus,
+.ownerCaseFilters select:focus,
+.ownerCaseGrid input:focus,
+.ownerCaseGrid select:focus,
+.ownerCaseGrid textarea:focus {
+  border-color: rgba(103, 229, 255, 0.48);
+}
+
+.ownerCaseSummary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ownerCaseSummary span,
+.ownerCaseMeta span {
+  border: 1px solid rgba(103, 229, 255, 0.13);
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #638d97;
+  font-size: 0.48rem;
+  letter-spacing: 0.1em;
+}
+
+.ownerCaseSummary b {
+  color: var(--cyan);
+  font-weight: 500;
+}
+
+.ownerCaseWorkspace {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
+  gap: 10px;
+}
+
+.ownerCaseForm,
+.ownerCaseListWrap {
+  display: grid;
+  align-content: start;
+  min-height: 0;
+  gap: 9px;
+  border: 1px solid rgba(103, 229, 255, 0.12);
+  border-radius: 10px;
+  padding: 11px;
+  background: rgba(1, 12, 19, 0.54);
+}
+
+.ownerCaseGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ownerCaseWide {
+  grid-column: 1 / -1;
+}
+
+.ownerCaseList {
+  display: grid;
+  align-content: start;
+  min-height: 0;
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ownerCaseItem {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(103, 229, 255, 0.14);
+  border-left: 2px solid #d0ad69;
+  border-radius: 10px;
+  padding: 11px;
+  background: rgba(1, 12, 19, 0.66);
+}
+
+.ownerCaseItem.strong_buy,
+.ownerCaseItem.shortlist {
+  border-left-color: #70e6b3;
+}
+
+.ownerCaseItem.avoid {
+  border-left-color: #e68e8e;
+}
+
+.ownerCaseItem header em {
+  color: var(--cyan);
+  font-size: 0.54rem;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ownerCaseMeta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ownerCaseItem button {
   justify-self: start;
 }
 
@@ -4110,6 +4372,152 @@ button {
   color: #a8d0d8;
   font-size: 0.56rem;
   font-weight: 500;
+}
+
+.analysisCaseIntelligence {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  border: 1px solid rgba(103, 229, 255, 0.12);
+  border-left: 2px solid rgba(103, 229, 255, 0.58);
+  border-radius: 8px;
+  padding: 9px;
+  background: linear-gradient(135deg, rgba(103, 229, 255, 0.05), transparent 48%), rgba(0, 11, 18, 0.36);
+  overflow-wrap: anywhere;
+}
+
+.analysisCaseIntelligence.tracked {
+  border-left-color: #6fd9a0;
+}
+
+.analysisCaseIntelligence.risk {
+  border-left-color: #e68e8e;
+}
+
+.analysisCaseIntelligence.thin,
+.analysisCaseIntelligence.partial,
+.analysisCaseIntelligence.watch {
+  border-left-color: #d0ad69;
+}
+
+.analysisCaseIntelligence header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.analysisCaseIntelligence header span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.analysisCaseIntelligence small {
+  color: #67b7c7;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.analysisCaseIntelligence header b {
+  color: #d8fbff;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.analysisCaseIntelligence header em {
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #8fdde8;
+  font-size: 0.46rem;
+  font-style: normal;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analysisCaseIntelligence > p,
+.caseIntelligenceItem p,
+.caseActionQueue span {
+  margin: 0;
+  color: #638f99;
+  font-size: 0.51rem;
+  line-height: 1.4;
+}
+
+.caseIntelligenceCards {
+  display: grid;
+  gap: 6px;
+}
+
+.caseIntelligenceItem,
+.caseActionQueue {
+  border: 1px solid rgba(103, 229, 255, 0.08);
+  border-radius: 8px;
+  padding: 7px;
+  background: rgba(0, 10, 17, 0.28);
+}
+
+.caseIntelligenceItem {
+  display: grid;
+  gap: 7px;
+  border-left: 2px solid #d0ad69;
+}
+
+.caseIntelligenceItem.strong_buy,
+.caseIntelligenceItem.shortlist {
+  border-left-color: #70e6b3;
+}
+
+.caseIntelligenceItem.avoid {
+  border-left-color: #e68e8e;
+}
+
+.caseIntelligenceItem div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.caseIntelligenceItem div span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  border: 1px solid rgba(103, 229, 255, 0.07);
+  border-radius: 7px;
+  padding: 6px;
+}
+
+.caseIntelligenceItem div b,
+.caseActionQueue b {
+  color: #a8d0d8;
+  font-size: 0.56rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.caseActionQueue {
+  display: grid;
+  gap: 5px;
+}
+
+.caseActionQueue h3 {
+  margin: 0;
+  color: #67b7c7;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+}
+
+.caseActionQueue p {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.38fr) minmax(0, 1fr);
+  gap: 7px;
+  margin: 0;
+  border-top: 1px solid rgba(103, 229, 255, 0.07);
+  padding-top: 5px;
 }
 
 .analysisDocumentStack {
@@ -6739,6 +7147,7 @@ button {
   .journalOpen .assistantStage,
   .ownerMarketOpen .assistantStage,
   .ownerEvidenceOpen .assistantStage,
+  .ownerCaseOpen .assistantStage,
   .trustOpen .assistantStage {
     transform: translateY(-28dvh) scale(0.5);
   }
@@ -6750,6 +7159,7 @@ button {
   .journalOpen .identity,
   .ownerMarketOpen .identity,
   .ownerEvidenceOpen .identity,
+  .ownerCaseOpen .identity,
   .trustOpen .identity {
     opacity: 0;
   }
@@ -6804,6 +7214,7 @@ button {
   .journalPanel,
   .ownerMarketPanel,
   .ownerEvidencePanel,
+  .ownerCasePanel,
   .trustPanel {
     padding: 12px;
   }
@@ -6914,6 +7325,10 @@ button {
     max-height: calc(100dvh - 104px);
   }
 
+  .ownerCasePanel {
+    max-height: calc(100dvh - 104px);
+  }
+
   .trustPanel {
     max-height: calc(100dvh - 104px);
   }
@@ -6933,22 +7348,30 @@ button {
 
   .ownerMarketAccess,
   .ownerEvidenceAccess,
+  .ownerCaseAccess,
   .ownerMarketFilters,
+  .ownerCaseFilters,
   .ownerMarketWorkspace,
   .ownerEvidenceWorkspace,
+  .ownerCaseWorkspace,
   .ownerMarketGrid,
   .ownerEvidenceGrid,
+  .ownerCaseGrid,
   .ownerMarketLists {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .ownerMarketAccess button,
   .ownerEvidenceAccess button,
+  .ownerCaseAccess button,
   .ownerMarketFilters button,
   .ownerMarketForm button,
   .ownerEvidenceForm button,
+  .ownerCaseForm button,
   .ownerMarketItem button,
   .ownerEvidenceItem button,
+  .ownerCaseItem button,
+  .ownerCaseListWrap button,
   .ownerEvidenceListWrap button {
     min-height: 40px;
   }
@@ -6959,7 +7382,8 @@ button {
 
   .ownerProjectList,
   .ownerObservationList,
-  .ownerEvidenceList {
+  .ownerEvidenceList,
+  .ownerCaseList {
     max-height: none;
     overflow: visible;
   }
@@ -6969,10 +7393,16 @@ button {
   .ownerMarketGrid textarea,
   .ownerEvidenceGrid input,
   .ownerEvidenceGrid textarea,
+  .ownerCaseGrid input,
+  .ownerCaseGrid select,
+  .ownerCaseGrid textarea,
   .ownerMarketAccess input,
   .ownerEvidenceAccess input,
+  .ownerCaseAccess input,
   .ownerMarketFilters input,
-  .ownerMarketFilters select {
+  .ownerMarketFilters select,
+  .ownerCaseFilters input,
+  .ownerCaseFilters select {
     min-height: 44px;
     font-size: 0.9rem;
   }
@@ -7200,6 +7630,8 @@ button {
   .developmentProfileSignals,
   .developmentStackMeta,
   .developmentStackLanes,
+  .caseIntelligenceItem div,
+  .caseActionQueue p,
   .documentStackMeta,
   .documentStackLanes,
   .documentMatchedEvidence p,
@@ -7240,6 +7672,7 @@ button {
   .analysisMarketPulse header,
   .analysisDevelopmentProfile header,
   .analysisDevelopmentStack header,
+  .analysisCaseIntelligence header,
   .analysisDocumentStack header,
   .analysisPortfolioCommand header,
   .analysisFinalCommand header,
@@ -7248,6 +7681,7 @@ button {
   }
 
   .analysisDevelopmentStack header,
+  .analysisCaseIntelligence header,
   .analysisDocumentStack header,
   .analysisPortfolioCommand header,
   .analysisFinalCommand header,
@@ -7256,6 +7690,7 @@ button {
   }
 
   .analysisDevelopmentStack header em,
+  .analysisCaseIntelligence header em,
   .analysisDocumentStack header em,
   .analysisPortfolioCommand header em,
   .analysisFinalCommand header em,
@@ -7264,6 +7699,7 @@ button {
   }
 
   .analysisDevelopmentStack header b,
+  .analysisCaseIntelligence header b,
   .analysisDocumentStack header b,
   .analysisPortfolioCommand header b,
   .analysisFinalCommand header b,
@@ -7285,6 +7721,10 @@ button {
   .developmentStackLane span > small,
   .developmentStackLane em,
   .developmentActionQueue span,
+  .analysisCaseIntelligence > p,
+  .caseIntelligenceItem p,
+  .caseIntelligenceItem div b,
+  .caseActionQueue span,
   .documentStackLane span > small,
   .documentStackLane em,
   .documentMatchedEvidence span,
@@ -7306,6 +7746,7 @@ button {
   }
 
   .developmentActionQueue p,
+  .caseActionQueue p,
   .documentActionQueue p,
   .portfolioCommandQueue p {
     grid-template-columns: minmax(0, 1fr);
@@ -7581,6 +8022,7 @@ button {
   body.printMode .analysisCommercialGuardrail,
   body.printMode .analysisDevelopmentProfile,
   body.printMode .analysisDevelopmentStack,
+  body.printMode .analysisCaseIntelligence,
   body.printMode .analysisDocumentStack,
   body.printMode .analysisPortfolioCommand,
   body.printMode .analysisFinalCommand {
@@ -7596,6 +8038,9 @@ button {
   body.printMode .developmentStackMeta span,
   body.printMode .developmentStackLane,
   body.printMode .developmentActionQueue,
+  body.printMode .caseIntelligenceItem,
+  body.printMode .caseIntelligenceItem div span,
+  body.printMode .caseActionQueue,
   body.printMode .documentStackMeta span,
   body.printMode .documentStackLane,
   body.printMode .documentMatchedEvidence,
@@ -7637,6 +8082,13 @@ button {
   body.printMode .developmentStackLane em,
   body.printMode .developmentActionQueue b,
   body.printMode .developmentActionQueue span,
+  body.printMode .analysisCaseIntelligence header b,
+  body.printMode .analysisCaseIntelligence > p,
+  body.printMode .caseIntelligenceItem header b,
+  body.printMode .caseIntelligenceItem p,
+  body.printMode .caseIntelligenceItem div b,
+  body.printMode .caseActionQueue b,
+  body.printMode .caseActionQueue span,
   body.printMode .analysisDocumentStack header b,
   body.printMode .documentStackMeta b,
   body.printMode .documentStackLane b,
@@ -7720,6 +8172,10 @@ button {
   body.printMode .analysisMarketPulse,
   body.printMode .analysisDevelopmentProfile,
   body.printMode .analysisDevelopmentStack,
+  body.printMode .analysisCaseIntelligence,
+  body.printMode .caseIntelligenceItem,
+  body.printMode .caseIntelligenceItem div span,
+  body.printMode .caseActionQueue,
   body.printMode .analysisDocumentStack,
   body.printMode .analysisPortfolioCommand,
   body.printMode .analysisDecisionFocus,
@@ -7761,6 +8217,7 @@ button {
   body.printMode .analysisMarketPulse,
   body.printMode .analysisDevelopmentProfile,
   body.printMode .analysisDevelopmentStack,
+  body.printMode .analysisCaseIntelligence,
   body.printMode .analysisDocumentStack,
   body.printMode .analysisPortfolioCommand,
   body.printMode .analysisOverview,

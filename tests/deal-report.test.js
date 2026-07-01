@@ -214,6 +214,8 @@ test("deal report separates evidence, suitability, exit risk, and downside scena
   assert.equal(result.payload.analysis.verdict, "SHORTLIST");
   assert.equal(result.payload.analysis.engineVersion, "Apex v10.10");
   assert.equal(result.payload.analysis.reasoningMode, "Framework only");
+  assert.equal(result.payload.analysis.caseIntelligence.version, "case-v1");
+  assert.equal(result.payload.analysis.caseIntelligence.matched, 0);
   assert.equal(result.payload.analysis.documentIntelligence.version, "v8");
   assert.equal(result.payload.analysis.documentIntelligence.lanes.length, 10);
   assert.ok(result.payload.analysis.documentIntelligence.lanes.some((item) => item.version === "V8.10"));

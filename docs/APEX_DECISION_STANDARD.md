@@ -593,6 +593,17 @@ The rest of the V7 path turns the development profile into a compact market inte
 
 V7 improves the market read, but it does not override V6 trust boundaries or V4 evidence gates. A project can be attractive and still fail because of financing, legal title, poor management, weak rent, or the user's financial profile.
 
+## Development Case Library v1
+
+The Development Case Library stores owner-written opinions on specific projects, developments, and close substitutes.
+
+- A case note is a founder judgment layer, not a public user memory and not a universal framework rule.
+- Only the owner token can create, edit, or delete cases. Normal users can benefit from matched case intelligence in chat and Deal Reports, but they cannot write to the shared case library.
+- Each case should state the project, area, buyer/tenant fit, strengths, weaknesses, management/JMB view, resident profile, supply threat, rental outlook, resale outlook, verdict, confidence, rating, and source basis.
+- Matched cases can sharpen V7 market/project confidence and V10 final-command challenge mode.
+- A matched case must remain subordinate to current transaction, rental, financing, legal, site, and supply evidence. A strong old case cannot approve a weak current deal.
+- An avoid case should create a founder-warning lane that requires new evidence before Apex allows the user to override the older opinion.
+
 ## v8.1 - v8.10 Evidence Vault And Document Intelligence Stack
 
 The V8 path turns the owner evidence store into an auditable proof layer. It answers a different question from V7: not "is the market story coherent?", but "which uploaded documents actually support this conclusion?"

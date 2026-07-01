@@ -57,6 +57,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /id="reportsPanel"[\s\S]*?DEAL REPORTS[\s\S]*?id="reportsList"/, "Signed-in accounts need private report history.");
   assert.match(html, /id="journalPanel"[\s\S]*?DECISION JOURNAL[\s\S]*?id="journalEditor"/, "Signed-in accounts need an inline decision journal.");
   assert.match(html, /id="ownerMarketToggle"[\s\S]*?MARKET/, "The owner market console must be reachable from the account surface.");
+  assert.match(html, /id="ownerCaseToggle"[\s\S]*?CASES/, "The owner development case library must be reachable from the account surface.");
   assert.match(html, /id="ownerEvidenceToggle"[\s\S]*?EVIDENCE/, "The V8 evidence vault must be reachable from the account surface.");
   assert.match(html, /id="trustToggle"[\s\S]*?TRUST/, "The v6 trust boundary must be reachable from the account surface.");
   assert.match(html, /id="trustPanel"[\s\S]*?V6\.0 TRUST BOUNDARY[\s\S]*?WHAT APEX CAN AND CANNOT DO/, "The v6 trust boundary needs an inline workspace.");
@@ -64,6 +65,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /id="trustAcceptance"[\s\S]*?FORMAL DEAL REPORTS[\s\S]*?id="trustAccept"/, "V6.1 needs an acknowledgement checkpoint before formal reports.");
   assert.match(html, /id="ownerMarketPanel"[\s\S]*?MARKET CONSOLE[\s\S]*?id="ownerMarketToken"/, "V2 needs an owner-token-gated market console.");
   assert.match(html, /id="ownerProjectForm"[\s\S]*?id="ownerObservationForm"[\s\S]*?id="ownerObservationList"/, "The market console needs project and observation entry surfaces.");
+  assert.match(html, /id="ownerCasePanel"[\s\S]*?DEVELOPMENT CASE LIBRARY[\s\S]*?id="ownerCaseForm"[\s\S]*?id="ownerCaseList"/, "The development case library needs owner-token-gated entry and review surfaces.");
   assert.match(html, /id="ownerEvidencePanel"[\s\S]*?EVIDENCE VAULT[\s\S]*?id="ownerEvidenceForm"[\s\S]*?id="ownerEvidenceList"/, "V8 needs an owner-token-gated evidence vault.");
   assert.doesNotMatch(html, /ESTATELAB \/ JARVIS|<b>J<\/b>/, "Legacy visible branding must not return.");
   assert.doesNotMatch(html, />[^<]*(EstateLab|Jarvis)[^<]*</i, "Visible HTML copy must use Apex branding only.");
@@ -131,6 +133,12 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(server, /function buildDevelopmentIntelligence[\s\S]*?V7\.1[\s\S]*?V7\.10/, "V7.1-V7.10 must be derived by the backend development intelligence engine.");
   assert.match(server, /analysis\.developmentIntelligence = buildDevelopmentIntelligence\(analysis\)/, "Formal deal reports must attach the V7 development intelligence stack after owner market matching.");
   assert.match(server, /developmentIntelligence: normalizeReportDevelopmentIntelligence\(analysis\.developmentIntelligence\)/, "Saved private reports must preserve the V7 stack.");
+  assert.match(server, /developmentCases: \[\]/, "Knowledge storage must include owner development cases.");
+  assert.match(server, /function selectDevelopmentCaseIntelligence[\s\S]*?actionQueue/, "Development case matching must produce summary, score, posture, and action queue.");
+  assert.match(server, /\/api\/owner\/development-cases/, "Owner development cases need a token-gated API.");
+  assert.match(server, /analysis\.caseIntelligence = selectDevelopmentCaseIntelligence/, "Formal deal reports must attach matched development case intelligence.");
+  assert.match(server, /caseIntelligence: normalizeReportCaseIntelligence\(analysis\.caseIntelligence\)/, "Saved private reports must preserve development case intelligence.");
+  assert.match(server, /developmentCaseSources\(analysis\.caseIntelligence\)/, "Matched development cases must appear in formal report sources.");
   assert.match(server, /function buildDocumentIntelligence[\s\S]*?V8\.1[\s\S]*?V8\.10/, "V8.1-V8.10 must be derived by the backend document intelligence engine.");
   assert.match(server, /knowledgeService\.retrieve\(learningQuery,\s*db\.knowledge\.chunks,\s*8\)/, "Formal deal reports must retrieve owner documents for V8 evidence matching.");
   assert.match(server, /analysis\.documentIntelligence = buildDocumentIntelligence\(analysis,\s*db\.knowledge,\s*documentEvidenceResult\)/, "Formal deal reports must attach the V8 document intelligence stack.");
@@ -146,6 +154,12 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /function developmentIntelligenceMarkup[\s\S]*?V7\.1 - V7\.10 DEVELOPMENT INTELLIGENCE[\s\S]*?developmentActionQueue/, "V7.1-V7.10 must render as one compact report stack.");
   assert.match(app, /function developmentIntelligenceText[\s\S]*?V7 development intelligence stack/, "Copied reports must include the V7.1-V7.10 stack.");
   assert.match(app, /developmentProfileMarkup\(analysis\)[\s\S]*?developmentIntelligenceMarkup\(analysis\.developmentIntelligence\)[\s\S]*?<div class="analysisOverview">/, "On-screen reports must show the V7 stack before detailed scorecard sections.");
+  assert.match(app, /function renderOwnerCases[\s\S]*?\/api\/owner\/development-cases/, "The case library must load owner development cases.");
+  assert.match(app, /function createOwnerCase[\s\S]*?\/api\/owner\/development-cases/, "The case library must create owner development cases.");
+  assert.match(app, /function caseIntelligenceMarkup[\s\S]*?CASE LIBRARY V1[\s\S]*?caseActionQueue/, "Matched development cases must render as one compact report card.");
+  assert.match(app, /function caseIntelligenceText[\s\S]*?Development case library/, "Copied reports must include matched development case intelligence.");
+  assert.match(app, /caseIntelligence: analysis\.caseIntelligence/, "Shortlisted deals must preserve matched development case intelligence.");
+  assert.match(app, /caseIntelligenceMarkup\(analysis\.caseIntelligence\)/, "On-screen reports must show matched development case intelligence.");
   assert.match(app, /function renderOwnerEvidence[\s\S]*?\/api\/owner\/documents/, "The V8 evidence vault must load owner documents.");
   assert.match(app, /function createOwnerEvidence[\s\S]*?\/api\/owner\/documents/, "The V8 evidence vault must create owner evidence documents.");
   assert.match(app, /function documentIntelligenceMarkup[\s\S]*?V8\.1 - V8\.10 DOCUMENT INTELLIGENCE[\s\S]*?documentActionQueue/, "V8.1-V8.10 must render as one compact report stack.");
@@ -223,11 +237,13 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /analysis\.scenarios/, "Deal results must render downside scenarios.");
   assert.match(app, /marketIntelligenceMarkup\(analysis\.marketIntelligence\)/, "Deal results must render matched dated market intelligence.");
   assert.match(app, /type === "market"/, "Market observations need a distinct source label.");
+  assert.match(app, /type === "case"/, "Owner development cases need a distinct source label.");
   assert.match(app, /\/api\/billing\/status/, "The account surface must load report entitlements.");
   assert.match(app, /\/api\/reports/, "The report-history surface must use private account storage.");
   assert.match(app, /\/api\/journal/, "The decision journal must use private account storage.");
   assert.match(app, /\/api\/owner\/market\/projects/, "The v2 market console must load and create owner market projects.");
   assert.match(app, /\/api\/owner\/market\/observations/, "The v2 market console must load and create owner market observations.");
+  assert.match(app, /\/api\/owner\/development-cases/, "The owner case library must use the development case API.");
   assert.match(app, /\/api\/owner\/documents/, "The v8 evidence vault must use the owner document API.");
   assert.match(app, /x-estatelab-owner-token/, "Owner market writes must require the owner token header.");
   assert.match(app, /ownerMarketEnabled\s*=\s*Boolean\(status\.ownerMarket\?\.enabled\)/, "The frontend must detect whether the owner market API is enabled.");
@@ -243,9 +259,12 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.ownerMarketOpen \.transcript[\s\S]*?display:\s*none;/, "The owner market console must replace chat content instead of opening a popup.");
   assert.match(styles, /\.ownerMarketPanel[\s\S]*?\.ownerMarketWorkspace[\s\S]*?grid-template-columns:/, "The v2 market console needs a styled owner workspace.");
   assert.match(styles, /\.ownerMarketLists[\s\S]*?\.ownerObservationList[\s\S]*?overflow-y:\s*auto;/, "Market observation lists must stay scrollable.");
+  assert.match(styles, /\.ownerCaseOpen \.transcript[\s\S]*?display:\s*none;/, "The owner case library must replace chat content instead of opening a popup.");
+  assert.match(styles, /\.ownerCasePanel[\s\S]*?\.ownerCaseWorkspace[\s\S]*?grid-template-columns:/, "The owner case library needs a styled owner workspace.");
   assert.match(styles, /\.ownerEvidenceOpen \.transcript[\s\S]*?display:\s*none;/, "The evidence vault must replace chat content instead of opening a popup.");
   assert.match(styles, /\.ownerEvidencePanel[\s\S]*?\.ownerEvidenceWorkspace[\s\S]*?grid-template-columns:/, "The v8 evidence vault needs a styled owner workspace.");
   assert.match(styles, /\.analysisMarketPulse[\s\S]*?overflow-wrap:\s*anywhere;/, "Market observations must remain readable without overflowing the report.");
+  assert.match(styles, /\.analysisCaseIntelligence[\s\S]*?\.caseIntelligenceCards[\s\S]*?\.caseActionQueue/, "Development case intelligence must have styled report cards.");
   assert.match(styles, /\.analysisOverview[\s\S]*?grid-template-columns:/, "The v1.1 report needs an organized readiness and scorecard overview.");
   assert.match(styles, /\.analysisEvidence[\s\S]*?\.evidenceItem/, "The v1.1 report needs a styled evidence checklist.");
   assert.match(styles, /\.analysisEvidenceEngine[\s\S]*?\.evidenceGate/, "The v4.0 evidence engine needs styled evidence gates.");

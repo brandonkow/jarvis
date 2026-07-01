@@ -427,6 +427,51 @@ function normalizeReportDevelopmentIntelligence(section = {}) {
   };
 }
 
+function normalizeReportCaseIntelligence(section = {}) {
+  const safeStatus = (value, fallback = "thin") => ["tracked", "partial", "thin", "risk", "clear", "watch", "missing", "action"].includes(value) ? value : fallback;
+  return {
+    version: reportText(section.version || "case-v1", 20),
+    status: safeStatus(section.status, "thin"),
+    score: Math.max(0, Math.min(100, Number(section.score || 0))),
+    summary: reportText(section.summary, 900),
+    posture: reportText(section.posture, 240),
+    matched: Math.max(0, Number(section.matched || 0)),
+    cases: Array.isArray(section.cases) ? section.cases.slice(0, 8).map((item) => ({
+      id: reportText(item?.id, 100),
+      projectName: reportText(item?.projectName, 160),
+      area: reportText(item?.area, 120),
+      state: reportText(item?.state, 80),
+      propertyType: reportText(item?.propertyType, 80),
+      developer: reportText(item?.developer, 120),
+      priceSegment: reportText(item?.priceSegment, 120),
+      targetBuyer: reportText(item?.targetBuyer, 220),
+      targetTenant: reportText(item?.targetTenant, 220),
+      verdict: reportText(item?.verdict, 40),
+      verdictLabel: reportText(item?.verdictLabel, 80),
+      rating: Math.max(0, Math.min(100, Number(item?.rating || 0))),
+      confidence: reportText(item?.confidence, 40),
+      score: Math.max(0, Math.min(100, Number(item?.score || 0))),
+      summary: reportText(item?.summary, 700),
+      strengths: reportText(item?.strengths, 700),
+      weaknesses: reportText(item?.weaknesses, 700),
+      managementView: reportText(item?.managementView, 700),
+      residentProfile: reportText(item?.residentProfile, 700),
+      supplyThreat: reportText(item?.supplyThreat, 700),
+      rentalOutlook: reportText(item?.rentalOutlook, 700),
+      resaleOutlook: reportText(item?.resaleOutlook, 700),
+      ownerVerdict: reportText(item?.ownerVerdict, 900),
+      sourceBasis: reportText(item?.sourceBasis, 500),
+      tags: Array.isArray(item?.tags) ? item.tags.slice(0, 20).map((tag) => reportText(tag, 60)).filter(Boolean) : [],
+      observedAt: reportText(item?.observedAt, 40)
+    })).filter((item) => item.id && item.projectName) : [],
+    actionQueue: Array.isArray(section.actionQueue) ? section.actionQueue.slice(0, 6).map((item) => ({
+      label: reportText(item?.label, 160),
+      status: safeStatus(item?.status, "watch"),
+      action: reportText(item?.action, 500)
+    })).filter((item) => item.label) : []
+  };
+}
+
 function normalizeReportDocumentIntelligence(section = {}) {
   const safeStatus = (value, fallback = "thin") => ["proven", "partial", "thin", "risk", "clear", "watch", "missing", "action"].includes(value) ? value : fallback;
   const lanes = Array.isArray(section.lanes) ? section.lanes.slice(0, 12).map((item) => ({
@@ -891,7 +936,7 @@ function normalizeReportAnalysis(analysis = {}) {
       mode: reportText(analysis?.sourceTransparency?.mode, 80),
       summary: reportText(analysis?.sourceTransparency?.summary, 700),
       sources: objectList(analysis?.sourceTransparency?.sources, 8, (item) => ({
-        type: ["framework", "ai", "memory", "journal", "saved_deal", "market", "evidence"].includes(item?.type) ? item.type : "framework",
+        type: ["framework", "ai", "memory", "journal", "saved_deal", "market", "evidence", "case"].includes(item?.type) ? item.type : "framework",
         label: reportText(item?.label, 140),
         status: ["used", "available", "not_used"].includes(item?.status) ? item.status : "used",
         detail: reportText(item?.detail, 420)
@@ -924,6 +969,7 @@ function normalizeReportAnalysis(analysis = {}) {
     missingEvidence: reportList(analysis.missingEvidence),
     nextActions: reportList(analysis.nextActions),
     developmentIntelligence: normalizeReportDevelopmentIntelligence(analysis.developmentIntelligence),
+    caseIntelligence: normalizeReportCaseIntelligence(analysis.caseIntelligence),
     documentIntelligence: normalizeReportDocumentIntelligence(analysis.documentIntelligence),
     portfolioCommand: normalizeReportPortfolioCommand(analysis.portfolioCommand),
     finalCommand: normalizeReportFinalCommand(analysis.finalCommand),
@@ -1035,7 +1081,7 @@ function normalizeAuth(auth) {
 }
 
 function emptyKnowledge() {
-  return { version: 2, documents: [], chunks: [], retrievalEvents: [], projects: [], observations: [] };
+  return { version: 3, documents: [], chunks: [], retrievalEvents: [], projects: [], observations: [], developmentCases: [] };
 }
 
 const MARKET_METRIC_TYPES = new Set([
@@ -1122,6 +1168,48 @@ function normalizeMarketObservation(observation, projectIds = new Set()) {
   };
 }
 
+const CASE_VERDICTS = new Set(["strong_buy", "shortlist", "watch", "avoid", "unknown"]);
+const CASE_CONFIDENCE_LEVELS = new Set(["high", "medium", "low"]);
+
+function normalizeDevelopmentCase(input = {}, projectIds = new Set()) {
+  const now = new Date().toISOString();
+  const projectId = cleanMarketText(input?.projectId, 100);
+  const verdict = String(input?.verdict || "watch").toLowerCase();
+  const confidence = String(input?.confidence || "medium").toLowerCase();
+  const projectName = cleanMarketText(input?.projectName || input?.name, 160);
+  if (!projectName) return null;
+  return {
+    id: cleanMarketText(input?.id || randomUUID(), 100),
+    projectId: projectIds.has(projectId) ? projectId : "",
+    projectName,
+    area: cleanMarketText(input?.area, 120),
+    state: cleanMarketText(input?.state, 80),
+    propertyType: cleanMarketText(input?.propertyType, 80),
+    developer: cleanMarketText(input?.developer, 120),
+    priceSegment: cleanMarketText(input?.priceSegment, 120),
+    targetBuyer: cleanMarketText(input?.targetBuyer, 220),
+    targetTenant: cleanMarketText(input?.targetTenant, 220),
+    strengths: cleanMarketText(input?.strengths, 1200),
+    weaknesses: cleanMarketText(input?.weaknesses, 1200),
+    managementView: cleanMarketText(input?.managementView, 900),
+    residentProfile: cleanMarketText(input?.residentProfile, 900),
+    supplyThreat: cleanMarketText(input?.supplyThreat, 900),
+    rentalOutlook: cleanMarketText(input?.rentalOutlook, 900),
+    resaleOutlook: cleanMarketText(input?.resaleOutlook, 900),
+    ownerVerdict: cleanMarketText(input?.ownerVerdict || input?.notes, 1200),
+    verdict: CASE_VERDICTS.has(verdict) ? verdict : "watch",
+    confidence: CASE_CONFIDENCE_LEVELS.has(confidence) ? confidence : "medium",
+    rating: Math.max(0, Math.min(100, Math.round(Number(input?.rating || 0)))),
+    sourceBasis: cleanMarketText(input?.sourceBasis, 500),
+    tags: Array.isArray(input?.tags)
+      ? [...new Set(input.tags.map((tag) => cleanMarketText(tag, 60)).filter(Boolean))].slice(0, 20)
+      : [],
+    observedAt: cleanMarketDate(input?.observedAt, now),
+    createdAt: cleanMarketDate(input?.createdAt, now),
+    updatedAt: cleanMarketDate(input?.updatedAt || input?.createdAt, now)
+  };
+}
+
 function normalizeKnowledge(knowledge) {
   const documents = Array.isArray(knowledge?.documents)
     ? knowledge.documents.map((document) => ({
@@ -1172,7 +1260,13 @@ function normalizeKnowledge(knowledge) {
       .filter((observation) => observation.projectId || observation.projectName || observation.area)
       .slice(-10000)
     : [];
-  return { version: 2, documents, chunks, retrievalEvents, projects, observations };
+  const developmentCases = Array.isArray(knowledge?.developmentCases)
+    ? knowledge.developmentCases
+      .map((item) => normalizeDevelopmentCase(item, projectIds))
+      .filter(Boolean)
+      .slice(-2000)
+    : [];
+  return { version: 3, documents, chunks, retrievalEvents, projects, observations, developmentCases };
 }
 
 function normalizeBrain(brain) {
@@ -2356,6 +2450,143 @@ function marketSources(marketIntelligence) {
   }));
 }
 
+function caseVerdictLabel(verdict = "watch") {
+  return {
+    strong_buy: "Strong Buy",
+    shortlist: "Shortlist",
+    watch: "Watch",
+    avoid: "Avoid",
+    unknown: "Unknown"
+  }[verdict] || "Watch";
+}
+
+function publicDevelopmentCase(item, score = 0) {
+  const summaryParts = [
+    item.ownerVerdict,
+    item.strengths ? `Strengths: ${item.strengths}` : "",
+    item.weaknesses ? `Weaknesses: ${item.weaknesses}` : "",
+    item.rentalOutlook ? `Rental: ${item.rentalOutlook}` : "",
+    item.resaleOutlook ? `Resale: ${item.resaleOutlook}` : ""
+  ].filter(Boolean);
+  return {
+    id: item.id,
+    projectName: item.projectName,
+    area: item.area,
+    state: item.state,
+    propertyType: item.propertyType,
+    developer: item.developer,
+    priceSegment: item.priceSegment,
+    targetBuyer: item.targetBuyer,
+    targetTenant: item.targetTenant,
+    strengths: item.strengths,
+    weaknesses: item.weaknesses,
+    managementView: item.managementView,
+    residentProfile: item.residentProfile,
+    supplyThreat: item.supplyThreat,
+    rentalOutlook: item.rentalOutlook,
+    resaleOutlook: item.resaleOutlook,
+    ownerVerdict: item.ownerVerdict,
+    verdict: item.verdict,
+    verdictLabel: caseVerdictLabel(item.verdict),
+    confidence: item.confidence,
+    rating: item.rating,
+    sourceBasis: item.sourceBasis,
+    tags: item.tags,
+    observedAt: item.observedAt,
+    updatedAt: item.updatedAt,
+    score,
+    summary: conciseText(summaryParts.join(" "), 700)
+  };
+}
+
+function selectDevelopmentCaseIntelligence(query, knowledge = emptyKnowledge(), limit = 5) {
+  const terms = tokenize(query);
+  const cases = Array.isArray(knowledge.developmentCases) ? knowledge.developmentCases : [];
+  if (!terms.length || !cases.length) {
+    return {
+      version: "case-v1",
+      status: "thin",
+      score: 0,
+      matched: 0,
+      summary: "No matching owner development case has been recorded yet.",
+      posture: "Build case library",
+      cases: [],
+      actionQueue: [{ label: "Case library gap", status: "missing", action: "Add a founder case note for this project or area before treating Apex as project-specific intelligence." }]
+    };
+  }
+  const ranked = cases
+    .map((item) => {
+      const searchText = [
+        item.projectName, item.area, item.state, item.propertyType, item.developer, item.priceSegment,
+        item.targetBuyer, item.targetTenant, item.strengths, item.weaknesses, item.managementView,
+        item.residentProfile, item.supplyThreat, item.rentalOutlook, item.resaleOutlook, item.ownerVerdict,
+        item.sourceBasis, item.tags?.join(" ")
+      ].filter(Boolean).join(" ");
+      return { item, score: termScore(terms, searchText) };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score || Number(right.item.rating || 0) - Number(left.item.rating || 0))
+    .slice(0, Math.max(1, Math.min(12, limit)));
+  const publicCases = ranked.map(({ item, score }) => publicDevelopmentCase(item, score));
+  const avoidCount = publicCases.filter((item) => item.verdict === "avoid").length;
+  const positiveCount = publicCases.filter((item) => ["strong_buy", "shortlist"].includes(item.verdict)).length;
+  const highConfidenceCount = publicCases.filter((item) => item.confidence === "high").length;
+  const score = publicCases.length
+    ? clampScore(publicCases.reduce((sum, item) => sum + (item.rating || (item.verdict === "avoid" ? 25 : item.verdict === "watch" ? 55 : 75)), 0) / publicCases.length)
+    : 0;
+  const status = !publicCases.length
+    ? "thin"
+    : avoidCount
+      ? "risk"
+      : positiveCount && highConfidenceCount
+        ? "tracked"
+        : positiveCount
+          ? "partial"
+          : "watch";
+  const strongest = publicCases[0];
+  const actionQueue = [];
+  if (!publicCases.length) {
+    actionQueue.push({ label: "No case match", status: "missing", action: "Add a case note for this project, closest substitute, or micro-area." });
+  } else {
+    actionQueue.push({ label: "Founder case review", status: status === "risk" ? "risk" : "watch", action: "Use the matched case as an opinion layer, then verify it against current transactions, rent, site condition, and supply." });
+    if (avoidCount) actionQueue.push({ label: "Avoid case conflict", status: "risk", action: "A matched owner case says avoid. Require new evidence before overriding the old view." });
+    if (!publicCases.some((item) => item.managementView)) actionQueue.push({ label: "Management gap", status: "missing", action: "Add management/JMB and resident-culture notes to make the case more useful." });
+  }
+  return {
+    version: "case-v1",
+    status,
+    score,
+    matched: publicCases.length,
+    summary: publicCases.length
+      ? `${publicCases.length} owner development case${publicCases.length === 1 ? "" : "s"} matched. Strongest read: ${strongest.projectName} is ${strongest.verdictLabel.toLowerCase()} with ${strongest.confidence} confidence.`
+      : "No matching owner development case has been recorded yet.",
+    posture: status === "tracked" ? "Case-backed" : status === "risk" ? "Founder warning active" : publicCases.length ? "Case-informed, verify live" : "Build case library",
+    cases: publicCases,
+    actionQueue
+  };
+}
+
+function developmentCaseSources(caseIntelligence) {
+  return (caseIntelligence?.cases || []).slice(0, 6).map((item) => ({
+    id: item.id,
+    title: `${item.projectName} founder case`,
+    type: "case",
+    preview: conciseText(item.summary || item.ownerVerdict || item.strengths || "Owner development case", 180),
+    score: item.score,
+    verdict: item.verdict,
+    confidence: item.confidence,
+    observedAt: item.observedAt
+  }));
+}
+
+function developmentCaseIntelligenceForPrompt(caseIntelligence) {
+  if (!caseIntelligence?.cases?.length) return "No matching owner development case.";
+  return [
+    `Summary: ${caseIntelligence.summary}`,
+    ...caseIntelligence.cases.slice(0, 4).map((item) => `- ${item.projectName} / ${caseVerdictLabel(item.verdict)} / ${item.confidence} confidence: ${item.summary || item.ownerVerdict || "Case recorded."}`)
+  ].join("\n");
+}
+
 function developmentIntelligenceStatus(score, missingCount, riskCount, observationCount) {
   if (riskCount >= 2) return "risk";
   if (score >= 78 && observationCount) return "tracked";
@@ -3045,6 +3276,7 @@ function buildFinalCommand(analysis = {}) {
   const evidenceStatus = analysis.evidenceEngine?.status || "unknown";
   const documentStatus = analysis.documentIntelligence?.status || "thin";
   const developmentStatus = analysis.developmentIntelligence?.status || "thin";
+  const caseStatus = analysis.caseIntelligence?.status || "thin";
   const portfolioStatus = analysis.portfolioCommand?.status || "hold";
   const sealStatus = analysis.decisionSeal?.status || "conditional";
   const sourceMode = analysis.sourceTransparency?.mode || analysis.reasoningMode || "Framework only";
@@ -3078,9 +3310,9 @@ function buildFinalCommand(analysis = {}) {
       : ["proven", "strong"].includes(evidenceStatus) && ["proven", "partial"].includes(documentStatus)
         ? "clear"
         : "watch";
-  const marketProjectStatus = ["risk"].includes(developmentStatus) || analysis.marketPulse?.status === "risk"
+  const marketProjectStatus = ["risk"].includes(developmentStatus) || caseStatus === "risk" || analysis.marketPulse?.status === "risk"
     ? "risk"
-    : ["tracked", "proven", "opportunity"].includes(developmentStatus) || analysis.marketPulse?.status === "opportunity"
+    : ["tracked", "proven", "opportunity"].includes(developmentStatus) || caseStatus === "tracked" || analysis.marketPulse?.status === "opportunity"
       ? "clear"
       : "watch";
   const portfolioLaneStatus = portfolioStatus === "pause"
@@ -3149,7 +3381,7 @@ function buildFinalCommand(analysis = {}) {
       "V10.5",
       "Market and project confidence",
       marketProjectStatus,
-      analysis.developmentIntelligence?.summary || analysis.marketPulse?.summary || "Market/project confidence is not fully tracked.",
+      analysis.caseIntelligence?.matched ? `${analysis.caseIntelligence.summary} ${analysis.developmentIntelligence?.summary || ""}` : analysis.developmentIntelligence?.summary || analysis.marketPulse?.summary || "Market/project confidence is not fully tracked.",
       "Confirm the project still has scarcity, management quality, buyer depth, and defense against newer substitutes."
     ),
     finalCommandLane(
@@ -3340,6 +3572,33 @@ function marketObservationFromInput(body = {}, knowledge, existing = null) {
     throw marketInputError("Provide a numeric value or a qualitative note.");
   }
   return observation;
+}
+
+function developmentCaseFromInput(body = {}, knowledge, existing = null) {
+  const merged = { ...(existing || {}), ...body };
+  let project = null;
+  if (merged.projectId) {
+    project = findMarketProject(knowledge, { id: String(merged.projectId) });
+    if (!project) throw marketInputError("The linked market project does not exist.");
+  } else if (merged.projectName) {
+    project = findMarketProject(knowledge, { name: merged.projectName, area: merged.area });
+  }
+  const now = new Date().toISOString();
+  const projectIds = new Set(knowledge.projects.map((item) => item.id));
+  const item = normalizeDevelopmentCase({
+    ...merged,
+    id: existing?.id || randomUUID(),
+    projectId: project?.id || merged.projectId || "",
+    projectName: merged.projectName || project?.name || "",
+    area: merged.area || project?.area || "",
+    state: merged.state || project?.state || "",
+    propertyType: merged.propertyType || project?.propertyType || "",
+    developer: merged.developer || project?.developer || "",
+    createdAt: existing?.createdAt || now,
+    updatedAt: now
+  }, projectIds);
+  if (!item) throw marketInputError("Project name is required for a development case.");
+  return item;
 }
 
 function compactQuery(text) {
@@ -6937,6 +7196,18 @@ function dealAnalysisText(analysis) {
       lines.push("V7 action queue", ...analysis.developmentIntelligence.actionQueue.map((item) => `- ${item.version} ${item.label}: ${item.action}`));
     }
   }
+  if (analysis.caseIntelligence?.summary) {
+    lines.push(
+      "",
+      "Development case library",
+      `- ${analysis.caseIntelligence.status || "thin"} (${analysis.caseIntelligence.score || 0}/100): ${analysis.caseIntelligence.summary}`,
+      `- Posture: ${analysis.caseIntelligence.posture || "Case-informed, verify live"}.`
+    );
+    lines.push(...(analysis.caseIntelligence.cases || []).map((item) => `- ${item.projectName}: ${item.verdictLabel || item.verdict}, ${item.confidence} confidence, ${item.rating || 0}/100. ${item.summary || item.ownerVerdict || ""}`));
+    if (analysis.caseIntelligence.actionQueue?.length) {
+      lines.push("Case action queue", ...analysis.caseIntelligence.actionQueue.map((item) => `- ${item.label}: ${item.action}`));
+    }
+  }
   if (analysis.documentIntelligence?.summary) {
     lines.push(
       "",
@@ -7810,6 +8081,12 @@ function buildSourceTransparency({ mode = "framework", sources = [], analysis = 
       label: "Owner market observations",
       status: analysis.marketIntelligence?.summary?.matched ? "used" : "not_used",
       detail: analysis.marketIntelligence?.summary?.matched ? `${analysis.marketIntelligence.summary.matched} dated owner observation${analysis.marketIntelligence.summary.matched === 1 ? "" : "s"} matched.` : "No dated owner market observation matched this report."
+    },
+    {
+      type: "case",
+      label: "Owner development cases",
+      status: analysis.caseIntelligence?.matched ? "used" : "not_used",
+      detail: analysis.caseIntelligence?.matched ? `${analysis.caseIntelligence.matched} founder case note${analysis.caseIntelligence.matched === 1 ? "" : "s"} matched.` : "No founder case note matched this report."
     }
   ];
   const used = sourceList.filter((source) => source.status === "used").map((source) => source.label);
@@ -7832,6 +8109,7 @@ async function generateJarvisLlmAnswer({
   memoryProfile,
   journal,
   marketIntelligence = null,
+  caseIntelligence = null,
   responsePersona = responsePersonaFromProfile(financialProfile),
   fallbackAnswer
 }) {
@@ -7874,6 +8152,9 @@ ${journalForPrompt(journal)}
 
 OWNER-CONTROLLED MARKET INTELLIGENCE
 ${marketIntelligenceForPrompt(marketIntelligence)}
+
+OWNER DEVELOPMENT CASE LIBRARY
+${developmentCaseIntelligenceForPrompt(caseIntelligence)}
 
 DETERMINISTIC FALLBACK ANALYSIS
 ${fallbackAnswer}
@@ -7919,6 +8200,7 @@ async function retrieveGuidance(query, property, brain, knowledge = emptyKnowled
     return { ...chunk, title: document?.title || "Owner evidence", tags: document?.tags || [] };
   });
   const marketIntelligence = selectMarketIntelligence(`${query} ${property ? JSON.stringify(property) : ""}`, knowledge, 6);
+  const caseIntelligence = selectDevelopmentCaseIntelligence(`${query} ${property ? JSON.stringify(property) : ""}`, knowledge, 4);
 
   const beliefHits = brain.beliefs
     .map((belief) => ({ ...belief, score: termScore(queryTerms, `${belief.claim} ${belief.scope} ${belief.evidenceFor} ${belief.evidenceAgainst} ${belief.falsifier}`) }))
@@ -7935,6 +8217,7 @@ async function retrieveGuidance(query, property, brain, knowledge = emptyKnowled
   if (scored.length) sections.push(`Relevant reference guidance:\n${scored.map((doc) => `- ${doc.title}: ${doc.body}`).join("\n")}`);
   if (evidenceHits.length) sections.push(`Relevant owner evidence:\n${evidenceHits.map((item) => `- ${item.title}: ${item.content}`).join("\n")}`);
   if (marketIntelligence.observations.length) sections.push(`Relevant owner market intelligence:\n${marketIntelligenceForPrompt(marketIntelligence)}`);
+  if (caseIntelligence.cases.length) sections.push(`Relevant owner development cases:\n${developmentCaseIntelligenceForPrompt(caseIntelligence)}`);
   if (beliefHits.length) {
     sections.push(`Your relevant recorded beliefs:\n${beliefHits.map((belief) => `- ${belief.claim} (${belief.confidence}% confidence). Falsifier: ${belief.falsifier || "not defined"}`).join("\n")}`);
   }
@@ -7948,6 +8231,7 @@ async function retrieveGuidance(query, property, brain, knowledge = emptyKnowled
     sources: [
       ...scored.map(({ id, title, tags }) => ({ id, title, tags, type: "reference" })),
       ...evidenceHits.map(({ id, title, tags, score }) => ({ id, title, tags, score, type: "evidence" })),
+      ...developmentCaseSources(caseIntelligence),
       ...marketSources(marketIntelligence),
       ...beliefHits.map(({ id, claim }) => ({ id, title: claim, type: "belief" })),
       ...decisionHits.map(({ id, subject }) => ({ id, title: subject, type: "decision" }))
@@ -8015,6 +8299,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     };
   });
   const marketIntelligence = selectMarketIntelligence(`${recentSessionContext} ${query} ${contextForSearch}`, knowledge, 6);
+  const caseIntelligence = selectDevelopmentCaseIntelligence(`${recentSessionContext} ${query} ${contextForSearch}`, knowledge, 4);
   const topReferences = corpus
     .map((doc) => ({ ...doc, score: termScore(queryTerms, `${doc.title} ${doc.tags?.join(" ")} ${doc.body}`) }))
     .filter((doc) => doc.score > 0)
@@ -8091,6 +8376,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
   }
 
   const ownerEvidenceLines = ownerEvidence.slice(0, 2).map((reference) => `${reference.title}: ${shortSentence(reference.content, 180)}`);
+  const caseLines = caseIntelligence.cases.slice(0, 3).map((item) => `${item.projectName}: ${item.verdictLabel || caseVerdictLabel(item.verdict)} / ${item.confidence} confidence. ${shortSentence(item.summary || item.ownerVerdict, 180)}`);
   const marketLines = marketIntelligence.observations.slice(0, 3).map((observation) => observation.body);
   const memoryProfileLines = relevantMemoryProfile.approvedCount ? [
     `${relevantMemoryProfile.investorType}; ${relevantMemoryProfile.riskStyle}.`,
@@ -8105,6 +8391,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
   const sections = [
     verdict,
     bulletSection("Owner evidence", ownerEvidenceLines, 2),
+    bulletSection("Owner case library", caseLines, 3),
     bulletSection("Market intelligence", marketLines, 3),
     marketIntelligence.observations.length ? bulletSection("Market freshness", [marketIntelligence.summary.warning], 1) : "",
     bulletSection("Deal read", dealRead, 3),
@@ -8125,6 +8412,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     evidenceChecks,
     challenge,
     ownerEvidenceLines,
+    caseLines,
     marketLines,
     dealRead,
     profileFit,
@@ -8149,6 +8437,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         preview: conciseText(reference.content, 160),
         score: reference.score
       })),
+      ...developmentCaseSources(caseIntelligence),
       ...marketSources(marketIntelligence),
       ...uniqueSources([...topReferences, rentalReference, supplyReference, buyerPoolReference, evidenceReference], 6).map((reference) => ({
         id: reference.id,
@@ -8201,6 +8490,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
         memoryProfile: relevantMemoryProfile,
         journal: relevantJournal,
         marketIntelligence,
+        caseIntelligence,
         responsePersona,
         fallbackAnswer
       });
@@ -8856,6 +9146,7 @@ async function router(req, res) {
         indexedChunks: db.knowledge.chunks.length,
         trackedProjects: db.knowledge.projects.length,
         marketObservations: db.knowledge.observations.length,
+        developmentCases: db.knowledge.developmentCases.length,
         activeBeliefs: db.brain.beliefs.filter((belief) => belief.status !== "retired").length,
         decisions: db.brain.decisions.length
       },
@@ -8878,7 +9169,8 @@ async function router(req, res) {
       ownerMarket: {
         enabled: Boolean(OWNER_TOKEN),
         trackedProjects: db.knowledge.projects.length,
-        marketObservations: db.knowledge.observations.length
+        marketObservations: db.knowledge.observations.length,
+        developmentCases: db.knowledge.developmentCases.length
       },
       boundary: "Public chats are stored as conversation sessions only. They do not update the owner knowledge base."
     });
@@ -8978,9 +9270,13 @@ async function router(req, res) {
     analysis.memoryConflicts = buildMemoryConflicts(analysis.learningLoop?.profile || {});
     analysis.personalOperatingRules = buildPersonalOperatingRules(analysis, analysis.learningLoop?.profile || {});
     analysis.marketIntelligence = selectMarketIntelligence(`${subject} ${JSON.stringify(dealCard)}`, db.knowledge, 8);
+    analysis.caseIntelligence = selectDevelopmentCaseIntelligence(`${subject} ${JSON.stringify(dealCard)}`, db.knowledge, 6);
     const marketStage = analysis.stages.find((stage) => stage.number === 6);
     if (marketStage && analysis.marketIntelligence.observations.length) {
       marketStage.summary = `${analysis.marketIntelligence.summary.matched} owner market observation${analysis.marketIntelligence.summary.matched === 1 ? " matches" : "s match"} this deal. ${analysis.marketIntelligence.summary.warning}`;
+    }
+    if (marketStage && analysis.caseIntelligence.matched) {
+      marketStage.summary = `${analysis.caseIntelligence.matched} founder development case${analysis.caseIntelligence.matched === 1 ? " matches" : "s match"} this deal. ${analysis.caseIntelligence.summary}`;
     }
     analysis.developmentIntelligence = buildDevelopmentIntelligence(analysis);
     const documentEvidenceResult = await knowledgeService.retrieve(learningQuery, db.knowledge.chunks, 8);
@@ -8988,6 +9284,7 @@ async function router(req, res) {
     analysis.portfolioCommand = buildPortfolioCommand(analysis);
     const sources = [
       ...documentEvidenceSources(analysis.documentIntelligence),
+      ...developmentCaseSources(analysis.caseIntelligence),
       ...marketSources(analysis.marketIntelligence),
       ...dealMemories.map((memory) => ({
         id: memory.id,
@@ -9200,6 +9497,69 @@ async function router(req, res) {
     if (cascade) db.knowledge.observations = db.knowledge.observations.filter((observation) => observation.projectId !== id);
     await writeDb(db);
     return send(res, 200, { deleted: true, deletedObservations: cascade ? linkedObservations : 0 });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/owner/development-cases") {
+    const query = String(url.searchParams.get("q") || "").trim().toLowerCase();
+    const area = String(url.searchParams.get("area") || "").trim().toLowerCase();
+    const verdict = String(url.searchParams.get("verdict") || "").trim().toLowerCase();
+    const limit = Math.max(1, Math.min(500, Number(url.searchParams.get("limit") || 200)));
+    const cases = db.knowledge.developmentCases
+      .map((item) => {
+        const project = item.projectId ? db.knowledge.projects.find((projectItem) => projectItem.id === item.projectId) : null;
+        return { ...item, linkedProject: project ? { id: project.id, name: project.name, area: project.area } : null };
+      })
+      .filter((item) => !query || [
+        item.projectName, item.area, item.state, item.propertyType, item.developer, item.priceSegment,
+        item.targetBuyer, item.targetTenant, item.strengths, item.weaknesses, item.ownerVerdict, item.tags.join(" ")
+      ].join(" ").toLowerCase().includes(query))
+      .filter((item) => !area || `${item.area} ${item.linkedProject?.area || ""}`.toLowerCase().includes(area))
+      .filter((item) => !verdict || item.verdict === verdict)
+      .sort((left, right) => String(right.updatedAt).localeCompare(String(left.updatedAt)));
+    const counts = cases.reduce((summary, item) => {
+      summary[item.verdict] = (summary[item.verdict] || 0) + 1;
+      return summary;
+    }, {});
+    return send(res, 200, {
+      cases: cases.slice(0, limit),
+      summary: {
+        matched: cases.length,
+        returned: Math.min(cases.length, limit),
+        total: db.knowledge.developmentCases.length,
+        ...counts
+      }
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/owner/development-cases") {
+    const item = developmentCaseFromInput(await readBody(req), db.knowledge);
+    const duplicate = db.knowledge.developmentCases.find((existing) => existing.projectName.toLowerCase() === item.projectName.toLowerCase() && existing.area.toLowerCase() === item.area.toLowerCase());
+    if (duplicate) return send(res, 409, { error: "A development case with this project and area already exists." });
+    db.knowledge.developmentCases.push(item);
+    db.knowledge = normalizeKnowledge(db.knowledge);
+    await writeDb(db);
+    return send(res, 201, { case: item });
+  }
+
+  if (req.method === "PATCH" && url.pathname.startsWith("/api/owner/development-cases/")) {
+    const id = decodeURIComponent(url.pathname.split("/").pop());
+    const index = db.knowledge.developmentCases.findIndex((item) => item.id === id);
+    if (index === -1) return send(res, 404, { error: "Development case not found." });
+    const item = developmentCaseFromInput(await readBody(req), db.knowledge, db.knowledge.developmentCases[index]);
+    const duplicate = db.knowledge.developmentCases.find((existing) => existing.id !== id && existing.projectName.toLowerCase() === item.projectName.toLowerCase() && existing.area.toLowerCase() === item.area.toLowerCase());
+    if (duplicate) return send(res, 409, { error: "A development case with this project and area already exists." });
+    db.knowledge.developmentCases[index] = item;
+    db.knowledge = normalizeKnowledge(db.knowledge);
+    await writeDb(db);
+    return send(res, 200, { case: item });
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/owner/development-cases/")) {
+    const id = decodeURIComponent(url.pathname.split("/").pop());
+    if (!db.knowledge.developmentCases.some((item) => item.id === id)) return send(res, 404, { error: "Development case not found." });
+    db.knowledge.developmentCases = db.knowledge.developmentCases.filter((item) => item.id !== id);
+    await writeDb(db);
+    return send(res, 204, "");
   }
 
   if (req.method === "GET" && url.pathname === "/api/owner/market/observations") {

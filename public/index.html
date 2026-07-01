@@ -114,6 +114,7 @@
             <button id="reportsToggle" type="button" aria-expanded="false" aria-controls="reportsPanel" hidden>REPORTS</button>
             <button id="journalToggle" type="button" aria-expanded="false" aria-controls="journalPanel" hidden>JOURNAL</button>
             <button id="ownerMarketToggle" type="button" aria-expanded="false" aria-controls="ownerMarketPanel">MARKET</button>
+            <button id="ownerCaseToggle" type="button" aria-expanded="false" aria-controls="ownerCasePanel">CASES</button>
             <button id="ownerEvidenceToggle" type="button" aria-expanded="false" aria-controls="ownerEvidencePanel">EVIDENCE</button>
             <button id="trustToggle" type="button" aria-expanded="false" aria-controls="trustPanel">TRUST</button>
           </div>
@@ -267,6 +268,94 @@
             </fieldset>
             <p id="journalMessage" class="journalMessage" role="status"></p>
           </form>
+        </section>
+
+        <section id="ownerCasePanel" class="ownerCasePanel" aria-label="Owner development case library" hidden>
+          <header class="ownerCaseHeader">
+            <span><small>OWNER-CONTROLLED OPINION</small><b>DEVELOPMENT CASE LIBRARY</b></span>
+            <button id="ownerCaseClose" type="button" aria-label="Close development case library">CLOSE</button>
+          </header>
+          <p class="ownerCaseIntro">Record your project-by-project judgment here. Public users can benefit from matched case intelligence in answers and reports, but only the owner token can create or delete cases.</p>
+          <form id="ownerCaseAccess" class="ownerCaseAccess" autocomplete="off">
+            <label>Owner Token<input id="ownerCaseToken" type="password" placeholder="Uses the same owner token as Market" autocomplete="off" /></label>
+            <button id="ownerCaseSaveToken" type="submit">SAVE</button>
+            <button id="ownerCaseClearToken" type="button">CLEAR</button>
+          </form>
+          <div id="ownerCaseSummary" class="ownerCaseSummary" aria-live="polite">
+            <span><b>0</b> CASES</span>
+            <span><b>0</b> SHORTLIST</span>
+            <span>OWNER TOKEN REQUIRED</span>
+          </div>
+
+          <div class="ownerCaseWorkspace">
+            <form id="ownerCaseForm" class="ownerCaseForm" autocomplete="off">
+              <header><small>CASE NOTE</small><b>Add Development Opinion</b></header>
+              <div class="ownerCaseGrid">
+                <label>Linked Project
+                  <select id="ownerCaseProject">
+                    <option value="">No linked market project</option>
+                  </select>
+                </label>
+                <label>Project Name<input id="ownerCaseProjectName" required maxlength="160" placeholder="Queens Waterfront" /></label>
+                <label>Area<input id="ownerCaseArea" maxlength="120" placeholder="Bayan Lepas" /></label>
+                <label>State<input id="ownerCaseState" maxlength="80" placeholder="Penang" /></label>
+                <label>Type<input id="ownerCaseType" maxlength="80" placeholder="Condo / serviced residence" /></label>
+                <label>Developer<input id="ownerCaseDeveloper" maxlength="120" placeholder="Developer name" /></label>
+                <label>Price Segment<input id="ownerCasePriceSegment" maxlength="120" placeholder="RM400k-RM550k mass affluent" /></label>
+                <label>Verdict
+                  <select id="ownerCaseVerdict">
+                    <option value="shortlist">Shortlist</option>
+                    <option value="strong_buy">Strong buy</option>
+                    <option value="watch">Watch</option>
+                    <option value="avoid">Avoid</option>
+                    <option value="unknown">Unknown</option>
+                  </select>
+                </label>
+                <label>Confidence
+                  <select id="ownerCaseConfidence">
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="low">Low</option>
+                  </select>
+                </label>
+                <label>Rating<input id="ownerCaseRating" type="number" min="0" max="100" inputmode="numeric" placeholder="75" /></label>
+                <label>Observed Date<input id="ownerCaseObservedAt" type="date" /></label>
+                <label>Tags<input id="ownerCaseTags" maxlength="300" placeholder="Penang, family, rental, freehold" /></label>
+                <label class="ownerCaseWide">Target Buyer<textarea id="ownerCaseTargetBuyer" maxlength="700" placeholder="Who will emotionally buy this later?"></textarea></label>
+                <label class="ownerCaseWide">Target Tenant<textarea id="ownerCaseTargetTenant" maxlength="700" placeholder="Who is likely to rent this?"></textarea></label>
+                <label class="ownerCaseWide">Strengths<textarea id="ownerCaseStrengths" maxlength="1200" placeholder="Layout, view, location, scarcity, own-stay emotion..."></textarea></label>
+                <label class="ownerCaseWide">Weaknesses<textarea id="ownerCaseWeaknesses" maxlength="1200" placeholder="Density, supply, accessibility, layout issue, pricing risk..."></textarea></label>
+                <label class="ownerCaseWide">Management / JMB<textarea id="ownerCaseManagement" maxlength="900" placeholder="Management attitude, arrears, upkeep, common area condition..."></textarea></label>
+                <label class="ownerCaseWide">Resident Profile<textarea id="ownerCaseResident" maxlength="900" placeholder="Owner-stay, tenants, families, students, short-stay risk..."></textarea></label>
+                <label class="ownerCaseWide">Supply Threat<textarea id="ownerCaseSupply" maxlength="900" placeholder="Nearby substitutes, future VP pressure, pricing competition..."></textarea></label>
+                <label class="ownerCaseWide">Rental Outlook<textarea id="ownerCaseRental" maxlength="900" placeholder="Tenant pool, rent level, vacancy speed, furnishing needs..."></textarea></label>
+                <label class="ownerCaseWide">Resale Outlook<textarea id="ownerCaseResale" maxlength="900" placeholder="Exit buyer depth, owner-stay emotion, bankability, liquidity..."></textarea></label>
+                <label class="ownerCaseWide">Founder Verdict<textarea id="ownerCaseOwnerVerdict" maxlength="1200" placeholder="Your final opinion on this development and what Apex should remember..."></textarea></label>
+                <label class="ownerCaseWide">Source Basis<input id="ownerCaseSourceBasis" maxlength="500" placeholder="Site visit, agent feedback, Brickz, auction, management office..." /></label>
+              </div>
+              <button class="ownerCasePrimary" type="submit">ADD CASE</button>
+            </form>
+
+            <section class="ownerCaseListWrap">
+              <header>
+                <span><small>CASE LIBRARY</small><b id="ownerCaseMetrics">0 case notes</b></span>
+                <button id="ownerCaseRefresh" type="button">REFRESH</button>
+              </header>
+              <div class="ownerCaseFilters">
+                <input id="ownerCaseFilter" placeholder="Filter project or area..." />
+                <select id="ownerCaseVerdictFilter">
+                  <option value="">All verdicts</option>
+                  <option value="strong_buy">Strong buy</option>
+                  <option value="shortlist">Shortlist</option>
+                  <option value="watch">Watch</option>
+                  <option value="avoid">Avoid</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </div>
+              <div id="ownerCaseList" class="ownerCaseList"></div>
+            </section>
+          </div>
+          <p id="ownerCaseMessage" class="ownerCaseMessage" role="status"></p>
         </section>
 
         <section id="ownerEvidencePanel" class="ownerEvidencePanel" aria-label="Owner evidence vault" hidden>

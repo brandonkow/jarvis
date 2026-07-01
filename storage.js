@@ -120,7 +120,7 @@ function serializableState(state) {
     properties: Array.isArray(state?.properties) ? state.properties : [],
     comps: Array.isArray(state?.comps) ? state.comps : [],
     brain: state?.brain && typeof state.brain === "object" ? state.brain : {},
-    knowledge: state?.knowledge && typeof state.knowledge === "object" ? state.knowledge : { version: 2, documents: [], chunks: [], retrievalEvents: [], projects: [], observations: [] },
+    knowledge: state?.knowledge && typeof state.knowledge === "object" ? state.knowledge : { version: 3, documents: [], chunks: [], retrievalEvents: [], projects: [], observations: [], developmentCases: [] },
     jarvis: state?.jarvis && typeof state.jarvis === "object" ? state.jarvis : { sessions: [] },
     auth: state?.auth && typeof state.auth === "object" ? state.auth : { version: 5, users: [], sessions: [], tokens: [] }
   };
