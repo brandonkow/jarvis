@@ -325,6 +325,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
 
   assert.match(styles, /\.conversation:has\(\.contextPanel\.expanded\) \.transcript[\s\S]*?display:\s*none;/, "Expanded cards must replace the transcript instead of overflowing beneath it.");
   assert.match(styles, /\.contextPanelSecondary:not\(\.expanded\)[\s\S]*?display:\s*none;/, "Secondary context cards must not crowd the collapsed default row.");
+  assert.match(styles, /\.contextReadiness \{[\s\S]*?display:\s*none;[\s\S]*?\.experienceLock \{[\s\S]*?display:\s*none;[\s\S]*?\.aiDisclosure \{[\s\S]*?display:\s*none;/, "Diagnostic context and status strips must not duplicate the visible Deal/Profile controls.");
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.contextReadiness \{[\s\S]*?display:\s*none;[\s\S]*?\.experienceLock \{[\s\S]*?display:\s*none;/, "Mobile should hide secondary status strips under the orb.");
   assert.match(styles, /\.contextHeader[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto;/, "Card reset controls must fit beside the expandable header.");
   assert.match(styles, /\.contextPanel\.expanded \.contextGrid[\s\S]*?overflow-y:\s*auto|\.contextGrid[\s\S]*?overflow-y:\s*auto/, "Expanded card fields must remain scrollable.");

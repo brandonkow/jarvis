@@ -581,7 +581,7 @@ button {
 }
 
 .contextReadiness {
-  display: grid;
+  display: none;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   width: min(620px, 100%);
   margin: -2px auto 0;
@@ -650,7 +650,7 @@ button {
 }
 
 .experienceLock {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
@@ -2833,6 +2833,7 @@ button {
 }
 
 .aiDisclosure {
+  display: none;
   width: 100%;
   margin: -3px 0 0;
   color: #527b85;
