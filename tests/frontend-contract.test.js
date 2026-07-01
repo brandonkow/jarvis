@@ -81,6 +81,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /data-coach-prompt/, "V5.2 next-move prompts must be clickable from chat.");
   assert.match(app, /function renderContextReadiness[\s\S]*?data-readiness-panel/, "V5.3 must render clickable Deal, Profile, and Guidance readiness chips.");
   assert.match(app, /focusFirstMissingContextField\(panelName\)/, "V5.3 readiness chips must open the right card and focus missing context.");
+  assert.match(app, /contextCoreFieldKeys[\s\S]*?function renderContextAssist[\s\S]*?data-context-field-mode/, "Expanded cards must default to guided essentials before exposing advanced fields.");
+  assert.match(app, /function markContextFieldDepth[\s\S]*?contextAdvanced[\s\S]*?applyContextFieldMode/, "Context fields must be classified into core and advanced groups at boot.");
   assert.match(app, /function dealScreeningPrompt[\s\S]*?Run Apex Deal Screening Mode[\s\S]*?Ask at most 3 next questions/, "The quick screening path must generate a short mentor-style prompt from current cards.");
   assert.match(app, /function runDealScreening[\s\S]*?submitQuestion\(dealScreeningPrompt\(\), \{ displayText: "Screen this deal using my current Deal\/Profile cards\." \}\)/, "The quick screening button must keep the displayed chat message clean.");
   assert.match(app, /function detectInputMode[\s\S]*?compare[\s\S]*?offer[\s\S]*?checklist/, "V5.4 must detect smart input intent before send.");
@@ -91,6 +93,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /responseFeedback:\s*responseFeedbackSummary\(\)/, "V5.6 must send recent answer feedback into future chat requests.");
   assert.match(server, /responseFeedback[\s\S]*?Recent answer feedback/, "V5.6 feedback must reach the server persona prompt.");
   assert.match(server, /feedbackPrefersShort[\s\S]*?feedbackPrefersWarmer[\s\S]*?feedbackPrefersEvidence/, "V5.6 server persona must translate feedback into answer-shape instructions.");
+  assert.match(server, /kind === "balanced"[\s\S]*?My read:[\s\S]*?Main risk:[\s\S]*?Check next:/, "Default balanced framework replies must use a compact mentor shape.");
+  assert.match(server, /For normal questions[\s\S]*?My read[\s\S]*?Missing proof[\s\S]*?under about 150 words/, "External-model instructions must keep ordinary answers short and human.");
   assert.match(app, /function syncResponseFeedback[\s\S]*?\/api\/memory\/answer-style/, "V5.7 must sync answer-style feedback for signed-in users.");
   assert.match(app, /answerStyle\.feedbackCount/, "V5.7 memory settings must surface account-level answer-style learning.");
   assert.match(server, /function normalizeAnswerStyle[\s\S]*?slice\(0, 40\)/, "V5.7 must keep account answer-style memory compact.");
@@ -293,6 +297,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.analysisProductExperience[\s\S]*?\.productExperienceCheck/, "The v5 product-experience report section needs styled compact cards.");
   assert.match(styles, /\.contextCoach[\s\S]*?data-coach-prompt|\.contextCoach[\s\S]*?\.contextCoach button/, "The v5.2 next-move coach needs styled prompt buttons.");
   assert.match(styles, /\.contextReadiness[\s\S]*?\.contextReadiness button/, "The v5.3 context-readiness strip needs styled clickable chips.");
+  assert.match(styles, /\.contextGrid\.contextCoreMode \.contextAdvanced[\s\S]*?display:\s*none;[\s\S]*?\.contextAssist/, "Expanded context cards must hide advanced fields behind a guided essentials layer.");
   assert.match(styles, /\.accountOpen \.contextReadiness[\s\S]*?display:\s*none;/, "Context readiness must hide when workspace panels replace chat.");
   assert.match(styles, /\.experienceLock[\s\S]*?\.experienceLock\.thin span/, "V5.10 experience lock needs compact state styling.");
   assert.match(styles, /\.accountOpen \.experienceLock[\s\S]*?\.shortlistOpen \.experienceLock[\s\S]*?display:\s*none;/, "V5.10 experience lock must hide when workspace panels replace chat.");

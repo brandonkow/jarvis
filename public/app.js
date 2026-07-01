@@ -224,6 +224,7 @@ const clientKey = "estatelab.jarvis.clientId";
 const dealContextKey = "estatelab.jarvis.dealCard";
 const profileContextKey = "estatelab.jarvis.financialProfile";
 const contextPanelKey = "estatelab.jarvis.contextPanels";
+const contextFieldModeKey = "apex.contextFieldMode.v1";
 const shortlistKey = "apex.shortlist.v1";
 const responseFeedbackKey = "apex.responseFeedback.v1";
 const ownerMarketTokenKey = "apex.ownerMarket.token";
@@ -255,6 +256,22 @@ let ownerCaseItems = [];
 let ownerCaseEditingId = "";
 let memorySettingsLoading = false;
 let pendingTrustAction = "";
+
+const contextCoreFieldKeys = {
+  deal: new Set([
+    "area", "projectName", "propertyType", "askingPrice", "conservativeFairValue",
+    "expectedRent", "estimatedInstallment", "maintenance", "ownStayAppeal",
+    "managementQuality", "exitBuyerPool", "nearbySupply", "mainConcern"
+  ]),
+  profile: new Set([
+    "monthlyIncome", "cashReserveMonths", "cashAvailable", "currentDebt",
+    "investmentGoal", "holdingPeriod", "financialConcern"
+  ]),
+  guidance: new Set([
+    "experienceLevel", "guidanceMode", "decisionIntent", "preferredOutput",
+    "confidenceComfort", "onboardingNotes"
+  ])
+};
 
 function clientId() {
   const existing = window.localStorage.getItem(clientKey);
@@ -4215,6 +4232,114 @@ function focusFirstMissingContextField(panelName) {
   field?.focus();
 }
 
+function contextFieldKey(field) {
+  return field.getAttribute("data-deal-field") || field.getAttribute("data-profile-field") || "";
+}
+
+function readContextFieldModes() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(contextFieldModeKey) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    window.localStorage.removeItem(contextFieldModeKey);
+    return {};
+  }
+}
+
+function writeContextFieldMode(panelName, mode) {
+  const modes = readContextFieldModes();
+  modes[panelName] = mode;
+  window.localStorage.setItem(contextFieldModeKey, JSON.stringify(modes));
+}
+
+function contextFieldMode(panelName) {
+  return readContextFieldModes()[panelName] === "all" ? "all" : "core";
+}
+
+function contextPanelHint(panelName, mode) {
+  if (panelName === "deal") {
+    return mode === "all"
+      ? "Advanced evidence fields are visible. Use them when you have proof, not guesses."
+      : "Start with area/project, price, rent, own-stay quality, management, exit pool, supply, and your main concern.";
+  }
+  if (panelName === "profile") {
+    return mode === "all"
+      ? "Advanced portfolio context is visible. Add it when the deal is moving beyond first screen."
+      : "Start with income, reserve, cash available, debt, goal, holding period, and financial concern.";
+  }
+  return "Set the answer style once. Apex will use it to sound more like the adviser you need.";
+}
+
+function fieldForContextKey(panelName, key) {
+  const selector = panelName === "deal" ? "data-deal-field" : "data-profile-field";
+  return contextFieldsForPanel(panelName).find((field) => field.getAttribute(selector) === key);
+}
+
+function renderContextAssist(panelName) {
+  const body = document.querySelector(`[data-context-body="${panelName}"]`);
+  if (!body) return;
+  const mode = contextFieldMode(panelName);
+  let assist = body.querySelector(`[data-context-assist="${panelName}"]`);
+  if (!assist) {
+    assist = document.createElement("section");
+    assist.className = "contextAssist";
+    assist.setAttribute("data-context-assist", panelName);
+    body.prepend(assist);
+  }
+  const readiness = contextPanelReadiness(panelName);
+  const missingGroups = readiness.groups
+    .filter((item) => !contextGroupValue(readiness.context, item.keys))
+    .filter((item) => mode === "all" || item.keys.some((key) => contextCoreFieldKeys[panelName]?.has(key)))
+    .slice(0, 3);
+  const missingChips = missingGroups.map((item) => {
+    const key = item.keys.find((candidate) => fieldForContextKey(panelName, candidate));
+    return key ? `<button type="button" data-context-focus-panel="${escapeHtml(panelName)}" data-context-focus-key="${escapeHtml(key)}">${escapeHtml(item.label)}</button>` : "";
+  }).filter(Boolean).join("");
+  const panelLabel = panelName === "deal" ? "Deal" : panelName === "profile" ? "Profile" : "Guidance";
+  assist.innerHTML = `
+    <header>
+      <span><small>${escapeHtml(panelLabel)} guide</small><b>${escapeHtml(mode === "all" ? "All fields visible" : "Essentials first")}</b></span>
+      <button type="button" data-context-field-mode="${escapeHtml(panelName)}">${escapeHtml(mode === "all" ? "CORE ONLY" : "SHOW ALL")}</button>
+    </header>
+    <p>${escapeHtml(contextPanelHint(panelName, mode))}</p>
+    ${missingChips ? `<div>${missingChips}</div>` : `<em>Enough context for a first pass. Add advanced proof only when the deal deserves deeper work.</em>`}
+  `;
+}
+
+function applyContextFieldMode(panelName) {
+  const body = document.querySelector(`[data-context-body="${panelName}"]`);
+  if (!body) return;
+  const mode = contextFieldMode(panelName);
+  body.classList.toggle("contextCoreMode", mode !== "all");
+  body.classList.toggle("contextAllMode", mode === "all");
+  renderContextAssist(panelName);
+}
+
+function setContextFieldMode(panelName, mode) {
+  writeContextFieldMode(panelName, mode);
+  applyContextFieldMode(panelName);
+  setSystemState("System ready", mode === "all" ? "Advanced fields visible." : "Showing only core fields.");
+}
+
+function markContextFieldDepth() {
+  for (const panelName of Object.keys(contextCoreFieldKeys)) {
+    for (const field of contextFieldsForPanel(panelName)) {
+      const key = contextFieldKey(field);
+      const label = field.closest("label");
+      if (!label) continue;
+      const isCore = contextCoreFieldKeys[panelName].has(key);
+      label.classList.toggle("contextCore", isCore);
+      label.classList.toggle("contextAdvanced", !isCore);
+      label.dataset.contextDepth = isCore ? "core" : "advanced";
+    }
+    applyContextFieldMode(panelName);
+  }
+}
+
+function refreshContextGuides() {
+  for (const panelName of Object.keys(contextCoreFieldKeys)) renderContextAssist(panelName);
+}
+
 function compactContextList(context = {}, entries = []) {
   return entries
     .map(([key, label]) => {
@@ -4310,6 +4435,7 @@ function saveContext(fields, attributeName, storageKey) {
   const context = collectContext(fields, attributeName);
   window.localStorage.setItem(storageKey, JSON.stringify(context));
   renderContextReadiness();
+  refreshContextGuides();
 }
 
 function restoreContext(fields, attributeName, storageKey) {
@@ -4340,6 +4466,7 @@ function resetContextCard(panelName) {
   }
   const label = panelName === "guidance" ? "Guidance" : isDeal ? "Deal" : "Profile";
   renderContextReadiness();
+  refreshContextGuides();
   setSystemState("System ready", `${label} details cleared.`);
 }
 
@@ -4369,6 +4496,7 @@ function setContextPanelState(toggle, expanded, persist = true) {
   body.hidden = !expanded;
   toggle.closest(".contextPanel")?.classList.toggle("expanded", expanded);
   if (action) action.textContent = expanded ? "CLOSE" : "OPEN";
+  if (expanded) renderContextAssist(panelName);
 
   if (persist) {
     const state = contextToggles.reduce((nextState, item) => {
@@ -5152,6 +5280,22 @@ contextReadiness?.addEventListener("click", (event) => {
   if (toggle) setContextPanelState(toggle, true);
   focusFirstMissingContextField(panelName);
 });
+document.addEventListener("click", (event) => {
+  const modeButton = event.target.closest("[data-context-field-mode]");
+  if (modeButton) {
+    const panelName = modeButton.getAttribute("data-context-field-mode");
+    setContextFieldMode(panelName, contextFieldMode(panelName) === "all" ? "core" : "all");
+    return;
+  }
+  const focusButton = event.target.closest("[data-context-focus-panel]");
+  if (focusButton) {
+    const panelName = focusButton.getAttribute("data-context-focus-panel");
+    const key = focusButton.getAttribute("data-context-focus-key");
+    const toggle = contextToggles.find((item) => item.getAttribute("data-context-toggle") === panelName);
+    if (toggle) setContextPanelState(toggle, true);
+    fieldForContextKey(panelName, key)?.focus();
+  }
+});
 authClose.addEventListener("click", closeAuthPanel);
 authModeToggle.addEventListener("click", () => setAuthMode(authMode === "login" ? "register" : "login"));
 authRecoveryToggle.addEventListener("click", () => showAuthRecovery(true));
@@ -5210,6 +5354,7 @@ for (const field of profileFields) {
 async function bootJarvis() {
   restoreContext(dealFields, "data-deal-field", dealContextKey);
   restoreContext(profileFields, "data-profile-field", profileContextKey);
+  markContextFieldDepth();
   renderTrustAcceptance();
   updateInputModeHint();
   renderContextReadiness();

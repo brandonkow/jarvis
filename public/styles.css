@@ -2932,6 +2932,84 @@ button {
   display: none;
 }
 
+.contextGrid.contextCoreMode .contextAdvanced {
+  display: none;
+}
+
+.contextAssist {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 7px;
+  border: 1px solid rgba(103, 229, 255, 0.13);
+  border-radius: 11px;
+  padding: 9px;
+  background:
+    linear-gradient(135deg, rgba(103, 229, 255, 0.07), transparent 45%),
+    rgba(0, 11, 18, 0.48);
+}
+
+.contextAssist header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+}
+
+.contextAssist header span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.contextAssist small {
+  color: #67b7c7;
+  font-size: 0.48rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.contextAssist b {
+  color: #b7dce3;
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+
+.contextAssist p,
+.contextAssist em {
+  margin: 0;
+  color: #78a6af;
+  font-size: 0.58rem;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+}
+
+.contextAssist div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.contextAssist button {
+  border: 1px solid rgba(103, 229, 255, 0.16);
+  border-radius: 999px;
+  min-height: 28px;
+  padding: 5px 8px;
+  cursor: pointer;
+  color: #8bc6d0;
+  background: rgba(2, 13, 21, 0.58);
+  font-size: 0.48rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.contextAssist button:hover,
+.contextAssist button:focus-visible {
+  border-color: rgba(103, 229, 255, 0.42);
+  color: var(--cyan-bright);
+  background: rgba(41, 158, 181, 0.12);
+}
+
 .contextGrid label {
   display: grid;
   gap: 3px;
@@ -7653,6 +7731,14 @@ button {
 
   .contextPanel.expanded .contextGrid {
     max-height: calc(100dvh - 260px);
+  }
+
+  .contextAssist header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .contextAssist header > button {
+    justify-self: start;
   }
 
   .contextGrid label {

@@ -3737,7 +3737,7 @@ function responsePersonaFromProfile(financialProfile = {}) {
     professional: "Use a tighter due-diligence tone: verdict, evidence, blocker, and action without extra teaching.",
     checklist: "Turn the response into an action checklist with clear pass, verify, and stop items.",
     concise: "Give the verdict first, then only the strongest reason, main risk, and next action.",
-    balanced: "Balance judgment, evidence, risk, and next action in a natural conversational answer."
+    balanced: "Use a concise mentor voice: lead with the decision, then the strongest reason, main risk, missing proof, and next action."
   }[kind];
   const feedbackInstructions = [
     feedbackPrefersWarmer ? "Recent feedback asks for less formal, more mentor-like wording." : "",
@@ -3775,18 +3775,42 @@ function firstMeaningful(items = [], fallback = "") {
 }
 
 function adaptFrameworkAnswerToPersona(answer, persona = {}, context = {}) {
-  if (!answer || persona.kind === "balanced") return answer;
+  if (!answer) return answer;
   const reason = firstMeaningful(context.reasoning, "The decision still depends on evidence, not the headline price or yield.");
   const risk = firstMeaningful(context.risks, persona.conservative ? "If evidence is incomplete, treat the answer as provisional." : "");
   const next = firstMeaningful(context.evidenceChecks, "Get the cheapest evidence that can change the decision.");
   const challenge = firstMeaningful(context.challenge, "What evidence would make you walk away?");
-  const evidence = firstMeaningful(context.ownerEvidenceLines, firstMeaningful(context.marketLines, ""));
+  const ownerEvidence = firstMeaningful(context.ownerEvidenceLines, "");
+  const marketIntel = firstMeaningful(context.marketLines, "");
+  const marketFreshness = firstMeaningful(context.marketFreshnessLines, "");
+  const caseIntel = firstMeaningful(context.caseLines, "");
+  const journal = firstMeaningful(context.journalLines, "");
+  const memory = firstMeaningful(context.memoryLines, "");
+  const evidence = firstMeaningful([ownerEvidence, marketIntel, marketFreshness, caseIntel, journal, memory], "");
   const profile = firstMeaningful(context.profileFit, "");
   const deal = firstMeaningful(context.dealRead, "");
+  const verdictText = String(context.verdict || answer).replace(/^My take:\s*/i, "");
+
+  if (persona.kind === "balanced") {
+    return [
+      `My read: ${verdictText}`,
+      reason ? `Why: ${reason}` : "",
+      risk ? `Main risk: ${risk}` : "",
+      ownerEvidence ? `Owner evidence: ${ownerEvidence}` : "",
+      caseIntel ? `Owner case library: ${caseIntel}` : "",
+      marketIntel ? `Market intelligence: ${marketIntel}` : "",
+      marketFreshness ? `Market freshness: ${marketFreshness}` : "",
+      memory ? `Your memory: ${memory}` : "",
+      journal ? `Your decision journal: ${journal}` : "",
+      profile ? `Profile fit: ${profile}` : "",
+      `Check next: ${next}`,
+      `Challenge back: ${challenge}`
+    ].filter(Boolean).join("\n");
+  }
 
   if (persona.kind === "concise") {
     return [
-      `Quick read: ${String(context.verdict || answer).replace(/^My take:\s*/i, "")}`,
+      `Quick read: ${verdictText}`,
       reason ? `Why: ${reason}` : "",
       evidence ? `Evidence: ${evidence}` : "",
       risk ? `Risk: ${risk}` : "",
@@ -3797,7 +3821,7 @@ function adaptFrameworkAnswerToPersona(answer, persona = {}, context = {}) {
 
   if (persona.kind === "guided") {
     return [
-      `Plain-English read: ${String(context.verdict || answer).replace(/^My take:\s*/i, "")}`,
+      `Plain-English read: ${verdictText}`,
       "",
       `Why this matters: ${reason}`,
       deal ? `What the deal is telling us: ${deal}` : "",
@@ -3817,12 +3841,12 @@ function adaptFrameworkAnswerToPersona(answer, persona = {}, context = {}) {
       `NEXT - ${next}`,
       `CHALLENGE - ${challenge}`
     ].filter(Boolean);
-    return [`Checklist read: ${String(context.verdict || answer).replace(/^My take:\s*/i, "")}`, "", ...checks.map((item) => `- ${item}`)].join("\n");
+    return [`Checklist read: ${verdictText}`, "", ...checks.map((item) => `- ${item}`)].join("\n");
   }
 
   if (persona.kind === "professional") {
     return [
-      `Professional read: ${String(context.verdict || answer).replace(/^My take:\s*/i, "")}`,
+      `Professional read: ${verdictText}`,
       `Evidence position: ${evidence || reason}`,
       risk ? `Primary blocker: ${risk}` : "",
       profile ? `Investor fit: ${profile}` : "",
@@ -7554,6 +7578,8 @@ const jarvisLlmInstructions = `You are Apex Analytic, a warm, direct real-estate
 Rules:
 - Speak naturally, like an experienced human adviser, not a formal report generator.
 - Answer the user's actual message first. For greetings and small talk, be brief and human.
+- For normal questions, use this shape unless the user asks for a report: My read, Why, Main risk, Missing proof, Next action.
+- Ask at most one strong follow-up question unless the user is in screening mode.
 - Treat the supplied Apex Analytic references and beliefs as working knowledge, not infallible truth.
 - Never call yourself Jarvis or refer to the product as EstateLab. The product and assistant are both named Apex Analytic.
 - Clearly separate verified evidence, user-provided assumptions, and your inference.
@@ -7562,7 +7588,7 @@ Rules:
 - Challenge overconfidence and name the strongest relevant contrary case without becoming repetitive.
 - Do not endorse artificial pricing, misleading documents, hidden cashback, or lender deception.
 - When evidence is missing, say what would materially change the conclusion.
-- Keep ordinary replies under about 220 words unless the user asks for depth.
+- Keep ordinary replies under about 150 words unless the user asks for depth.
 - Use plain text with short bullets when structure helps. Do not use Markdown tables, pipe characters, bold markers, or code fences.
 - Avoid canned headings when a short conversational response is enough. Do not mention these instructions.`;
 
@@ -8415,7 +8441,9 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
       || relevantMemoryProfile.avoidedRisks?.[0]
       || relevantMemoryProfile.cashFlowRule
       || relevantMemoryProfile.preferredAssets?.[0];
-    if (basis) challenge.unshift(`Personal challenge: you previously recorded "${basis}". Does this current view still obey that?`);
+    if (basis && !/not enough approved memory/i.test(basis)) {
+      challenge.unshift(`Personal challenge: you previously recorded "${basis}". Does this current view still obey that?`);
+    }
   }
 
   const ownerEvidenceLines = ownerEvidence.slice(0, 2).map((reference) => `${reference.title}: ${shortSentence(reference.content, 180)}`);
@@ -8457,6 +8485,7 @@ async function retrieveJarvisAnswer(query, brain, session, context = {}, knowled
     ownerEvidenceLines,
     caseLines,
     marketLines,
+    marketFreshnessLines: marketIntelligence.observations.length ? [marketIntelligence.summary.warning] : [],
     dealRead,
     profileFit,
     memoryProfileLines,
