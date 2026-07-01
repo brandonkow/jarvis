@@ -147,12 +147,24 @@ export class JsonStateStore {
   }
 
   async read() {
-    return JSON.parse(await readFile(this.filePath, "utf8"));
+    const parsed = JSON.parse(await readFile(this.filePath, "utf8"));
+    return { ...parsed, _storageRevision: Number(parsed._storageRevision || 0) };
   }
 
   async write(state) {
-    const payload = `${JSON.stringify(serializableState(state), null, 2)}\n`;
-    this.writeQueue = this.writeQueue.catch(() => {}).then(() => writeFile(this.filePath, payload));
+    this.writeQueue = this.writeQueue.catch(() => {}).then(async () => {
+      let currentRevision = 0;
+      try {
+        const existing = JSON.parse(await readFile(this.filePath, "utf8"));
+        currentRevision = Number(existing._storageRevision || 0);
+      } catch {
+        currentRevision = 0;
+      }
+      const expectedRevision = Number(state?._storageRevision ?? currentRevision);
+      if (currentRevision !== expectedRevision) throw new StorageConflictError();
+      const payload = `${JSON.stringify({ ...serializableState(state), _storageRevision: currentRevision + 1 }, null, 2)}\n`;
+      await writeFile(this.filePath, payload);
+    });
     return this.writeQueue;
   }
 

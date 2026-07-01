@@ -22,6 +22,25 @@ const DATABASE_URL = String(globalThis.process?.env?.DATABASE_URL || "").trim();
 const OBJECT_DIR = path.resolve(globalThis.process?.env?.ESTATELAB_OBJECT_DIR || path.join(DATA_DIR, "objects"));
 
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8" };
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "media-src 'self' blob: data:",
+    "connect-src 'self'",
+    "font-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self'"
+  ].join("; ")
+};
 const OWNER_TOKEN = String(globalThis.process?.env?.ESTATELAB_OWNER_TOKEN || "");
 const RAW_OPENAI_API_KEY = String(globalThis.process?.env?.OPENAI_API_KEY || "").trim();
 const OPENROUTER_API_KEY = String(globalThis.process?.env?.OPENROUTER_API_KEY || "").trim();
@@ -43,7 +62,8 @@ const OPENAI_TIMEOUT_MS = Math.max(5000, Number(globalThis.process?.env?.OPENAI_
 const EMAIL_WEBHOOK_URL = String(globalThis.process?.env?.ESTATELAB_EMAIL_WEBHOOK_URL || "").trim();
 const EMAIL_WEBHOOK_SECRET = String(globalThis.process?.env?.ESTATELAB_EMAIL_WEBHOOK_SECRET || "").trim();
 const REQUIRE_EMAIL_VERIFICATION = String(globalThis.process?.env?.ESTATELAB_REQUIRE_EMAIL_VERIFICATION || "false").toLowerCase() === "true";
-const AUTH_DEBUG_TOKENS = String(globalThis.process?.env?.ESTATELAB_AUTH_DEBUG_TOKENS || "false").toLowerCase() === "true";
+const AUTH_DEBUG_TOKENS = String(globalThis.process?.env?.ESTATELAB_AUTH_DEBUG_TOKENS || "false").toLowerCase() === "true"
+  && String(globalThis.process?.env?.NODE_ENV || "").toLowerCase() !== "production";
 const AUTH_COOKIE = "estatelab_session";
 const AUTH_SESSION_DAYS = Math.max(1, Number(globalThis.process?.env?.ESTATELAB_AUTH_SESSION_DAYS || 30));
 const BILLING_ENFORCEMENT = String(globalThis.process?.env?.APEX_BILLING_ENFORCEMENT || "false").toLowerCase() === "true";
@@ -54,6 +74,7 @@ const PRO_PRICE_RM = Math.max(1, Number(globalThis.process?.env?.APEX_PRO_PRICE_
 const ADVISOR_PRICE_RM = Math.max(1, Number(globalThis.process?.env?.APEX_ADVISOR_PRICE_RM || 199));
 const AUTH_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const AUTH_ATTEMPT_LIMIT = 10;
+const TRUSTED_PROXY_HOPS = Math.max(1, Number(globalThis.process?.env?.ESTATELAB_TRUSTED_PROXY_HOPS || 1));
 const MAX_JSON_BODY_BYTES = 8 * 1024 * 1024;
 const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
 const DEFAULT_SESSION_TITLE = "New Apex Session";
@@ -1953,8 +1974,17 @@ function claimJarvisSession(session, actor, clientId) {
 }
 
 function authRateKey(req) {
-  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-  return forwarded || String(req.socket?.remoteAddress || "unknown");
+  const chain = String(req.headers["x-forwarded-for"] || "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (chain.length) {
+    // Trust only the hop(s) our own proxy appends; everything to the left is
+    // client-controlled, so count from the right to prevent X-Forwarded-For spoofing.
+    const index = Math.max(0, chain.length - TRUSTED_PROXY_HOPS);
+    return chain[index] || chain[chain.length - 1];
+  }
+  return String(req.socket?.remoteAddress || "unknown");
 }
 
 function allowAuthAttempt(req) {
@@ -8573,7 +8603,7 @@ async function readBody(req) {
 }
 
 function send(res, status, payload, headers = jsonHeaders) {
-  res.writeHead(status, headers);
+  res.writeHead(status, { ...SECURITY_HEADERS, ...headers });
   if (Buffer.isBuffer(payload)) return res.end(payload);
   res.end(typeof payload === "string" ? payload : JSON.stringify(payload));
 }
@@ -8614,17 +8644,23 @@ function isPublicApiRoute(method, pathname) {
   );
 }
 
+function constantTimeEqual(a, b) {
+  const left = Buffer.from(String(a ?? ""));
+  const right = Buffer.from(String(b ?? ""));
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+
 function isOwnerRequest(req) {
   const tokenHeader = req.headers["x-estatelab-owner-token"];
   const token = Array.isArray(tokenHeader) ? tokenHeader[0] : tokenHeader;
-  return Boolean(OWNER_TOKEN && token && token === OWNER_TOKEN);
+  return Boolean(OWNER_TOKEN && token && constantTimeEqual(token, OWNER_TOKEN));
 }
 
 async function serveStatic(req, res) {
   const rawPath = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
   const safePath = rawPath === "/" ? "/index.html" : rawPath;
   const filePath = path.normalize(path.join(PUBLIC_DIR, safePath));
-  if (!filePath.startsWith(PUBLIC_DIR)) return send(res, 403, "Forbidden", { "Content-Type": "text/plain" });
+  if (filePath !== PUBLIC_DIR && !filePath.startsWith(PUBLIC_DIR + path.sep)) return send(res, 403, "Forbidden", { "Content-Type": "text/plain" });
   try {
     const content = await readFile(filePath);
     send(res, 200, content, { "Content-Type": mimeTypes[path.extname(filePath)] || "application/octet-stream" });

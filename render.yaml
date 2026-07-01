@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: NODE_ENV
+        value: production
       - key: ESTATELAB_DATA_DIR
         value: ./data
       - key: ESTATELAB_RAG_PATH
