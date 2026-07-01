@@ -4484,6 +4484,202 @@ button {
   padding-top: 5px;
 }
 
+.analysisFinalCommand {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  border: 1px solid rgba(123, 255, 213, 0.16);
+  border-left: 2px solid rgba(123, 255, 213, 0.68);
+  border-radius: 8px;
+  padding: 9px;
+  background: linear-gradient(135deg, rgba(123, 255, 213, 0.07), transparent 48%), rgba(0, 13, 18, 0.46);
+  overflow-wrap: anywhere;
+}
+
+.analysisFinalCommand.approve {
+  border-left-color: #7bdca9;
+}
+
+.analysisFinalCommand.shortlist,
+.analysisFinalCommand.investigate {
+  border-left-color: #d0ad69;
+}
+
+.analysisFinalCommand.pause,
+.analysisFinalCommand.reject {
+  border-left-color: #e68e8e;
+}
+
+.analysisFinalCommand header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.analysisFinalCommand header span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.analysisFinalCommand small {
+  color: #75d4c8;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.analysisFinalCommand header b {
+  color: #e2fffb;
+  font-size: 0.69rem;
+  font-weight: 500;
+}
+
+.analysisFinalCommand header em {
+  border: 1px solid rgba(123, 255, 213, 0.2);
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #a8f3e6;
+  font-size: 0.46rem;
+  font-style: normal;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.finalCommandDecision,
+.finalCommandMeta span,
+.finalCommandContradictions,
+.finalCommandLane,
+.finalCommandQueue {
+  border: 1px solid rgba(123, 255, 213, 0.1);
+  border-radius: 8px;
+  padding: 7px;
+  background: rgba(0, 11, 15, 0.3);
+}
+
+.finalCommandDecision {
+  display: grid;
+  gap: 4px;
+}
+
+.finalCommandDecision strong {
+  color: #cfffee;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.finalCommandDecision p,
+.finalCommandContradictions p {
+  margin: 0;
+  color: #8fbfc0;
+  font-size: 0.57rem;
+  line-height: 1.45;
+}
+
+.finalCommandMeta,
+.finalCommandLanes {
+  display: grid;
+  gap: 6px;
+}
+
+.finalCommandMeta {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.finalCommandMeta span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.finalCommandMeta b,
+.finalCommandLane b,
+.finalCommandQueue b {
+  color: #b4dfdc;
+  font-size: 0.59rem;
+  font-weight: 500;
+}
+
+.finalCommandContradictions,
+.finalCommandQueue {
+  display: grid;
+  gap: 5px;
+}
+
+.finalCommandContradictions h3,
+.finalCommandQueue h3 {
+  margin: 0;
+  color: #75d4c8;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+}
+
+.finalCommandLanes {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.finalCommandLane {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+}
+
+.finalCommandLane i {
+  align-self: start;
+  border: 1px solid rgba(123, 255, 213, 0.18);
+  border-radius: 999px;
+  padding: 3px 6px;
+  color: #9cc6c1;
+  font-size: 0.42rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.finalCommandLane.clear i { color: #7bdca9; border-color: rgba(112, 255, 191, 0.26); }
+.finalCommandLane.watch i,
+.finalCommandLane.missing i,
+.finalCommandLane.action i { color: #d7b970; border-color: rgba(255, 210, 116, 0.26); }
+.finalCommandLane.risk i { color: #ef9999; border-color: rgba(255, 126, 126, 0.3); }
+
+.finalCommandLane span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.finalCommandLane b small {
+  color: #78a9a6;
+  font-size: 0.46rem;
+  letter-spacing: 0.08em;
+}
+
+.finalCommandLane span > small,
+.finalCommandLane em,
+.finalCommandQueue span {
+  color: #6d9998;
+  font-size: 0.49rem;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.finalCommandLane em {
+  color: #8ac4bd;
+}
+
+.finalCommandQueue p {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.38fr) minmax(0, 1fr);
+  gap: 7px;
+  margin: 0;
+  border-top: 1px solid rgba(123, 255, 213, 0.08);
+  padding-top: 5px;
+}
+
 .analysisMarketPulse {
   display: grid;
   gap: 7px;
@@ -7010,6 +7206,9 @@ button {
   .portfolioCommandMeta,
   .portfolioCapitalMap,
   .portfolioCommandLanes,
+  .finalCommandMeta,
+  .finalCommandLanes,
+  .finalCommandQueue p,
   .executionOffer,
   .executionActions,
   .shortlistList {
@@ -7043,6 +7242,7 @@ button {
   .analysisDevelopmentStack header,
   .analysisDocumentStack header,
   .analysisPortfolioCommand header,
+  .analysisFinalCommand header,
   .analysisMarketPulse li {
     align-items: flex-start;
   }
@@ -7050,6 +7250,7 @@ button {
   .analysisDevelopmentStack header,
   .analysisDocumentStack header,
   .analysisPortfolioCommand header,
+  .analysisFinalCommand header,
   .analysisDevelopmentProfile header {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -7057,6 +7258,7 @@ button {
   .analysisDevelopmentStack header em,
   .analysisDocumentStack header em,
   .analysisPortfolioCommand header em,
+  .analysisFinalCommand header em,
   .analysisDevelopmentProfile header em {
     justify-self: start;
   }
@@ -7064,13 +7266,16 @@ button {
   .analysisDevelopmentStack header b,
   .analysisDocumentStack header b,
   .analysisPortfolioCommand header b,
+  .analysisFinalCommand header b,
   .developmentStackMeta b,
   .documentStackMeta b,
   .portfolioCommandMeta b,
   .portfolioCapitalMap b,
+  .finalCommandMeta b,
   .developmentStackLane b,
   .documentStackLane b,
   .portfolioCommandLane b,
+  .finalCommandLane b,
   .analysisDevelopmentProfile header b,
   .developmentIdentity b,
   .developmentProfileSignal b {
@@ -7088,6 +7293,11 @@ button {
   .portfolioCommandLane span > small,
   .portfolioCommandLane em,
   .portfolioCommandQueue span,
+  .finalCommandDecision p,
+  .finalCommandContradictions p,
+  .finalCommandLane span > small,
+  .finalCommandLane em,
+  .finalCommandQueue span,
   .analysisDevelopmentProfile p,
   .developmentProfileSignal small,
   .developmentProfileSignal em {
@@ -7372,7 +7582,8 @@ button {
   body.printMode .analysisDevelopmentProfile,
   body.printMode .analysisDevelopmentStack,
   body.printMode .analysisDocumentStack,
-  body.printMode .analysisPortfolioCommand {
+  body.printMode .analysisPortfolioCommand,
+  body.printMode .analysisFinalCommand {
     border-color: #d7e4e8;
     border-left-color: #2b8fa3;
     background: #f8fcfd;
@@ -7392,7 +7603,12 @@ button {
   body.printMode .portfolioCommandMeta span,
   body.printMode .portfolioCapitalMap span,
   body.printMode .portfolioCommandLane,
-  body.printMode .portfolioCommandQueue {
+  body.printMode .portfolioCommandQueue,
+  body.printMode .finalCommandDecision,
+  body.printMode .finalCommandMeta span,
+  body.printMode .finalCommandContradictions,
+  body.printMode .finalCommandLane,
+  body.printMode .finalCommandQueue {
     border-color: #d6e3e7;
     background: #fff;
   }
@@ -7439,6 +7655,17 @@ button {
   body.printMode .portfolioCommandLane em,
   body.printMode .portfolioCommandQueue b,
   body.printMode .portfolioCommandQueue span,
+  body.printMode .analysisFinalCommand header b,
+  body.printMode .finalCommandDecision strong,
+  body.printMode .finalCommandDecision p,
+  body.printMode .finalCommandMeta b,
+  body.printMode .finalCommandContradictions b,
+  body.printMode .finalCommandContradictions p,
+  body.printMode .finalCommandLane b,
+  body.printMode .finalCommandLane span > small,
+  body.printMode .finalCommandLane em,
+  body.printMode .finalCommandQueue b,
+  body.printMode .finalCommandQueue span,
   body.printMode .analysisReadiness p,
   body.printMode .analysisReadiness li,
   body.printMode .evidenceItem b,

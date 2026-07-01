@@ -139,7 +139,10 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(server, /function buildPortfolioCommand[\s\S]*?V9\.1[\s\S]*?V9\.10/, "V9.1-V9.10 must be derived by the backend portfolio command engine.");
   assert.match(server, /analysis\.portfolioCommand = buildPortfolioCommand\(analysis\)/, "Formal deal reports must attach the V9 portfolio command stack.");
   assert.match(server, /portfolioCommand: normalizeReportPortfolioCommand\(analysis\.portfolioCommand\)/, "Saved private reports must preserve the V9 stack.");
-  assert.match(server, /engineVersion:\s*"Apex v9\.10"/, "New formal analyses must expose the V9.10 engine label.");
+  assert.match(server, /function buildFinalCommand[\s\S]*?V10\.1[\s\S]*?V10\.10/, "V10.1-V10.10 must be derived by the backend final command engine.");
+  assert.match(server, /analysis\.finalCommand = buildFinalCommand\(analysis\)/, "Formal deal reports must attach the V10 final command stack.");
+  assert.match(server, /finalCommand: normalizeReportFinalCommand\(analysis\.finalCommand\)/, "Saved private reports must preserve the V10 stack.");
+  assert.match(server, /engineVersion:\s*"Apex v10\.10"/, "New formal analyses must expose the V10.10 engine label.");
   assert.match(app, /function developmentIntelligenceMarkup[\s\S]*?V7\.1 - V7\.10 DEVELOPMENT INTELLIGENCE[\s\S]*?developmentActionQueue/, "V7.1-V7.10 must render as one compact report stack.");
   assert.match(app, /function developmentIntelligenceText[\s\S]*?V7 development intelligence stack/, "Copied reports must include the V7.1-V7.10 stack.");
   assert.match(app, /developmentProfileMarkup\(analysis\)[\s\S]*?developmentIntelligenceMarkup\(analysis\.developmentIntelligence\)[\s\S]*?<div class="analysisOverview">/, "On-screen reports must show the V7 stack before detailed scorecard sections.");
@@ -150,7 +153,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /developmentIntelligenceMarkup\(analysis\.developmentIntelligence\)[\s\S]*?documentIntelligenceMarkup\(analysis\.documentIntelligence\)[\s\S]*?<div class="analysisOverview">/, "On-screen reports must show the V8 stack before detailed scorecard sections.");
   assert.match(app, /function portfolioCommandMarkup[\s\S]*?V9\.1 - V9\.10 PORTFOLIO COMMAND[\s\S]*?portfolioCommandQueue/, "V9.1-V9.10 must render as one compact report stack.");
   assert.match(app, /function portfolioCommandText[\s\S]*?V9 portfolio command stack/, "Copied reports must include the V9.1-V9.10 stack.");
-  assert.match(app, /documentIntelligenceMarkup\(analysis\.documentIntelligence\)[\s\S]*?portfolioCommandMarkup\(analysis\.portfolioCommand\)[\s\S]*?<div class="analysisOverview">/, "On-screen reports must show the V9 stack before detailed scorecard sections.");
+  assert.match(app, /documentIntelligenceMarkup\(analysis\.documentIntelligence\)[\s\S]*?portfolioCommandMarkup\(analysis\.portfolioCommand\)[\s\S]*?finalCommandMarkup\(analysis\.finalCommand\)[\s\S]*?<div class="analysisOverview">/, "On-screen reports must show the V9 and V10 stacks before detailed scorecard sections.");
+  assert.match(app, /function finalCommandMarkup[\s\S]*?V10\.1 - V10\.10 FINAL COMMAND[\s\S]*?finalCommandQueue/, "V10.1-V10.10 must render as one compact final command stack.");
+  assert.match(app, /function finalCommandText[\s\S]*?V10 final command stack/, "Copied reports must include the V10.1-V10.10 stack.");
   assert.match(app, /billingGuardrail\.textContent[\s\S]*?never changes scores, hard stops, or recommendations/, "Account billing must state that payment cannot change decisions.");
   assert.match(app, /\/api\/memory\/settings/, "Memory collection and reasoning must be controlled through explicit settings.");
   assert.match(app, /captureEnabled:\s*memoryCaptureEnabled\.checked/, "Memory capture must be opt-in from the UI.");
@@ -207,6 +212,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /developmentIntelligence: analysis\.developmentIntelligence/, "Shortlisted deals must preserve the V7 development intelligence stack.");
   assert.match(app, /documentIntelligence: analysis\.documentIntelligence/, "Shortlisted deals must preserve the V8 document intelligence stack.");
   assert.match(app, /portfolioCommand: analysis\.portfolioCommand/, "Shortlisted deals must preserve the V9 portfolio command stack.");
+  assert.match(app, /finalCommand: analysis\.finalCommand/, "Shortlisted deals must preserve the V10 final command stack.");
   assert.match(app, /marketIntelligence: analysis\.marketIntelligence/, "Shortlisted deals must preserve matched owner market intelligence for later comparison.");
   assert.match(app, /dealMemoryComparison: analysis\.dealMemoryComparison/, "Shortlisted deals must preserve V3.4 saved deal comparison.");
   assert.match(app, /beliefTracker: analysis\.beliefTracker/, "Shortlisted deals must preserve V3.5 belief tracking.");
@@ -283,6 +289,9 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.analysisPortfolioCommand[\s\S]*?\.portfolioCommandLanes[\s\S]*?\.portfolioCommandQueue/, "V9.1-V9.10 portfolio command stack needs compact lane and action queue styling.");
   assert.match(styles, /\.portfolioCommandMeta,[\s\S]*?\.portfolioCapitalMap,[\s\S]*?\.portfolioCommandLanes,[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);/, "V9.1-V9.10 stack must collapse cleanly on mobile.");
   assert.match(styles, /body\.printMode \.analysisPortfolioCommand[\s\S]*?body\.printMode \.portfolioCommandLane/, "V9.1-V9.10 stack must stay readable in print.");
+  assert.match(styles, /\.analysisFinalCommand[\s\S]*?\.finalCommandLanes[\s\S]*?\.finalCommandQueue/, "V10.1-V10.10 final command stack needs compact lane and action queue styling.");
+  assert.match(styles, /\.finalCommandMeta,[\s\S]*?\.finalCommandLanes,[\s\S]*?\.finalCommandQueue p,[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);/, "V10.1-V10.10 stack must collapse cleanly on mobile.");
+  assert.match(styles, /body\.printMode \.analysisFinalCommand[\s\S]*?body\.printMode \.finalCommandLane/, "V10.1-V10.10 stack must stay readable in print.");
   assert.match(styles, /\.inputModeHint[\s\S]*?\.commandBar\[data-input-mode="voice"\]/, "V5.4 smart input mode needs styled command-bar states.");
   assert.match(styles, /\.voiceMuted[\s\S]*?#soundToggle/, "V5.5 needs a visible muted-voice state.");
   assert.match(styles, /\.responseFeedback[\s\S]*?button\.active/, "V5.6 response feedback controls need compact active-state styling.");

@@ -510,10 +510,41 @@ function normalizeReportPortfolioCommand(section = {}) {
   };
 }
 
+function normalizeReportFinalCommand(section = {}) {
+  const safeStatus = (value, fallback = "investigate") => ["approve", "shortlist", "investigate", "pause", "reject", "clear", "watch", "risk", "missing", "action"].includes(value) ? value : fallback;
+  const lanes = Array.isArray(section.lanes) ? section.lanes.slice(0, 12).map((item) => ({
+    version: reportText(item?.version, 20),
+    label: reportText(item?.label, 160),
+    status: safeStatus(item?.status, "watch"),
+    score: Math.max(0, Math.min(100, Number(item?.score || 0))),
+    reading: reportText(item?.reading, 700),
+    action: reportText(item?.action, 500)
+  })).filter((item) => item.version && item.label) : [];
+  return {
+    version: reportText(section.version || "v10", 20),
+    status: safeStatus(section.status),
+    score: Math.max(0, Math.min(100, Number(section.score || 0))),
+    command: reportText(section.command, 120),
+    headline: reportText(section.headline, 240),
+    summary: reportText(section.summary, 900),
+    finalAnswer: reportText(section.finalAnswer, 900),
+    nextMove: reportText(section.nextMove, 500),
+    contradictionCount: Math.max(0, Number(section.contradictionCount || 0)),
+    contradictions: reportList(section.contradictions, 8),
+    lanes,
+    actionQueue: Array.isArray(section.actionQueue) ? section.actionQueue.slice(0, 8).map((item) => ({
+      version: reportText(item?.version, 20),
+      label: reportText(item?.label, 160),
+      status: safeStatus(item?.status, "watch"),
+      action: reportText(item?.action, 500)
+    })).filter((item) => item.version && item.label) : []
+  };
+}
+
 function normalizeReportAnalysis(analysis = {}) {
   const objectList = (items, limit, mapper) => Array.isArray(items) ? items.slice(0, limit).map(mapper) : [];
   return {
-    engineVersion: reportText(analysis.engineVersion || "Apex v9.10", 40),
+    engineVersion: reportText(analysis.engineVersion || "Apex v10.10", 40),
     reasoningMode: reportText(analysis.reasoningMode || "Framework only", 40),
     verdict: reportText(analysis.verdict, 40),
     summary: reportText(analysis.summary, 600),
@@ -895,6 +926,7 @@ function normalizeReportAnalysis(analysis = {}) {
     developmentIntelligence: normalizeReportDevelopmentIntelligence(analysis.developmentIntelligence),
     documentIntelligence: normalizeReportDocumentIntelligence(analysis.documentIntelligence),
     portfolioCommand: normalizeReportPortfolioCommand(analysis.portfolioCommand),
+    finalCommand: normalizeReportFinalCommand(analysis.finalCommand),
     marketIntelligence: normalizeReportMarketIntelligence(analysis.marketIntelligence),
     context: normalizeReportContext(analysis.context)
   };
@@ -2991,6 +3023,258 @@ function buildPortfolioCommand(analysis = {}) {
       .sort((left, right) => laneStatusScore(left.status) - laneStatusScore(right.status))
       .slice(0, 5)
       .map((lane) => ({ version: lane.version, label: lane.label, status: lane.status, action: lane.action }))
+  };
+}
+
+function finalCommandLane(version, label, status, reading, action) {
+  return {
+    version,
+    label,
+    status,
+    score: laneStatusScore(status),
+    reading,
+    action
+  };
+}
+
+function buildFinalCommand(analysis = {}) {
+  const hardStops = Array.isArray(analysis.hardStops) ? analysis.hardStops.filter(Boolean) : [];
+  const blockers = Array.isArray(analysis.recommendationBlockers) ? analysis.recommendationBlockers.filter(Boolean) : [];
+  const missingEvidence = Array.isArray(analysis.missingEvidence) ? analysis.missingEvidence.filter(Boolean) : [];
+  const nextActions = Array.isArray(analysis.nextActions) ? analysis.nextActions.filter(Boolean) : [];
+  const evidenceStatus = analysis.evidenceEngine?.status || "unknown";
+  const documentStatus = analysis.documentIntelligence?.status || "thin";
+  const developmentStatus = analysis.developmentIntelligence?.status || "thin";
+  const portfolioStatus = analysis.portfolioCommand?.status || "hold";
+  const sealStatus = analysis.decisionSeal?.status || "conditional";
+  const sourceMode = analysis.sourceTransparency?.mode || analysis.reasoningMode || "Framework only";
+  const contradictions = [];
+
+  if (analysis.verdict === "SHORTLIST" && hardStops.length) {
+    contradictions.push("The headline verdict is shortlist-level, but hard stops still exist.");
+  }
+  if (analysis.verdict === "SHORTLIST" && ["pause", "repair"].includes(portfolioStatus)) {
+    contradictions.push(`The property may be shortlisted, but V9 portfolio command says ${portfolioStatus}.`);
+  }
+  if ((analysis.averageScore || 0) >= 75 && blockers.length) {
+    contradictions.push("The score is healthy, but unresolved decision blockers remain.");
+  }
+  if (["proven", "strong"].includes(evidenceStatus) && documentStatus === "thin") {
+    contradictions.push("Framework evidence is strong, but owner document backing is still thin.");
+  }
+  if (analysis.confidence >= 80 && missingEvidence.length >= 4) {
+    contradictions.push("Confidence is high while several proof items are still missing.");
+  }
+  if (analysis.portfolioCommand?.status === "advance" && sealStatus === "blocked") {
+    contradictions.push("Portfolio command permits advancement, but the decision seal is blocked.");
+  }
+
+  const contradictionStatus = contradictions.length >= 3 ? "risk" : contradictions.length ? "watch" : "clear";
+  const hardStopStatus = hardStops.length ? "risk" : blockers.length ? "action" : "clear";
+  const evidenceLadderStatus = ["blocked", "weak"].includes(evidenceStatus) || ["risk", "thin"].includes(documentStatus)
+    ? "risk"
+    : missingEvidence.length >= 4
+      ? "action"
+      : ["proven", "strong"].includes(evidenceStatus) && ["proven", "partial"].includes(documentStatus)
+        ? "clear"
+        : "watch";
+  const marketProjectStatus = ["risk"].includes(developmentStatus) || analysis.marketPulse?.status === "risk"
+    ? "risk"
+    : ["tracked", "proven", "opportunity"].includes(developmentStatus) || analysis.marketPulse?.status === "opportunity"
+      ? "clear"
+      : "watch";
+  const portfolioLaneStatus = portfolioStatus === "pause"
+    ? "risk"
+    : portfolioStatus === "repair"
+      ? "action"
+      : portfolioStatus === "advance"
+        ? "clear"
+        : "watch";
+  const challengeStatus = ["hard"].includes(analysis.challengeMode?.level) || analysis.personalizedChallenge?.status === "hard"
+    ? "risk"
+    : ["challenge", "reminder"].includes(analysis.personalizedChallenge?.status) || analysis.challengeMode?.level === "missing"
+      ? "watch"
+      : "clear";
+  const handoffTasks = [
+    ...(analysis.dueDiligencePlan?.tasks || []),
+    ...(analysis.executionPlan?.actions || [])
+  ];
+  const professionalStatus = handoffTasks.some((item) => ["stop", "required"].includes(item?.status) || item?.priority === "high")
+    ? "action"
+    : handoffTasks.length
+      ? "watch"
+      : "missing";
+  const actionStatus = nextActions.length || (analysis.portfolioCommand?.actionQueue || []).length
+    ? "action"
+    : "clear";
+
+  const lanes = [
+    finalCommandLane(
+      "V10.1",
+      "Thesis integrity",
+      analysis.counterThesis && analysis.summary ? "clear" : "missing",
+      analysis.counterThesis
+        ? `Main thesis has a counter-thesis: ${analysis.counterThesis}`
+        : "The report needs a clear counter-thesis before Apex can act like an investment committee.",
+      "State the purchase thesis, exit buyer, holding period, rent assumption, and walk-away reason in one sentence before booking."
+    ),
+    finalCommandLane(
+      "V10.2",
+      "Cross-layer contradiction scan",
+      contradictionStatus,
+      contradictions.length
+        ? `${contradictions.length} contradiction${contradictions.length === 1 ? "" : "s"} found across verdict, evidence, document, and portfolio layers.`
+        : "No major contradiction was detected across the main Apex layers.",
+      "Resolve contradictions before treating the headline verdict as executable."
+    ),
+    finalCommandLane(
+      "V10.3",
+      "Hard-stop hierarchy",
+      hardStopStatus,
+      hardStops.length
+        ? `Hard stop count: ${hardStops.length}. The first hard stop is: ${hardStops[0]}`
+        : blockers.length
+          ? `No hard stop, but ${blockers.length} decision blocker${blockers.length === 1 ? "" : "s"} remain.`
+          : "No hard stop or decision blocker is currently active.",
+      "Hard stops override price, yield, confidence, and user excitement."
+    ),
+    finalCommandLane(
+      "V10.4",
+      "Evidence ladder",
+      evidenceLadderStatus,
+      `Framework evidence is ${evidenceStatus}; document intelligence is ${documentStatus}; missing proof count is ${missingEvidence.length}.`,
+      "Move from story to proof: completed transactions, achieved rent, bankability, legal/title, site/JMB, and owner documents."
+    ),
+    finalCommandLane(
+      "V10.5",
+      "Market and project confidence",
+      marketProjectStatus,
+      analysis.developmentIntelligence?.summary || analysis.marketPulse?.summary || "Market/project confidence is not fully tracked.",
+      "Confirm the project still has scarcity, management quality, buyer depth, and defense against newer substitutes."
+    ),
+    finalCommandLane(
+      "V10.6",
+      "Portfolio command fit",
+      portfolioLaneStatus,
+      analysis.portfolioCommand?.summary || "Portfolio command is not available.",
+      "Do not allocate capital unless reserve, DSR, holding power, concentration, and sequence are acceptable."
+    ),
+    finalCommandLane(
+      "V10.7",
+      "Human challenge mode",
+      challengeStatus,
+      analysis.personalizedChallenge?.message || analysis.challengeMode?.message || "No personalized emotional-risk challenge is active.",
+      "Challenge FOMO, greed, overconfidence, and the desire to prove a deal right after liking it."
+    ),
+    finalCommandLane(
+      "V10.8",
+      "Professional handoff",
+      professionalStatus,
+      handoffTasks.length
+        ? `${handoffTasks.length} professional or due-diligence task${handoffTasks.length === 1 ? "" : "s"} remain in the execution pack.`
+        : "Professional handoff tasks are not clearly mapped.",
+      "Assign the next evidence task to the right party: agent, banker, lawyer, management office, valuer, or owner."
+    ),
+    finalCommandLane(
+      "V10.9",
+      "Action compression",
+      actionStatus,
+      nextActions.length
+        ? `Apex has ${nextActions.length} next action${nextActions.length === 1 ? "" : "s"}; the first is: ${nextActions[0]}`
+        : "No extra next action is listed, so the final command becomes the main instruction.",
+      "Compress the report into one next move so the user does not drown in analysis."
+    ),
+    finalCommandLane(
+      "V10.10",
+      "Final command seal",
+      "watch",
+      "The final command seal follows the weakest V10 lane and cannot override hard stops.",
+      "Use this final seal as Apex's single investment-committee answer."
+    )
+  ];
+
+  const riskCount = lanes.filter((lane) => lane.status === "risk").length;
+  const actionCount = lanes.filter((lane) => lane.status === "action").length;
+  const missingCount = lanes.filter((lane) => lane.status === "missing").length;
+  const scoreWithoutSeal = clampScore(lanes.slice(0, -1).reduce((sum, lane) => sum + lane.score, 0) / Math.max(1, lanes.length - 1));
+  const finalStatus = hardStops.length || analysis.verdict === "REJECT"
+    ? "reject"
+    : riskCount >= 2 || portfolioStatus === "pause" || sealStatus === "blocked"
+      ? "pause"
+      : actionCount || missingCount >= 2 || blockers.length || evidenceLadderStatus === "risk"
+        ? "investigate"
+        : analysis.verdict === "SHORTLIST" && scoreWithoutSeal >= 78 && portfolioStatus === "advance" && contradictions.length === 0
+          ? "approve"
+          : analysis.verdict === "SHORTLIST"
+            ? "shortlist"
+            : "investigate";
+  const finalLaneStatus = {
+    approve: "clear",
+    shortlist: "watch",
+    investigate: "action",
+    pause: "risk",
+    reject: "risk"
+  }[finalStatus];
+  lanes[lanes.length - 1] = {
+    ...lanes[lanes.length - 1],
+    status: finalLaneStatus,
+    score: laneStatusScore(finalLaneStatus),
+    reading: finalStatus === "approve"
+      ? "The final seal allows controlled advancement, but only after professional execution and live proof stay consistent."
+      : finalStatus === "shortlist"
+        ? "The final seal supports shortlist status, not blind purchase. Clear the named proof items before booking."
+        : finalStatus === "investigate"
+          ? "The final seal requires investigation because one or more important lanes still need proof or repair."
+          : finalStatus === "pause"
+            ? "The final seal says pause. Capital, evidence, or contradiction risk is too high to proceed now."
+            : "The final seal rejects the deal because hard-stop or serious boundary risk is active."
+  };
+  const score = clampScore(lanes.reduce((sum, lane) => sum + lane.score, 0) / lanes.length);
+  const command = {
+    approve: "APPROVE WITH CONDITIONS",
+    shortlist: "SHORTLIST ONLY",
+    investigate: "INVESTIGATE FIRST",
+    pause: "PAUSE",
+    reject: "REJECT"
+  }[finalStatus];
+  const nextMove = finalStatus === "approve"
+    ? "Proceed only if live pricing, financing, legal status, site condition, and reserve runway remain unchanged."
+    : finalStatus === "shortlist"
+      ? "Keep it on the shortlist and clear the weakest proof item before any booking or offer."
+      : finalStatus === "investigate"
+        ? "Investigate the highest-risk V10 lane first; do not negotiate from excitement."
+        : finalStatus === "pause"
+          ? "Pause the deal until the risk-level V10 lane is fixed with evidence."
+          : "Walk away unless the hard-stop condition disappears and the deal is re-underwritten from zero.";
+  const headline = `${command}: ${analysis.context?.dealCard?.projectName || analysis.context?.dealCard?.area || "this deal"}`;
+  const summary = finalStatus === "approve"
+    ? "Apex v10 sees a controlled path forward, but this is still conditional on final professional checks."
+    : finalStatus === "shortlist"
+      ? "Apex v10 keeps the deal alive, but the answer is not buy yet; it is verify the weakest proof lane."
+      : finalStatus === "investigate"
+        ? "Apex v10 cannot give a clean go signal because the report still has proof, action, or contradiction work."
+        : finalStatus === "pause"
+          ? "Apex v10 tells the user to stop momentum because the risk stack is not investment-ready."
+          : "Apex v10 rejects the deal until the hard-stop issue is removed and the full framework is rerun.";
+  const actionQueue = lanes
+    .filter((lane) => lane.status !== "clear" && lane.version !== "V10.10")
+    .sort((left, right) => laneStatusScore(left.status) - laneStatusScore(right.status))
+    .slice(0, 5)
+    .map((lane) => ({ version: lane.version, label: lane.label, status: lane.status, action: lane.action }));
+  return {
+    version: "v10",
+    status: finalStatus,
+    score,
+    command,
+    headline,
+    summary,
+    finalAnswer: `${summary} ${nextMove}`,
+    nextMove,
+    contradictionCount: contradictions.length,
+    contradictions: contradictions.slice(0, 8),
+    sourceMode,
+    lanes,
+    actionQueue
   };
 }
 
@@ -6456,7 +6740,7 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   };
 
   return {
-    engineVersion: "Apex v9.10",
+    engineVersion: "Apex v10.10",
     reasoningMode: "Framework only",
     verdict,
     summary: verdictSummary,
@@ -6682,6 +6966,22 @@ function dealAnalysisText(analysis) {
     lines.push(...(analysis.portfolioCommand.lanes || []).map((item) => `- ${item.version} ${item.label}: ${item.status}, ${item.score}/100. ${item.reading} Action: ${item.action}`));
     if (analysis.portfolioCommand.actionQueue?.length) {
       lines.push("V9 action queue", ...analysis.portfolioCommand.actionQueue.map((item) => `- ${item.version} ${item.label}: ${item.action}`));
+    }
+  }
+  if (analysis.finalCommand?.summary) {
+    lines.push(
+      "",
+      "V10 final command stack",
+      `- ${analysis.finalCommand.command || "INVESTIGATE FIRST"} (${analysis.finalCommand.score || 0}/100): ${analysis.finalCommand.summary}`,
+      `- Next move: ${analysis.finalCommand.nextMove || "Clear the weakest V10 lane."}`,
+      `- Contradictions: ${analysis.finalCommand.contradictionCount || 0}`
+    );
+    if (analysis.finalCommand.contradictions?.length) {
+      lines.push(...analysis.finalCommand.contradictions.map((item) => `- Contradiction: ${item}`));
+    }
+    lines.push(...(analysis.finalCommand.lanes || []).map((item) => `- ${item.version} ${item.label}: ${item.status}, ${item.score}/100. ${item.reading} Action: ${item.action}`));
+    if (analysis.finalCommand.actionQueue?.length) {
+      lines.push("V10 action queue", ...analysis.finalCommand.actionQueue.map((item) => `- ${item.version} ${item.label}: ${item.action}`));
     }
   }
   if (analysis.holdExitPlan?.summary) {
@@ -8726,6 +9026,7 @@ async function router(req, res) {
     }
     analysis.reasoningMode = mode === "llm" ? "Framework + AI" : "Framework only";
     analysis.sourceTransparency = buildSourceTransparency({ mode, sources, analysis });
+    analysis.finalCommand = buildFinalCommand(analysis);
     const now = new Date().toISOString();
     session.messages.push({
       id: randomUUID(),

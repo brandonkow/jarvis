@@ -627,6 +627,23 @@ The V9 path asks whether a deal belongs in the user's portfolio sequence. A prop
 
 V9 must not turn an unsafe deal into an acceptable one. It only decides whether the investor should allocate capital now, hold for more proof, repair missing inputs, or pause. If V4 evidence, V6 trust, V8 document backing, or legal/financing checks fail, V9 should respect those limits.
 
+## v10.1 - v10.10 Final Command And Investment Committee Stack
+
+The V10 path is the final orchestration layer. It does not add another raw checklist. It compresses V1-V9 into one investment-committee answer: approve with conditions, shortlist only, investigate first, pause, or reject.
+
+- **v10.1 Thesis integrity**: Apex checks whether the deal has a clear thesis, counter-thesis, exit logic, holding period, and walk-away reason.
+- **v10.2 Cross-layer contradiction scan**: Apex flags conflict between verdict, score, hard stops, evidence, document backing, confidence, and portfolio command.
+- **v10.3 Hard-stop hierarchy**: Apex makes hard stops override price, yield, bank approval, confidence, and emotional attraction.
+- **v10.4 Evidence ladder**: Apex ranks framework proof, owner documents, completed transactions, achieved rent, bankability, legal/title, and site/JMB evidence.
+- **v10.5 Market and project confidence**: Apex checks whether V7 market/project intelligence supports the deal or exposes supply, management, or substitute risk.
+- **v10.6 Portfolio command fit**: Apex respects V9 capital allocation, reserve runway, DSR, holding power, concentration, and acquisition sequence.
+- **v10.7 Human challenge mode**: Apex challenges FOMO, greed, overconfidence, and the desire to rationalize a liked property.
+- **v10.8 Professional handoff**: Apex assigns unresolved work to agent, banker, lawyer, management office, valuer, or owner evidence.
+- **v10.9 Action compression**: Apex reduces the report into one practical next move so the user does not drown in analysis.
+- **v10.10 Final command seal**: Apex issues the final command and explains why it cannot override the weakest critical lane.
+
+V10 is the final v1-v10 build boundary. Future improvements should deepen data quality, automation, collaboration, or case-basis intelligence, but the core decision stack should remain stable unless real user outcomes prove that a rule is wrong.
+
 ## Four Decision Dimensions
 
 - **Property quality**: entry value, rentability, own-stay appeal, management, unit position, tenure, and buyer depth.

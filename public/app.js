@@ -1258,6 +1258,78 @@ function portfolioCommandText(section = {}) {
   return lines;
 }
 
+function finalCommandMarkup(section = {}) {
+  if (!section.summary) return "";
+  const lanes = Array.isArray(section.lanes) ? section.lanes : [];
+  const actions = Array.isArray(section.actionQueue) ? section.actionQueue : [];
+  const contradictions = Array.isArray(section.contradictions) ? section.contradictions : [];
+  return `
+    <section class="analysisFinalCommand ${escapeHtml(section.status || "investigate")}" aria-label="V10 final command stack">
+      <header>
+        <span><small>V10.1 - V10.10 FINAL COMMAND</small><b>${escapeHtml(section.headline || section.command || "Final command")}</b></span>
+        <em>${escapeHtml(section.score || 0)}/100</em>
+      </header>
+      <div class="finalCommandDecision">
+        <strong>${escapeHtml(section.command || "INVESTIGATE FIRST")}</strong>
+        <p>${escapeHtml(section.finalAnswer || section.summary)}</p>
+      </div>
+      <div class="finalCommandMeta">
+        <span><small>STATUS</small><b>${escapeHtml(section.status || "investigate")}</b></span>
+        <span><small>NEXT MOVE</small><b>${escapeHtml(section.nextMove || "Clear weakest lane")}</b></span>
+        <span><small>CONTRADICTIONS</small><b>${escapeHtml(section.contradictionCount || 0)}</b></span>
+      </div>
+      ${contradictions.length ? `
+        <div class="finalCommandContradictions">
+          <h3>CONTRADICTION SCAN</h3>
+          ${contradictions.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}
+        </div>
+      ` : ""}
+      ${lanes.length ? `
+        <div class="finalCommandLanes">
+          ${lanes.map((item) => `
+            <article class="finalCommandLane ${escapeHtml(item.status || "watch")}">
+              <i>${escapeHtml(item.version || "V10")}</i>
+              <span>
+                <b>${escapeHtml(item.label)} <small>${escapeHtml(item.score || 0)}/100</small></b>
+                <small>${escapeHtml(item.reading)}</small>
+                <em>${escapeHtml(item.action)}</em>
+              </span>
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
+      ${actions.length ? `
+        <div class="finalCommandQueue">
+          <h3>V10 ACTION QUEUE</h3>
+          ${actions.map((item) => `
+            <p><b>${escapeHtml(item.version)} ${escapeHtml(item.label)}</b><span>${escapeHtml(item.action)}</span></p>
+          `).join("")}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
+function finalCommandText(section = {}) {
+  if (!section.summary) return [];
+  const lines = [
+    "V10 final command stack:",
+    `- ${section.command || "INVESTIGATE FIRST"} (${section.score || 0}/100): ${section.summary}`,
+    `- Status: ${section.status || "investigate"}.`,
+    `- Next move: ${section.nextMove || "Clear the weakest V10 lane."}`,
+    `- Contradictions: ${section.contradictionCount || 0}.`
+  ];
+  for (const item of section.contradictions || []) lines.push(`- Contradiction: ${item}`);
+  for (const item of section.lanes || []) {
+    lines.push(`- ${item.version} ${item.label}: ${item.status}, ${item.score}/100. ${item.reading} Action: ${item.action}`);
+  }
+  if (section.actionQueue?.length) {
+    lines.push("V10 action queue:");
+    for (const item of section.actionQueue) lines.push(`- ${item.version} ${item.label}: ${item.action}`);
+  }
+  return lines;
+}
+
 function sourceLabel(type) {
   if (type === "memory") return "MEMORY";
   if (type === "journal") return "JOURNAL";
@@ -2057,6 +2129,7 @@ function saveAnalysisToShortlist(analysis) {
     developmentIntelligence: analysis.developmentIntelligence || null,
     documentIntelligence: analysis.documentIntelligence || null,
     portfolioCommand: analysis.portfolioCommand || null,
+    finalCommand: analysis.finalCommand || null,
     marketIntelligence: analysis.marketIntelligence || null,
     counterThesis: analysis.counterThesis,
     context: analysis.context || {}
@@ -2134,6 +2207,8 @@ function analysisExportText(analysis) {
     ...documentIntelligenceText(analysis.documentIntelligence),
     "",
     ...portfolioCommandText(analysis.portfolioCommand),
+    "",
+    ...finalCommandText(analysis.finalCommand),
     "",
     `Summary: ${analysis.summary || ""}`
   ];
@@ -3484,7 +3559,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       </section>
     ` : ""}
     <div class="analysisMeta">
-      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v9.10")}</b></span>
+      <span>ENGINE <b>${escapeHtml(analysis.engineVersion || "Apex v10.10")}</b></span>
       <span>REASONING <b>${escapeHtml(analysis.reasoningMode || (analysis.aiCommentary ? "Framework + AI" : "Framework only"))}</b></span>
       <span>DECISION SCORE <b>${escapeHtml(analysis.averageScore)}/100</b></span>
       <span>INPUT COMPLETE <b>${escapeHtml(analysis.completeness)}%</b></span>
@@ -3497,6 +3572,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
     ${developmentIntelligenceMarkup(analysis.developmentIntelligence)}
     ${documentIntelligenceMarkup(analysis.documentIntelligence)}
     ${portfolioCommandMarkup(analysis.portfolioCommand)}
+    ${finalCommandMarkup(analysis.finalCommand)}
     <div class="analysisOverview">
       ${readinessMarkup(analysis.investorReadiness)}
       ${dimensionMarkup ? `<section class="analysisDimensionSection"><h3>DEAL SCORECARD</h3><div class="analysisDimensions">${dimensionMarkup}</div></section>` : ""}
