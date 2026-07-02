@@ -580,75 +580,6 @@ button {
   gap: 8px;
 }
 
-.contextReadiness {
-  display: none;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: min(620px, 100%);
-  margin: -2px auto 0;
-  gap: 6px;
-}
-
-.contextReadiness button {
-  display: grid;
-  min-width: 0;
-  gap: 3px;
-  border: 1px solid rgba(103, 229, 255, 0.12);
-  border-radius: 999px;
-  padding: 6px 9px;
-  cursor: pointer;
-  background: rgba(2, 13, 21, 0.45);
-  text-align: left;
-}
-
-.contextReadiness button:hover,
-.contextReadiness button:focus-visible {
-  border-color: rgba(103, 229, 255, 0.4);
-  background: rgba(41, 158, 181, 0.1);
-}
-
-.contextReadiness button.ready {
-  border-color: rgba(112, 230, 179, 0.28);
-}
-
-.contextReadiness button.watch {
-  border-color: rgba(208, 173, 105, 0.26);
-}
-
-.contextReadiness button.missing {
-  border-color: rgba(230, 142, 142, 0.22);
-}
-
-.contextReadiness span {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.contextReadiness small {
-  color: var(--cyan);
-  font-size: 0.48rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.contextReadiness b {
-  color: #9cd0da;
-  font-size: 0.54rem;
-  font-weight: 500;
-}
-
-.contextReadiness em {
-  overflow: hidden;
-  color: #638e98;
-  font-size: 0.47rem;
-  font-style: normal;
-  letter-spacing: 0.06em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .dealJourney {
   display: grid;
   width: min(720px, 100%);
@@ -789,51 +720,6 @@ button {
   background: #c17c7c;
 }
 
-.experienceLock {
-  display: none;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  width: min(720px, 100%);
-  margin: -3px auto 0;
-  gap: 5px;
-}
-
-.experienceLock span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid rgba(103, 229, 255, 0.1);
-  border-radius: 999px;
-  padding: 4px 7px;
-  color: #668c95;
-  background: rgba(2, 13, 21, 0.36);
-  font-size: 0.45rem;
-  letter-spacing: 0.11em;
-}
-
-.experienceLock b {
-  color: var(--cyan);
-  font-weight: 500;
-}
-
-.experienceLock small {
-  color: #8ab8c2;
-  font-size: inherit;
-}
-
-.experienceLock.ready span {
-  border-color: rgba(112, 230, 179, 0.18);
-}
-
-.experienceLock.building span {
-  border-color: rgba(208, 173, 105, 0.16);
-}
-
-.experienceLock.thin span {
-  border-color: rgba(230, 142, 142, 0.14);
-}
-
 .authPanel,
 .memoryPanel {
   width: min(620px, 100%);
@@ -862,9 +748,7 @@ button {
 
 .accountOpen .transcript,
 .accountOpen .contextDeck,
-.accountOpen .contextReadiness,
 .accountOpen .dealJourney,
-.accountOpen .experienceLock,
 .accountOpen .aiDisclosure,
 .accountOpen .commandBar,
 .accountOpen .utilityBar {
@@ -873,9 +757,7 @@ button {
 
 .memoryOpen .transcript,
 .memoryOpen .contextDeck,
-.memoryOpen .contextReadiness,
 .memoryOpen .dealJourney,
-.memoryOpen .experienceLock,
 .memoryOpen .aiDisclosure,
 .memoryOpen .commandBar,
 .memoryOpen .utilityBar {
@@ -901,9 +783,7 @@ button {
 
 .trustOpen .transcript,
 .trustOpen .contextDeck,
-.trustOpen .contextReadiness,
 .trustOpen .dealJourney,
-.trustOpen .experienceLock,
 .trustOpen .aiDisclosure,
 .trustOpen .commandBar,
 .trustOpen .utilityBar {
@@ -1638,9 +1518,7 @@ button {
 
 .reportsOpen .transcript,
 .reportsOpen .contextDeck,
-.reportsOpen .contextReadiness,
 .reportsOpen .dealJourney,
-.reportsOpen .experienceLock,
 .reportsOpen .aiDisclosure,
 .reportsOpen .commandBar,
 .reportsOpen .utilityBar {
@@ -1782,9 +1660,7 @@ button {
 
 .journalOpen .transcript,
 .journalOpen .contextDeck,
-.journalOpen .contextReadiness,
 .journalOpen .dealJourney,
-.journalOpen .experienceLock,
 .journalOpen .aiDisclosure,
 .journalOpen .commandBar,
 .journalOpen .utilityBar {
@@ -2095,9 +1971,7 @@ button {
 
 .ownerIntelOpen .transcript,
 .ownerIntelOpen .contextDeck,
-.ownerIntelOpen .contextReadiness,
 .ownerIntelOpen .dealJourney,
-.ownerIntelOpen .experienceLock,
 .ownerIntelOpen .aiDisclosure,
 .ownerIntelOpen .commandBar,
 .ownerIntelOpen .utilityBar {
@@ -2106,9 +1980,7 @@ button {
 
 .ownerMarketOpen .transcript,
 .ownerMarketOpen .contextDeck,
-.ownerMarketOpen .contextReadiness,
 .ownerMarketOpen .dealJourney,
-.ownerMarketOpen .experienceLock,
 .ownerMarketOpen .aiDisclosure,
 .ownerMarketOpen .commandBar,
 .ownerMarketOpen .utilityBar {
@@ -2117,9 +1989,7 @@ button {
 
 .ownerEvidenceOpen .transcript,
 .ownerEvidenceOpen .contextDeck,
-.ownerEvidenceOpen .contextReadiness,
 .ownerEvidenceOpen .dealJourney,
-.ownerEvidenceOpen .experienceLock,
 .ownerEvidenceOpen .aiDisclosure,
 .ownerEvidenceOpen .commandBar,
 .ownerEvidenceOpen .utilityBar {
@@ -2128,9 +1998,7 @@ button {
 
 .ownerCaseOpen .transcript,
 .ownerCaseOpen .contextDeck,
-.ownerCaseOpen .contextReadiness,
 .ownerCaseOpen .dealJourney,
-.ownerCaseOpen .experienceLock,
 .ownerCaseOpen .aiDisclosure,
 .ownerCaseOpen .commandBar,
 .ownerCaseOpen .utilityBar {
@@ -2991,9 +2859,7 @@ button {
 
 .shortlistOpen .transcript,
 .shortlistOpen .contextDeck,
-.shortlistOpen .contextReadiness,
 .shortlistOpen .dealJourney,
-.shortlistOpen .experienceLock,
 .shortlistOpen .aiDisclosure,
 .shortlistOpen .commandBar,
 .shortlistOpen .utilityBar {
@@ -3258,7 +3124,6 @@ button {
 
 .conversation:has(.contextPanel.expanded) .transcript,
 .conversation:has(.contextPanel.expanded) .dealJourney,
-.conversation:has(.contextPanel.expanded) .experienceLock,
 .conversation:has(.contextPanel.expanded) .aiDisclosure {
   display: none;
 }
@@ -7888,9 +7753,6 @@ button {
     font-size: 0.58rem;
   }
 
-  .contextReadiness {
-    display: none;
-  }
 
   .dealJourney {
     width: 100%;
@@ -7924,9 +7786,6 @@ button {
     white-space: normal;
   }
 
-  .experienceLock {
-    display: none;
-  }
 
   .authPanel,
   .memoryPanel,
@@ -8676,9 +8535,7 @@ button {
   body.printMode .systemBar,
   body.printMode .assistantStage,
   body.printMode .contextDeck,
-  body.printMode .contextReadiness,
   body.printMode .dealJourney,
-  body.printMode .experienceLock,
   body.printMode .aiDisclosure,
   body.printMode .commandBar,
   body.printMode .utilityBar,

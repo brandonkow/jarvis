@@ -35,9 +35,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(html, /id="screenDealBtn"[\s\S]*?>SCREEN<\/button>/, "The quick deal-screening action must stay available without opening the full report flow.");
   assert.match(html, /id="sessionBriefBtn"[\s\S]*?>BRIEF<\/button>/, "V5.9 needs a compact session-brief export action.");
   assert.match(html, /id="inputModeHint"[\s\S]*?class="inputModeHint"/, "V5.4 needs a compact smart-input mode chip in the command bar.");
-  assert.match(html, /id="contextReadiness"[\s\S]*?aria-label="Context readiness"/, "V5.3 needs a compact context-readiness strip near the input box.");
   assert.match(html, /id="dealJourney"[\s\S]*?aria-label="Apex deal journey"/, "The app needs a unified Deal Journey conductor near the input flow.");
-  assert.match(html, /id="experienceLock"[\s\S]*?aria-label="Product experience lock"/, "V5.10 needs one compact product-experience lock surface.");
+  assert.doesNotMatch(html, /id="contextReadiness"|id="experienceLock"/, "The retired context-readiness and experience-lock strips must stay consolidated into the Deal Journey.");
   assert.equal((html.match(/data-context-reset="(?:deal|profile|guidance)"/g) || []).length, 3, "Each context card needs its own reset button.");
   assert.match(html, /id="memoryPanel"[\s\S]*?PRIVATE TO YOUR ACCOUNT[\s\S]*?id="memoryList"/, "Signed-in users need a private memory review screen.");
   assert.match(html, /id="memoryCaptureEnabled"[\s\S]*?id="memoryReasoningEnabled"[\s\S]*?id="memoryModeNotice"/, "V3 memory must expose opt-in capture and reasoning controls.");
@@ -85,8 +84,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /result\.memoryCandidate/, "The chat must surface memory candidates for review.");
   assert.match(app, /contextCoachMarkup\(intelligence\.contextCoach\)/, "Chat replies need the v5.2 next-move coach.");
   assert.match(app, /data-coach-prompt/, "V5.2 next-move prompts must be clickable from chat.");
-  assert.match(app, /function renderContextReadiness[\s\S]*?data-readiness-panel/, "V5.3 must render clickable Deal, Profile, and Guidance readiness chips.");
-  assert.match(app, /focusFirstMissingContextField\(panelName\)/, "V5.3 readiness chips must open the right card and focus missing context.");
+  assert.doesNotMatch(app, /renderContextReadiness|data-readiness-panel|renderExperienceLock/, "The retired readiness-chip and experience-lock renderers must stay consolidated into the Deal Journey.");
+  assert.match(app, /function openJourneyPanel[\s\S]*?focusFirstMissingContextField\(panelName\)/, "Journey panel steps must open the right card and focus missing context.");
   assert.match(app, /function renderDealJourney[\s\S]*?APEX DEAL JOURNEY[\s\S]*?data-journey-action/, "The Deal Journey must convert scattered tools into one guided next-action flow.");
   assert.match(app, /function handleJourneyAction[\s\S]*?runDealScreening\(\)[\s\S]*?runDealAnalysis\(\)[\s\S]*?openShortlistPanel\(\)/, "Journey actions must route to existing screen, analyse, and compare flows.");
   assert.match(app, /function renderOwnerIntelligence[\s\S]*?ownerIntelLanes[\s\S]*?ownerIntelCoverage/, "Owner intelligence must render coverage lanes and project-level coverage rows.");
@@ -123,10 +122,6 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(app, /function sessionBriefText[\s\S]*?APEX ANALYTIC SESSION BRIEF[\s\S]*?latestApexBriefLines/, "V5.9 must build a portable session brief from current context and latest Apex direction.");
   assert.match(app, /function copySessionBrief[\s\S]*?writeClipboardText\(text\)/, "V5.9 session brief must use the shared clipboard fallback.");
   assert.match(app, /sessionBriefBtn\.addEventListener\("click"/, "V5.9 BRIEF action must be wired in the utility bar.");
-  assert.match(app, /function renderExperienceLock[\s\S]*?V5 LOCK/, "V5.10 must render the product-experience lock surface.");
-  assert.match(app, /function renderExperienceLock[\s\S]*?voiceResponsesEnabled/, "V5.10 lock must summarize voice state.");
-  assert.match(app, /function renderExperienceLock[\s\S]*?readResponseFeedback/, "V5.10 lock must summarize answer-style tuning.");
-  assert.match(app, /renderContextReadiness[\s\S]*?renderExperienceLock\(\)/, "V5.10 experience lock must refresh with context readiness.");
   assert.match(app, /function openTrustPanel[\s\S]*?classList\.add\("trustOpen"\)/, "V6.0 trust must open as a workspace state.");
   assert.match(app, /function closeTrustPanel[\s\S]*?classList\.remove\("trustOpen"\)/, "V6.0 trust must close as a workspace state.");
   assert.match(app, /trustToggle\.addEventListener\("click"/, "V6.0 trust action must be wired.");
@@ -321,13 +316,11 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.analysisV3Insight[\s\S]*?\.v3InsightItem/, "The v3 memory-path report sections need styled compact cards.");
   assert.match(styles, /\.analysisProductExperience[\s\S]*?\.productExperienceCheck/, "The v5 product-experience report section needs styled compact cards.");
   assert.match(styles, /\.contextCoach[\s\S]*?data-coach-prompt|\.contextCoach[\s\S]*?\.contextCoach button/, "The v5.2 next-move coach needs styled prompt buttons.");
-  assert.match(styles, /\.contextReadiness[\s\S]*?\.contextReadiness button/, "The v5.3 context-readiness strip needs styled clickable chips.");
+  assert.doesNotMatch(styles, /\.contextReadiness|\.experienceLock/, "Dead context-readiness and experience-lock styles must stay removed.");
   assert.match(styles, /\.dealJourney[\s\S]*?\.dealJourneySteps[\s\S]*?grid-template-columns:\s*repeat\(4/, "The Deal Journey needs a compact desktop step strip.");
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.dealJourneySteps[\s\S]*?grid-template-columns:\s*repeat\(2/, "The Deal Journey must collapse cleanly on mobile.");
   assert.match(styles, /\.contextGrid\.contextCoreMode \.contextAdvanced[\s\S]*?display:\s*none;[\s\S]*?\.contextAssist/, "Expanded context cards must hide advanced fields behind a guided essentials layer.");
-  assert.match(styles, /\.accountOpen \.contextReadiness[\s\S]*?display:\s*none;/, "Context readiness must hide when workspace panels replace chat.");
-  assert.match(styles, /\.experienceLock[\s\S]*?\.experienceLock\.thin span/, "V5.10 experience lock needs compact state styling.");
-  assert.match(styles, /\.accountOpen \.experienceLock[\s\S]*?\.shortlistOpen \.experienceLock[\s\S]*?display:\s*none;/, "V5.10 experience lock must hide when workspace panels replace chat.");
+  assert.match(styles, /\.accountOpen \.dealJourney[\s\S]*?display:\s*none;/, "The Deal Journey must hide when workspace panels replace chat.");
   assert.match(styles, /\.trustOpen \.transcript[\s\S]*?display:\s*none;/, "The v6 trust boundary must replace chat content instead of opening a popup.");
   assert.match(styles, /\.trustPanel[\s\S]*?\.trustGrid[\s\S]*?grid-template-columns:/, "The v6 trust boundary needs a compact organized layout.");
   assert.match(styles, /\.trustAcceptance[\s\S]*?data-state="accepted"[\s\S]*?border-color/, "V6.1 acknowledgement needs visible accepted and pending states.");
@@ -362,8 +355,7 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
 
   assert.match(styles, /\.conversation:has\(\.contextPanel\.expanded\) \.transcript[\s\S]*?display:\s*none;/, "Expanded cards must replace the transcript instead of overflowing beneath it.");
   assert.match(styles, /\.contextPanelSecondary:not\(\.expanded\)[\s\S]*?display:\s*none;/, "Secondary context cards must not crowd the collapsed default row.");
-  assert.match(styles, /\.contextReadiness \{[\s\S]*?display:\s*none;[\s\S]*?\.experienceLock \{[\s\S]*?display:\s*none;[\s\S]*?\.aiDisclosure \{[\s\S]*?display:\s*none;/, "Diagnostic context and status strips must not duplicate the visible Deal/Profile controls.");
-  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.contextReadiness \{[\s\S]*?display:\s*none;[\s\S]*?\.experienceLock \{[\s\S]*?display:\s*none;/, "Mobile should hide secondary status strips under the orb.");
+  assert.match(styles, /\.aiDisclosure \{[\s\S]*?display:\s*none;/, "The AI disclosure note must stay out of the default layout until activated.");
   assert.match(styles, /\.contextHeader[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto;/, "Card reset controls must fit beside the expandable header.");
   assert.match(styles, /\.contextPanel\.expanded \.contextGrid[\s\S]*?overflow-y:\s*auto|\.contextGrid[\s\S]*?overflow-y:\s*auto/, "Expanded card fields must remain scrollable.");
   assert.match(styles, /max-height:\s*calc\(100dvh - 260px\)/, "Mobile expanded cards need a viewport-bound field area.");

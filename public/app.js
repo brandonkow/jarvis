@@ -13,9 +13,7 @@ const sessionBriefBtn = document.querySelector("#sessionBriefBtn");
 const analyzeDealBtn = document.querySelector("#analyzeDealBtn");
 const screenDealBtn = document.querySelector("#screenDealBtn");
 const aiDisclosure = document.querySelector("#aiDisclosure");
-const contextReadiness = document.querySelector("#contextReadiness");
 const dealJourney = document.querySelector("#dealJourney");
-const experienceLock = document.querySelector("#experienceLock");
 const accountToggle = document.querySelector("#accountToggle");
 const accountLabel = document.querySelector("#accountLabel");
 const authPanel = document.querySelector("#authPanel");
@@ -394,7 +392,6 @@ function updateInputModeHint(value = chatInput.value) {
   chatForm.dataset.inputMode = mode.id;
   chatForm.setAttribute("aria-label", mode.prompt);
   chatInput.placeholder = mode.placeholder;
-  renderExperienceLock();
   return mode;
 }
 
@@ -538,7 +535,6 @@ function handleResponseFeedback(button) {
     item.classList.toggle("active", item === button);
   });
   setResponseRefinement(panel, feedback);
-  renderExperienceLock();
   setSystemState("System ready", `Feedback saved. ${option.note}`);
   void syncResponseFeedback(feedback);
 }
@@ -705,7 +701,6 @@ function acceptTrustBoundary() {
   const action = pendingTrustAction;
   pendingTrustAction = "";
   renderTrustAcceptance();
-  renderExperienceLock();
   setSystemState("System ready", "Trust boundary acknowledged.");
   if (action === "deal-analysis") {
     closeTrustPanel();
@@ -4787,26 +4782,6 @@ function contextPanelReadiness(panelName) {
   return { panelName, context, fields, groups, missing, percent, status };
 }
 
-function renderContextReadiness() {
-  if (!contextReadiness) return;
-  const panels = [
-    { panelName: "deal", label: "Deal" },
-    { panelName: "profile", label: "Profile" },
-    { panelName: "guidance", label: "Guidance" }
-  ].map((item) => ({ ...item, ...contextPanelReadiness(item.panelName) }));
-  contextReadiness.innerHTML = panels.map((item) => {
-    const summary = item.missing.length ? `Missing ${item.missing.slice(0, 2).join(", ")}` : "Ready enough";
-    return `
-      <button class="${escapeHtml(item.status)}" type="button" data-readiness-panel="${escapeHtml(item.panelName)}" aria-label="Open ${escapeHtml(item.label)} context card">
-        <span><small>${escapeHtml(item.label)}</small><b>${escapeHtml(item.percent)}%</b></span>
-        <em>${escapeHtml(summary)}</em>
-      </button>
-    `;
-  }).join("");
-  renderExperienceLock();
-  renderDealJourney();
-}
-
 function latestAnalysis() {
   return latestAnalysisId ? analysisRegistry.get(latestAnalysisId) || null : null;
 }
@@ -4874,29 +4849,6 @@ function renderDealJourney() {
         </button>
       `).join("")}
     </div>
-  `;
-}
-
-function renderExperienceLock() {
-  if (!experienceLock) return;
-  const panels = [
-    { panelName: "deal", label: "D" },
-    { panelName: "profile", label: "P" },
-    { panelName: "guidance", label: "G" }
-  ].map((item) => ({ ...item, ...contextPanelReadiness(item.panelName) }));
-  const average = Math.round(panels.reduce((sum, item) => sum + item.percent, 0) / Math.max(1, panels.length));
-  const status = average >= 80 ? "ready" : average >= 45 ? "building" : "thin";
-  const feedback = readResponseFeedback();
-  const latestFeedback = feedback[0]?.label || "";
-  const mode = detectInputMode(chatInput.value);
-  experienceLock.className = `experienceLock ${status}`;
-  experienceLock.innerHTML = `
-    <span><b>V5 LOCK</b><small>${escapeHtml(status === "ready" ? "READY" : status === "building" ? "BUILDING" : "NEEDS CONTEXT")}</small></span>
-    <span><b>MODE</b><small>${escapeHtml(mode.label)}</small></span>
-    <span><b>CONTEXT</b><small>${escapeHtml(`${average}% / ${panels.map((item) => `${item.label}${item.percent}`).join(" ")}`)}</small></span>
-    <span><b>VOICE</b><small>${voiceResponsesEnabled ? "ON" : "OFF"}</small></span>
-    <span><b>STYLE</b><small>${escapeHtml(feedback.length ? `${latestFeedback || "TUNED"} ${feedback.length}` : "NEUTRAL")}</small></span>
-    <span><b>TRUST</b><small>${hasAcceptedTrustBoundary() ? "ACCEPTED" : "PENDING"}</small></span>
   `;
 }
 
@@ -5115,7 +5067,7 @@ async function runDealScreening() {
 function saveContext(fields, attributeName, storageKey) {
   const context = collectContext(fields, attributeName);
   window.localStorage.setItem(storageKey, JSON.stringify(context));
-  renderContextReadiness();
+  renderDealJourney();
   refreshContextGuides();
 }
 
@@ -5146,7 +5098,7 @@ function resetContextCard(panelName) {
     window.localStorage.removeItem(storageKey);
   }
   const label = panelName === "guidance" ? "Guidance" : isDeal ? "Deal" : "Profile";
-  renderContextReadiness();
+  renderDealJourney();
   refreshContextGuides();
   setSystemState("System ready", `${label} details cleared.`);
 }
@@ -6007,14 +5959,6 @@ dealJourney?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-journey-action]");
   if (button) handleJourneyAction(button);
 });
-contextReadiness?.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-readiness-panel]");
-  if (!button) return;
-  const panelName = button.getAttribute("data-readiness-panel");
-  const toggle = contextToggles.find((item) => item.getAttribute("data-context-toggle") === panelName);
-  if (toggle) setContextPanelState(toggle, true);
-  focusFirstMissingContextField(panelName);
-});
 document.addEventListener("click", (event) => {
   const modeButton = event.target.closest("[data-context-field-mode]");
   if (modeButton) {
@@ -6072,7 +6016,6 @@ soundToggle.addEventListener("click", () => {
   soundToggle.textContent = voiceResponsesEnabled ? "VOICE ON" : "VOICE OFF";
   soundToggle.setAttribute("aria-pressed", String(voiceResponsesEnabled));
   document.body.classList.toggle("voiceMuted", !voiceResponsesEnabled);
-  renderExperienceLock();
   if (!voiceResponsesEnabled) stopSpeaking("Voice response off.");
   else setSystemState("System ready", "Voice response on. Spoken replies stay compact.");
 });
@@ -6093,7 +6036,7 @@ async function bootJarvis() {
   markContextFieldDepth();
   renderTrustAcceptance();
   updateInputModeHint();
-  renderContextReadiness();
+  renderDealJourney();
   renderShortlist();
   bootContextPanels();
   setAuthMode("login");
