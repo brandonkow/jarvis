@@ -2259,6 +2259,7 @@ function saveAnalysisToShortlist(analysis) {
     metrics: analysis.metrics || [],
     scenarios: analysis.scenarios || [],
     stressEnvelope: analysis.stressEnvelope || null,
+    acquisitionCostEstimate: analysis.acquisitionCostEstimate || null,
     portfolioGate: analysis.portfolioGate || null,
     marketPulse: analysis.marketPulse || null,
     holdExitPlan: analysis.holdExitPlan || null,
@@ -2478,6 +2479,10 @@ function analysisExportText(analysis) {
       `Reserve survival: ${analysis.stressEnvelope.reserveSurvivalMonths === null ? "Not applicable" : `${analysis.stressEnvelope.reserveSurvivalMonths} months`}`
     );
     for (const item of analysis.stressEnvelope.assumptions || []) lines.push(`- ${item.label}: ${item.value} (${item.source})`);
+  }
+  if (analysis.acquisitionCostEstimate?.items?.length) {
+    lines.push("", "Estimated Malaysian entry costs");
+    for (const line of acquisitionCostLines(analysis.acquisitionCostEstimate)) lines.push(`- ${line}`);
   }
   if (analysis.portfolioGate?.summary) {
     lines.push(
@@ -3904,6 +3909,22 @@ function analysisSection(title, items = [], className = "") {
   `;
 }
 
+function ringgitAmount(value) {
+  return `RM ${Math.round(Number(value) || 0).toLocaleString("en-MY")}`;
+}
+
+function acquisitionCostLines(costs) {
+  if (!costs || !Array.isArray(costs.items) || !costs.items.length) return [];
+  return [
+    `Down payment at ${costs.loanMarginPercent}% loan margin: ${ringgitAmount(costs.downPayment)}`,
+    ...costs.items.map((item) => `${item.label}: ${ringgitAmount(item.amount)}`),
+    `Total duties and fees: ${ringgitAmount(costs.totalTransactionCosts)} (about ${costs.costAsPercentOfPrice}% of price)`,
+    `Estimated cash to start: ${ringgitAmount(costs.estimatedCashToStart)}`,
+    ...(costs.rpgt?.note ? [`RPGT: ${costs.rpgt.note}`] : []),
+    ...(costs.disclaimer ? [costs.disclaimer] : [])
+  ];
+}
+
 function marketIntelligenceMarkup(market = {}) {
   const observations = Array.isArray(market.observations) ? market.observations : [];
   if (!observations.length) return "";
@@ -4662,6 +4683,7 @@ function addDealAnalysis(analysis, sources = [], intelligence = {}) {
       ${analysisSection("Hard stops", analysis.hardStops, "danger")}
       ${analysisSection("Decision blockers", analysis.recommendationBlockers, "warning")}
       ${analysisSection("Watch-outs", analysis.watchouts, "warning")}
+      ${analysisSection("Estimated Malaysian entry costs", acquisitionCostLines(analysis.acquisitionCostEstimate))}
       ${analysisSection("Missing evidence", analysis.missingEvidence)}
       ${analysisSection("Check next", analysis.nextActions, "actions")}
     </div>

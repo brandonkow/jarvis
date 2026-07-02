@@ -15,6 +15,9 @@ The public user experience is intentionally simple: users interact with one Apex
 - Owner-controlled project intelligence with dated market observations, metric trends, and freshness warnings in chat and Deal Reports.
 - Public request limits for chat, voice, and account endpoints.
 - Seven-stage Deal Analysis using the Deal Card and Financial Profile, with hard-stop precedence, four decision dimensions, evidence grading, downside scenarios, and a counter-thesis.
+- Malaysian deal-cost engine: tiered MOT stamp duty, loan stamp duty, SPA and loan legal fees, disbursement allowance, RPGT exit bands, and an estimated-cash-to-start check inside every Deal Report, plus a public `/api/tools/deal-costs` calculator.
+- Hardened HTTP surface: strict Content-Security-Policy on the app shell, `nosniff`/`frame-ancestors`/referrer security headers on every response, HSTS behind HTTPS, timing-safe owner and webhook token comparison, and path-traversal-safe static serving.
+- Fair multi-user chat retention: conversation sessions are capped per account or guest client instead of one global list, so one visitor can no longer push out another member's history.
 - Printable Apex Deal Reports plus a private browser shortlist for comparing up to four analysed properties.
 - Free, Pro, and Advisor entitlements with monthly report metering, configurable checkout handoff, and a signed provider-neutral billing webhook.
 - Private cross-device Deal Report history for signed-in accounts.
@@ -61,6 +64,7 @@ ESTATELAB_REQUIRE_EMAIL_VERIFICATION=false
 ESTATELAB_EMAIL_WEBHOOK_URL=https://your-email-automation.example/hook
 ESTATELAB_EMAIL_WEBHOOK_SECRET=your-webhook-bearer-secret
 ESTATELAB_AUTH_DEBUG_TOKENS=false
+ESTATELAB_TRUST_PROXY=true
 APEX_BILLING_ENFORCEMENT=false
 APEX_BILLING_WEBHOOK_SECRET=replace-with-a-long-random-secret
 APEX_PRO_CHECKOUT_URL=https://your-checkout.example/pro?email={email}&account={userId}
@@ -71,7 +75,9 @@ DATABASE_URL=postgresql://user:password@host:5432/database
 ESTATELAB_PG_POOL_MAX=5
 ```
 
-`ESTATELAB_OWNER_TOKEN` protects the owner-only APIs. Public chat endpoints remain accessible without this token. Legacy environment-variable and API-route names remain unchanged to preserve deployment compatibility.
+`ESTATELAB_OWNER_TOKEN` protects the owner-only APIs. Public chat endpoints remain accessible without this token. Legacy environment-variable and API-route names remain unchanged to preserve deployment compatibility. Use a long random secret; the server logs a startup warning when the token is missing, short, or left at the placeholder value.
+
+`ESTATELAB_TRUST_PROXY` controls whether rate limiting keys on the `X-Forwarded-For` header. Keep it `true` behind Render or any reverse proxy; set it to `false` only when clients connect to the Node process directly, so forged headers cannot bypass request limits.
 
 `ESTATELAB_DATA_DIR` controls the JSON fallback and PostgreSQL migration source. If the folder is empty on first start, Apex Analytic seeds it from the bundled `data/db.json`.
 
@@ -151,6 +157,7 @@ Public:
 - `POST /api/jarvis/analyze-deal`
 - `POST /api/jarvis/transcribe`
 - `POST /api/jarvis/speech`
+- `POST /api/tools/deal-costs`
 
 Owner-only:
 

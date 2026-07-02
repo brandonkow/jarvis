@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
@@ -152,7 +152,11 @@ export class JsonStateStore {
 
   async write(state) {
     const payload = `${JSON.stringify(serializableState(state), null, 2)}\n`;
-    this.writeQueue = this.writeQueue.catch(() => {}).then(() => writeFile(this.filePath, payload));
+    const temporaryPath = `${this.filePath}.tmp`;
+    this.writeQueue = this.writeQueue.catch(() => {}).then(async () => {
+      await writeFile(temporaryPath, payload);
+      await rename(temporaryPath, this.filePath);
+    });
     return this.writeQueue;
   }
 

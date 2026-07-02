@@ -44,6 +44,7 @@ const EMAIL_WEBHOOK_URL = String(globalThis.process?.env?.ESTATELAB_EMAIL_WEBHOO
 const EMAIL_WEBHOOK_SECRET = String(globalThis.process?.env?.ESTATELAB_EMAIL_WEBHOOK_SECRET || "").trim();
 const REQUIRE_EMAIL_VERIFICATION = String(globalThis.process?.env?.ESTATELAB_REQUIRE_EMAIL_VERIFICATION || "false").toLowerCase() === "true";
 const AUTH_DEBUG_TOKENS = String(globalThis.process?.env?.ESTATELAB_AUTH_DEBUG_TOKENS || "false").toLowerCase() === "true";
+const TRUST_PROXY = String(globalThis.process?.env?.ESTATELAB_TRUST_PROXY || "true").toLowerCase() !== "false";
 const AUTH_COOKIE = "estatelab_session";
 const AUTH_SESSION_DAYS = Math.max(1, Number(globalThis.process?.env?.ESTATELAB_AUTH_SESSION_DAYS || 30));
 const BILLING_ENFORCEMENT = String(globalThis.process?.env?.APEX_BILLING_ENFORCEMENT || "false").toLowerCase() === "true";
@@ -150,6 +151,90 @@ const thinkingQuestions = [
     category: "Learning",
     question: "Which lesson from your past experience do you believe should hold across locations, and where might it fail?",
     why: "This turns experience into a portable principle without pretending context never matters."
+  },
+  {
+    id: "entry-cost-reality",
+    category: "Costs",
+    question: "On your last completed purchase, what did the true all-in entry cost come to (stamp duty, legal fees, disbursements, renovation, furnishing, hidden extras), and which item surprised you most?",
+    why: "Real invoices calibrate the cost engine better than gazetted rate tables."
+  },
+  {
+    id: "auction-purchase-playbook",
+    category: "Auction",
+    question: "Have you bought or seriously attempted to buy at auction, and what rules do you now follow on deposit risk, outstanding charges, LACA versus non-LACA titles, and vacant possession?",
+    why: "The framework reads auctions as market signals but has no playbook for buying through them."
+  },
+  {
+    id: "new-launch-pathway",
+    category: "New launch",
+    question: "When would you buy from a developer at launch instead of subsale, and how do you treat rebates, furnishing packages, and free legal fees when judging the true net price?",
+    why: "The framework is subsale-oriented; launch incentives can hide the genuine entry price."
+  },
+  {
+    id: "rental-income-tax",
+    category: "Taxation",
+    question: "How do you handle tax on rental income in practice: which expenses do you deduct, and has tax ever changed a hold, sell, or refinance decision?",
+    why: "Net-after-tax return is the number that actually compounds, and the framework currently ignores it."
+  },
+  {
+    id: "insurance-protection",
+    category: "Insurance",
+    question: "What insurance do you actually carry on each property (fire, contents, MRTA or MLTA), and when has a claim or a gap in cover cost you money?",
+    why: "Risk transfer is absent from the framework even though one uninsured event can erase years of yield."
+  },
+  {
+    id: "ownership-structuring",
+    category: "Structuring",
+    question: "How do you decide between single name, joint names, or a family member's name on title and loan, and what worked or backfired?",
+    why: "Name and loan structuring changes margin eligibility, DSR headroom, RPGT, and estate outcomes."
+  },
+  {
+    id: "tenant-failure-recovery",
+    category: "Operations",
+    question: "Describe your worst tenant failure: how long did recovery take, what did it cost, and what screening or agreement clause would have prevented it?",
+    why: "Distress cases define the real downside of rental holding power better than average cases."
+  },
+  {
+    id: "contractor-renovation-control",
+    category: "Operations",
+    question: "How do you select and pay renovation contractors, and what payment schedule or supervision rule protects you from abandonment and overruns?",
+    why: "Renovation execution risk is a common capital sink that the budget rules alone do not control."
+  },
+  {
+    id: "refinance-true-cost",
+    category: "Refinance",
+    question: "On your last refinance or cash-out, what were the full switching costs (legal fees, lock-in penalty, MRTA clawback, valuation), and how long was the payback period?",
+    why: "The framework gates when to refinance but not what refinancing truly costs."
+  },
+  {
+    id: "data-source-trust",
+    category: "Data",
+    question: "Which transaction, rental, and auction data sources do you actually trust in Malaysia, in what order, and where has each one misled you?",
+    why: "The evidence hierarchy needs named, ranked sources before other users can replicate it."
+  },
+  {
+    id: "threshold-calibration",
+    category: "Calibration",
+    question: "For your own thresholds - RM450 negative cash flow, 1500-unit density, 20% entry discount, six-month reserve - name one real deal where the threshold saved you and one where it cost you a good deal.",
+    why: "Founder heuristics become framework rules only after they survive contact with real cases on both sides."
+  },
+  {
+    id: "deal-funnel-effort",
+    category: "Execution",
+    question: "In a normal sourcing month, how many listings do you review, how many do you view, offer on, and close, and how many hours does that take?",
+    why: "Funnel conversion rates turn 'be patient and selective' into a measurable operating standard."
+  },
+  {
+    id: "geographic-blind-spots",
+    category: "Geography",
+    question: "Outside Penang, Kuala Lumpur, and Selangor, which Malaysian markets would you personally touch or avoid (Johor Bahru, Ipoh, Kota Kinabalu, Kuching, Seremban), and why?",
+    why: "The framework's market beliefs currently stop at three states while users will ask about all of Malaysia."
+  },
+  {
+    id: "past-deal-case-file",
+    category: "Track record",
+    question: "Pick one past deal and give the full case file: entry price, all-in cost, achieved rent, vacancy record, current value, and what the framework would have scored it at purchase.",
+    why: "Complete historical cases are the only way to back-test the seven-stage engine against reality."
   }
 ];
 const mimeTypes = {
@@ -626,6 +711,36 @@ function normalizeReportAnalysis(analysis = {}) {
         source: ["provided", "default"].includes(item?.source) ? item.source : "default"
       }))
     },
+    acquisitionCostEstimate: analysis?.acquisitionCostEstimate?.items?.length ? {
+      currency: "RM",
+      price: Math.max(0, Number(analysis.acquisitionCostEstimate.price || 0)),
+      loanMarginPercent: Math.max(0, Math.min(100, Number(analysis.acquisitionCostEstimate.loanMarginPercent || 0))),
+      loanAmount: Math.max(0, Number(analysis.acquisitionCostEstimate.loanAmount || 0)),
+      downPayment: Math.max(0, Number(analysis.acquisitionCostEstimate.downPayment || 0)),
+      items: objectList(analysis.acquisitionCostEstimate.items, 8, (item) => ({
+        label: reportText(item?.label, 120),
+        amount: Math.max(0, Number(item?.amount || 0)),
+        basis: reportText(item?.basis, 160)
+      })),
+      totalTransactionCosts: Math.max(0, Number(analysis.acquisitionCostEstimate.totalTransactionCosts || 0)),
+      estimatedCashToStart: Math.max(0, Number(analysis.acquisitionCostEstimate.estimatedCashToStart || 0)),
+      costAsPercentOfPrice: Math.max(0, Number(analysis.acquisitionCostEstimate.costAsPercentOfPrice || 0)),
+      rpgt: {
+        basis: reportText(analysis.acquisitionCostEstimate.rpgt?.basis, 120),
+        schedule: objectList(analysis.acquisitionCostEstimate.rpgt?.schedule, 6, (item) => ({
+          label: reportText(item?.label, 80),
+          rate: Math.max(0, Math.min(100, Number(item?.rate || 0)))
+        })),
+        holdingYears: analysis.acquisitionCostEstimate.rpgt?.holdingYears === null || analysis.acquisitionCostEstimate.rpgt?.holdingYears === undefined
+          ? null
+          : Math.max(0, Number(analysis.acquisitionCostEstimate.rpgt.holdingYears || 0)),
+        applicableRate: analysis.acquisitionCostEstimate.rpgt?.applicableRate === null || analysis.acquisitionCostEstimate.rpgt?.applicableRate === undefined
+          ? null
+          : Math.max(0, Math.min(100, Number(analysis.acquisitionCostEstimate.rpgt.applicableRate || 0))),
+        note: reportText(analysis.acquisitionCostEstimate.rpgt?.note, 300)
+      },
+      disclaimer: reportText(analysis.acquisitionCostEstimate.disclaimer, 400)
+    } : null,
     portfolioGate: {
       summary: reportText(analysis?.portfolioGate?.summary, 700),
       status: ["allow", "review", "block", "unknown"].includes(analysis?.portfolioGate?.status) ? analysis.portfolioGate.status : "unknown",
@@ -1277,10 +1392,37 @@ function normalizeBrain(brain) {
   };
 }
 
+const MAX_SESSIONS_PER_OWNER = 20;
+const MAX_TOTAL_JARVIS_SESSIONS = 500;
+
+function capJarvisSessions(sessions) {
+  const sorted = sessions.slice().sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  const perOwner = new Map();
+  const kept = [];
+  for (const session of sorted) {
+    const ownerKey = session.userId ? `user:${session.userId}` : `client:${session.clientId}`;
+    const count = perOwner.get(ownerKey) || 0;
+    if (count >= MAX_SESSIONS_PER_OWNER) continue;
+    perOwner.set(ownerKey, count + 1);
+    kept.push(session);
+  }
+  if (kept.length > MAX_TOTAL_JARVIS_SESSIONS) {
+    let excess = kept.length - MAX_TOTAL_JARVIS_SESSIONS;
+    for (let index = kept.length - 1; index >= 0 && excess > 0; index -= 1) {
+      if (!kept[index].userId) {
+        kept.splice(index, 1);
+        excess -= 1;
+      }
+    }
+    if (excess > 0) kept.splice(kept.length - excess, excess);
+  }
+  return kept;
+}
+
 function normalizeJarvis(jarvis) {
   return {
     sessions: Array.isArray(jarvis?.sessions)
-      ? jarvis.sessions.map(normalizeJarvisSession).filter(Boolean).slice(0, 80)
+      ? capJarvisSessions(jarvis.sessions.map(normalizeJarvisSession).filter(Boolean))
       : []
   };
 }
@@ -1290,14 +1432,14 @@ function normalizeJarvisSession(session) {
   const messages = Array.isArray(session.messages)
     ? session.messages.map(normalizeJarvisMessage).filter(Boolean).slice(-80)
     : [];
-  const title = String(session.title || DEFAULT_SESSION_TITLE).trim();
+  const title = String(session.title || DEFAULT_SESSION_TITLE).trim().slice(0, 160);
   return {
-    id: String(session.id),
+    id: String(session.id).slice(0, 100),
     createdAt: String(session.createdAt || new Date().toISOString()),
     updatedAt: String(session.updatedAt || session.createdAt || new Date().toISOString()),
     title: defaultSessionTitle(title) ? DEFAULT_SESSION_TITLE : title,
-    clientId: String(session.clientId || "browser").trim(),
-    userId: String(session.userId || "").trim(),
+    clientId: String(session.clientId || "browser").trim().slice(0, 120),
+    userId: String(session.userId || "").trim().slice(0, 100),
     messages
   };
 }
@@ -1337,8 +1479,8 @@ function createJarvisSession(body = {}, user = null) {
     id: randomUUID(),
     createdAt: now,
     updatedAt: now,
-    title: String(body.title || DEFAULT_SESSION_TITLE).trim(),
-    clientId: String(body.clientId || "browser").trim(),
+    title: String(body.title || DEFAULT_SESSION_TITLE).trim().slice(0, 160),
+    clientId: String(body.clientId || "browser").trim().slice(0, 120),
     userId: String(user?.id || "").trim(),
     messages: []
   };
@@ -1536,12 +1678,17 @@ function checkoutUrlFor(planId, user) {
   }
 }
 
+function constantTimeEquals(expected, supplied) {
+  if (!expected || !supplied) return false;
+  const expectedHash = createHash("sha256").update(String(expected)).digest();
+  const suppliedHash = createHash("sha256").update(String(supplied)).digest();
+  return timingSafeEqual(expectedHash, suppliedHash);
+}
+
 function billingWebhookAuthorized(req) {
   if (!BILLING_WEBHOOK_SECRET) return false;
   const supplied = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
-  const expected = Buffer.from(BILLING_WEBHOOK_SECRET);
-  const actual = Buffer.from(supplied);
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
+  return constantTimeEquals(BILLING_WEBHOOK_SECRET, supplied);
 }
 
 function memoryCategoryLabel(category) {
@@ -1931,7 +2078,7 @@ function currentAuth(req, db) {
 function requestClientId(req, body = {}) {
   const header = req.headers["x-estatelab-client-id"];
   const value = Array.isArray(header) ? header[0] : header;
-  return String(value || body.clientId || "").trim();
+  return String(value || body.clientId || "").trim().slice(0, 120);
 }
 
 function canAccessJarvisSession(session, actor, clientId) {
@@ -1953,8 +2100,8 @@ function claimJarvisSession(session, actor, clientId) {
 }
 
 function authRateKey(req) {
-  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-  return forwarded || String(req.socket?.remoteAddress || "unknown");
+  const forwarded = TRUST_PROXY ? String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() : "";
+  return (forwarded || String(req.socket?.remoteAddress || "unknown")).slice(0, 100);
 }
 
 function allowAuthAttempt(req) {
@@ -1983,6 +2130,14 @@ function clearAuthAttempts(req) {
 function allowRequest(req, bucket, limit, windowMs) {
   const now = Date.now();
   const key = `${bucket}:${authRateKey(req)}`;
+  if (requestWindows.size > 10000) {
+    for (const [requestKey, value] of requestWindows) {
+      if (now >= value.resetAt) requestWindows.delete(requestKey);
+    }
+    while (requestWindows.size > 10000) {
+      requestWindows.delete(requestWindows.keys().next().value);
+    }
+  }
   const entry = requestWindows.get(key);
   if (!entry || now >= entry.resetAt) {
     requestWindows.set(key, { count: 1, resetAt: now + windowMs });
@@ -1990,11 +2145,6 @@ function allowRequest(req, bucket, limit, windowMs) {
   }
   if (entry.count >= limit) return false;
   entry.count += 1;
-  if (requestWindows.size > 10000) {
-    for (const [requestKey, value] of requestWindows) {
-      if (now >= value.resetAt) requestWindows.delete(requestKey);
-    }
-  }
   return true;
 }
 
@@ -2012,7 +2162,7 @@ function upsertJarvisSession(jarvis, session) {
   const normalized = normalizeJarvisSession(session);
   if (!normalized) return jarvis;
   const sessions = (jarvis.sessions || []).filter((item) => item.id !== normalized.id);
-  return { ...jarvis, sessions: [normalized, ...sessions].slice(0, 80) };
+  return { ...jarvis, sessions: capJarvisSessions([normalized, ...sessions]) };
 }
 
 function nextThinkingQuestion(brain) {
@@ -2044,6 +2194,86 @@ function brainSummary(brain) {
 
 function money(value) {
   return Number.isFinite(value) ? Math.round(value * 100) / 100 : 0;
+}
+
+const MYS_MOT_STAMP_TIERS = [
+  { upTo: 100000, rate: 0.01 },
+  { upTo: 500000, rate: 0.02 },
+  { upTo: 1000000, rate: 0.03 },
+  { upTo: Infinity, rate: 0.04 }
+];
+const MYS_CONVEYANCING_TIERS = [
+  { upTo: 500000, rate: 0.0125 },
+  { upTo: 7500000, rate: 0.01 },
+  { upTo: Infinity, rate: 0.01 }
+];
+const MYS_RPGT_INDIVIDUAL_SCHEDULE = [
+  { label: "Disposal in year 1-3", maxYears: 3, rate: 30 },
+  { label: "Disposal in year 4", maxYears: 4, rate: 20 },
+  { label: "Disposal in year 5", maxYears: 5, rate: 15 },
+  { label: "Disposal in year 6 or later", maxYears: Infinity, rate: 0 }
+];
+
+function tieredCharge(value, tiers) {
+  let remaining = Math.max(0, Number(value) || 0);
+  let previousCap = 0;
+  let total = 0;
+  for (const tier of tiers) {
+    if (remaining <= 0) break;
+    const band = Math.min(remaining, tier.upTo - previousCap);
+    total += band * tier.rate;
+    remaining -= band;
+    previousCap = tier.upTo;
+  }
+  return total;
+}
+
+function rpgtRateForHoldingYears(years) {
+  const holding = Math.max(0, Number(years) || 0);
+  return MYS_RPGT_INDIVIDUAL_SCHEDULE.find((tier) => holding <= tier.maxYears)?.rate ?? 0;
+}
+
+function estimateMalaysianDealCosts({ price, loanMarginPercent = 90, holdingYears = null } = {}) {
+  const cleanPrice = Math.max(0, Number(price) || 0);
+  if (!cleanPrice) return null;
+  const margin = Math.max(0, Math.min(100, Number(loanMarginPercent) || 0)) || 90;
+  const loanAmount = money(cleanPrice * (margin / 100));
+  const downPayment = money(cleanPrice - loanAmount);
+  const motStampDuty = money(tieredCharge(cleanPrice, MYS_MOT_STAMP_TIERS));
+  const loanStampDuty = money(loanAmount * 0.005);
+  const spaLegalFee = money(Math.max(500, tieredCharge(cleanPrice, MYS_CONVEYANCING_TIERS)));
+  const loanLegalFee = money(loanAmount ? Math.max(500, tieredCharge(loanAmount, MYS_CONVEYANCING_TIERS)) : 0);
+  const disbursementAllowance = 2000;
+  const items = [
+    { label: "Stamp duty on transfer (MOT)", amount: motStampDuty, basis: "Tiered 1-4% of purchase price" },
+    { label: "Stamp duty on loan agreement", amount: loanStampDuty, basis: "0.5% of loan amount" },
+    { label: "SPA legal fee", amount: spaLegalFee, basis: "Solicitors' remuneration scale on purchase price" },
+    { label: "Loan legal fee", amount: loanLegalFee, basis: "Solicitors' remuneration scale on loan amount" },
+    { label: "Disbursements, searches, and registration allowance", amount: disbursementAllowance, basis: "Fixed planning allowance; actual invoices vary" }
+  ].filter((item) => item.amount > 0);
+  const totalTransactionCosts = money(items.reduce((sum, item) => sum + item.amount, 0));
+  const holding = holdingYears === null || holdingYears === undefined || holdingYears === 0 ? null : Math.max(0, Number(holdingYears) || 0);
+  return {
+    currency: "RM",
+    price: cleanPrice,
+    loanMarginPercent: margin,
+    loanAmount,
+    downPayment,
+    items,
+    totalTransactionCosts,
+    estimatedCashToStart: money(downPayment + totalTransactionCosts),
+    costAsPercentOfPrice: money((totalTransactionCosts / cleanPrice) * 100),
+    rpgt: {
+      basis: "Malaysian citizen or permanent resident individual disposer",
+      schedule: MYS_RPGT_INDIVIDUAL_SCHEDULE.map((tier) => ({ label: tier.label, rate: tier.rate })),
+      holdingYears: holding,
+      applicableRate: holding === null ? null : rpgtRateForHoldingYears(holding),
+      note: holding === null
+        ? "State the planned holding period so Apex can flag the RPGT band for the planned exit."
+        : `At a ${holding}-year planned hold, the RPGT band on any chargeable gain is ${rpgtRateForHoldingYears(holding)}%.`
+    },
+    disclaimer: "Planning estimate only. Stamp duty exemptions, developer packages, valuation fees, and current gazetted rates must be confirmed with the lawyer and bank before relying on these numbers."
+  };
 }
 
 function monthlyMortgage(principal, annualRate, years) {
@@ -4339,6 +4569,13 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   const holdingCashFlow = rent && installment ? rent - installment - maintenance : null;
   const postDealDsr = income && installment ? ((currentDebt + installment) / income) * 100 : null;
   const cashAfterPurchase = cashAvailableProvided && cashOutlayProvided ? cashAvailable - cashOutlay : null;
+  const loanMarginMatch = String(dealCard.loanMarginPlan || "").match(/(\d{2,3})\s*%/);
+  const plannedLoanMarginPercent = loanMarginMatch ? Math.max(0, Math.min(100, Number(loanMarginMatch[1]))) : 90;
+  const acquisitionCostEstimate = estimateMalaysianDealCosts({
+    price,
+    loanMarginPercent: plannedLoanMarginPercent,
+    holdingYears: holdingYears || null
+  });
   const hardStops = [];
   const watchouts = [];
   const recommendationBlockers = [];
@@ -4349,6 +4586,10 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
   };
   const addWatchout = (message) => pushUnique(watchouts, message);
   const addBlocker = (message) => pushUnique(recommendationBlockers, message);
+
+  if (acquisitionCostEstimate && cashOutlayProvided && cashOutlay < acquisitionCostEstimate.estimatedCashToStart) {
+    addWatchout(`Planned cash outlay ${formatRinggit(cashOutlay)} is below the estimated ${formatRinggit(acquisitionCostEstimate.estimatedCashToStart)} needed for the down payment plus stamp duty, legal fees, and disbursements at a ${acquisitionCostEstimate.loanMarginPercent}% loan margin.`);
+  }
 
   if (!fairValue) missingEvidence.push("Recent completed subsale or auction evidence for conservative value");
   if (!rent) missingEvidence.push("Achieved rent and tenant-demand evidence from active local agents");
@@ -7081,12 +7322,15 @@ function analyzeSevenStageDeal(rawDealCard = {}, rawFinancialProfile = {}) {
       discountToFairValue === null ? null : { label: "Discount to value", value: `${money(discountToFairValue)}%` },
       holdingCashFlow === null ? null : { label: "Monthly holding", value: formatRinggit(holdingCashFlow) },
       postDealDsr === null ? null : { label: "Post-deal DSR", value: `${money(postDealDsr)}%` },
-      cashAfterPurchase === null ? null : { label: "Cash after purchase", value: formatRinggit(cashAfterPurchase) }
+      cashAfterPurchase === null ? null : { label: "Cash after purchase", value: formatRinggit(cashAfterPurchase) },
+      acquisitionCostEstimate === null ? null : { label: "Estimated entry costs", value: formatRinggit(acquisitionCostEstimate.totalTransactionCosts) },
+      acquisitionCostEstimate === null ? null : { label: "Estimated cash to start", value: formatRinggit(acquisitionCostEstimate.estimatedCashToStart) }
     ].filter(Boolean),
     stages,
     dimensions,
     scenarios,
     stressEnvelope,
+    acquisitionCostEstimate,
     portfolioGate,
     marketPulse,
     holdExitPlan,
@@ -7227,6 +7471,19 @@ function dealAnalysisText(analysis) {
     if (analysis.stressEnvelope.assumptions?.length) {
       lines.push(...analysis.stressEnvelope.assumptions.map((item) => `- ${item.label}: ${item.value} (${item.source}).`));
     }
+  }
+  if (analysis.acquisitionCostEstimate?.items?.length) {
+    const costs = analysis.acquisitionCostEstimate;
+    lines.push(
+      "",
+      "Estimated Malaysian entry costs",
+      `- Down payment at ${costs.loanMarginPercent}% loan margin: RM ${Math.round(costs.downPayment).toLocaleString("en-MY")}.`,
+      ...costs.items.map((item) => `- ${item.label}: RM ${Math.round(item.amount).toLocaleString("en-MY")} (${item.basis}).`),
+      `- Total transaction costs: RM ${Math.round(costs.totalTransactionCosts).toLocaleString("en-MY")} (about ${costs.costAsPercentOfPrice}% of price).`,
+      `- Estimated cash to start: RM ${Math.round(costs.estimatedCashToStart).toLocaleString("en-MY")}.`,
+      `- RPGT: ${costs.rpgt.note}`,
+      `- ${costs.disclaimer}`
+    );
   }
   if (analysis.portfolioGate?.summary) {
     lines.push(
@@ -8601,8 +8858,27 @@ async function readBody(req) {
   }
 }
 
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), geolocation=(), payment=()"
+};
+const STATIC_CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "media-src 'self' blob:",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'"
+].join("; ");
+
 function send(res, status, payload, headers = jsonHeaders) {
-  res.writeHead(status, headers);
+  res.writeHead(status, { ...SECURITY_HEADERS, ...headers });
   if (Buffer.isBuffer(payload)) return res.end(payload);
   res.end(typeof payload === "string" ? payload : JSON.stringify(payload));
 }
@@ -8631,6 +8907,7 @@ function isPublicApiRoute(method, pathname) {
     || (method === "POST" && pathname === "/api/memory/answer-style")
     || (method === "PATCH" && pathname === "/api/memory/settings")
     || (["PATCH", "DELETE"].includes(method) && pathname.startsWith("/api/memory/"))
+    || (method === "POST" && pathname === "/api/tools/deal-costs")
     || (method === "GET" && pathname === "/api/jarvis/status")
     || (method === "GET" && pathname === "/api/jarvis/sessions")
     || (method === "POST" && pathname === "/api/jarvis/sessions")
@@ -8646,23 +8923,37 @@ function isPublicApiRoute(method, pathname) {
 function isOwnerRequest(req) {
   const tokenHeader = req.headers["x-estatelab-owner-token"];
   const token = Array.isArray(tokenHeader) ? tokenHeader[0] : tokenHeader;
-  return Boolean(OWNER_TOKEN && token && token === OWNER_TOKEN);
+  return constantTimeEquals(OWNER_TOKEN, token);
 }
 
 async function serveStatic(req, res) {
-  const rawPath = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+  let rawPath;
+  try {
+    rawPath = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+  } catch {
+    return send(res, 400, "Bad request", { "Content-Type": "text/plain" });
+  }
+  if (rawPath.includes("\0")) return send(res, 400, "Bad request", { "Content-Type": "text/plain" });
   const safePath = rawPath === "/" ? "/index.html" : rawPath;
   const filePath = path.normalize(path.join(PUBLIC_DIR, safePath));
-  if (!filePath.startsWith(PUBLIC_DIR)) return send(res, 403, "Forbidden", { "Content-Type": "text/plain" });
+  if (filePath !== PUBLIC_DIR && !filePath.startsWith(PUBLIC_DIR + path.sep)) {
+    return send(res, 403, "Forbidden", { "Content-Type": "text/plain" });
+  }
   try {
     const content = await readFile(filePath);
-    send(res, 200, content, { "Content-Type": mimeTypes[path.extname(filePath)] || "application/octet-stream" });
+    const extension = path.extname(filePath);
+    const headers = { "Content-Type": mimeTypes[extension] || "application/octet-stream" };
+    if (extension === ".html") headers["Content-Security-Policy"] = STATIC_CSP;
+    send(res, 200, content, headers);
   } catch {
     send(res, 404, "Not found", { "Content-Type": "text/plain" });
   }
 }
 
 async function router(req, res) {
+  if (secureRequest(req)) {
+    res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
+  }
   const url = new URL(req.url, "http://localhost");
   if (!url.pathname.startsWith("/api/")) return serveStatic(req, res);
 
@@ -8689,6 +8980,23 @@ async function router(req, res) {
       storage: stateStore.kind,
       time: new Date().toISOString()
     });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tools/deal-costs") {
+    if (!allowRequest(req, "tools", 60, 10 * 60 * 1000)) {
+      return send(res, 429, { error: "Too many calculator requests. Pause briefly and try again." }, { ...jsonHeaders, "Retry-After": "600" });
+    }
+    const body = await readBody(req);
+    const price = Number(body.price || 0);
+    if (!Number.isFinite(price) || price <= 0 || price > 1000000000) {
+      return send(res, 400, { error: "Provide a purchase price above zero to estimate Malaysian entry costs." });
+    }
+    const estimate = estimateMalaysianDealCosts({
+      price,
+      loanMarginPercent: Number(body.loanMarginPercent || 90),
+      holdingYears: body.holdingYears === undefined || body.holdingYears === null || body.holdingYears === "" ? null : Number(body.holdingYears)
+    });
+    return send(res, 200, { estimate });
   }
 
   let db = await readDb();
@@ -9263,7 +9571,9 @@ async function router(req, res) {
     const body = await readBody(req);
     const text = String(body.text || "").trim();
     if (!text || text.length > 4000) return send(res, 400, { error: "Speech text must be between 1 and 4000 characters." });
-    const audio = await knowledgeService.synthesize(text, String(body.voice || OPENAI_SPEECH_VOICE));
+    const requestedVoice = String(body.voice || "").trim().toLowerCase();
+    const voice = /^[a-z]{2,32}$/.test(requestedVoice) ? requestedVoice : OPENAI_SPEECH_VOICE;
+    const audio = await knowledgeService.synthesize(text, voice);
     return send(res, 200, audio, { "Content-Type": "audio/mpeg", "Cache-Control": "no-store" });
   }
 
@@ -9801,7 +10111,7 @@ async function router(req, res) {
 
   if (req.method === "POST" && url.pathname === "/api/properties") {
     const body = await readBody(req);
-    const property = { id: randomUUID(), createdAt: new Date().toISOString(), ...body };
+    const property = { ...body, id: randomUUID(), createdAt: new Date().toISOString() };
     db.properties.push(property);
     await writeDb(db);
     return send(res, 201, { ...property, analysis: analyzeProperty(property) });
@@ -9913,7 +10223,7 @@ async function router(req, res) {
     const body = await readBody(req);
     const index = db.properties.findIndex((property) => property.id === id);
     if (index === -1) return send(res, 404, { error: "Property not found" });
-    db.properties[index] = { ...db.properties[index], ...body, updatedAt: new Date().toISOString() };
+    db.properties[index] = { ...db.properties[index], ...body, id, createdAt: db.properties[index].createdAt, updatedAt: new Date().toISOString() };
     await writeDb(db);
     return send(res, 200, { ...db.properties[index], analysis: analyzeProperty(db.properties[index]) });
   }
@@ -10025,9 +10335,18 @@ function ready() {
 }
 
 function handleError(res, error) {
-    console.error(error);
-    const status = Number(error.statusCode || 500);
-    send(res, status, { error: status === 500 ? "Unexpected server error" : error.message });
+  const statusCandidate = Math.floor(Number(error?.statusCode || 500));
+  const status = statusCandidate >= 400 && statusCandidate <= 599 ? statusCandidate : 500;
+  if (status >= 500) {
+    console.error("Apex Analytic request error", error);
+  } else {
+    console.warn(`Apex Analytic client error ${status}: ${error?.message || "unknown"}`);
+  }
+  if (res.headersSent) {
+    res.destroy();
+    return;
+  }
+  send(res, status, { error: status >= 500 ? "Unexpected server error" : error.message });
 }
 
 async function handler(req, res) {
@@ -10040,10 +10359,33 @@ function isMainModule() {
   return Boolean(entry && import.meta.url === pathToFileURL(entry).href);
 }
 
+function logStartupSecurityWarnings() {
+  const warnings = [];
+  if (!OWNER_TOKEN) {
+    warnings.push("ESTATELAB_OWNER_TOKEN is not set; owner APIs are disabled until it is configured.");
+  } else if (OWNER_TOKEN.length < 16 || /^change-this/i.test(OWNER_TOKEN)) {
+    warnings.push("ESTATELAB_OWNER_TOKEN looks weak or default; use a long random secret before exposing this deployment.");
+  }
+  if (AUTH_DEBUG_TOKENS) {
+    warnings.push("ESTATELAB_AUTH_DEBUG_TOKENS is enabled; verification and reset tokens are returned in API responses. Disable this in production.");
+  }
+  if (BILLING_ENFORCEMENT && !BILLING_WEBHOOK_SECRET) {
+    warnings.push("APEX_BILLING_ENFORCEMENT is on but APEX_BILLING_WEBHOOK_SECRET is empty; paid plans can never activate.");
+  }
+  if (REQUIRE_EMAIL_VERIFICATION && !EMAIL_WEBHOOK_URL) {
+    warnings.push("Email verification is required but ESTATELAB_EMAIL_WEBHOOK_URL is empty; new users cannot receive verification codes.");
+  }
+  if (!TRUST_PROXY) {
+    warnings.push("ESTATELAB_TRUST_PROXY is disabled; rate limits key on the direct socket address. Keep it disabled only when clients connect without a reverse proxy.");
+  }
+  for (const warning of warnings) console.warn(`Apex Analytic startup: ${warning}`);
+}
+
 let server;
 
 if (isMainModule()) {
   await ready();
+  logStartupSecurityWarnings();
   server = http.createServer((req, res) => {
     handler(req, res).catch((error) => handleError(res, error));
   });
