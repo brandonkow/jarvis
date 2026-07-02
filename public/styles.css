@@ -2203,6 +2203,7 @@ button {
 .ownerMarketHeader button,
 .ownerIntelHeader button,
 .ownerIntelAccess button,
+.ownerIntelControls button,
 .ownerIntelCoverageWrap button,
 .ownerIntelCoverageActions button,
 .ownerIntelActions button,
@@ -2237,6 +2238,7 @@ button {
 .ownerMarketHeader button:hover,
 .ownerIntelHeader button:hover,
 .ownerIntelAccess button:hover,
+.ownerIntelControls button:hover,
 .ownerIntelCoverageWrap button:hover,
 .ownerIntelCoverageActions button:hover,
 .ownerIntelActions button:hover,
@@ -2364,6 +2366,18 @@ button {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.ownerIntelControls {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.ownerIntelControls button[aria-pressed="true"] {
+  border-color: rgba(103, 229, 255, 0.42);
+  color: var(--cyan-bright);
+  background: rgba(103, 229, 255, 0.09);
 }
 
 .ownerMarketSummary span,
@@ -7969,6 +7983,7 @@ button {
   }
 
   .ownerIntelAccess button,
+  .ownerIntelControls button,
   .ownerIntelCoverageWrap button,
   .ownerIntelCoverageActions button,
   .ownerIntelActions button,

@@ -114,6 +114,8 @@ const ownerIntelAccess = document.querySelector("#ownerIntelAccess");
 const ownerIntelToken = document.querySelector("#ownerIntelToken");
 const ownerIntelClearToken = document.querySelector("#ownerIntelClearToken");
 const ownerIntelSummary = document.querySelector("#ownerIntelSummary");
+const ownerIntelControls = document.querySelector("#ownerIntelControls");
+const ownerIntelCopyBrief = document.querySelector("#ownerIntelCopyBrief");
 const ownerIntelLanes = document.querySelector("#ownerIntelLanes");
 const ownerIntelCoverage = document.querySelector("#ownerIntelCoverage");
 const ownerIntelNextTitle = document.querySelector("#ownerIntelNextTitle");
@@ -267,6 +269,8 @@ let billingPlans = [];
 let ownerMarketEnabled = false;
 let ownerMarketProjects = [];
 let ownerIntelProjects = [];
+let ownerIntelFilter = "all";
+let ownerIntelSnapshot = null;
 let ownerCaseItems = [];
 let ownerCaseEditingId = "";
 let memorySettingsLoading = false;
@@ -2867,6 +2871,42 @@ function ownerIntelLane(label, value, status, action) {
   `;
 }
 
+function ownerIntelCoverageScore(rows = []) {
+  if (!rows.length) return 0;
+  const total = rows.reduce((sum, row) => {
+    const rowScore = (row.cases ? 38 : 0)
+      + (row.observations ? 18 : 0)
+      + (row.observations && !row.stale ? 17 : 0)
+      + (row.evidence ? 27 : 0);
+    return sum + Math.max(0, Math.min(100, rowScore - (row.stale ? 12 : 0)));
+  }, 0);
+  return Math.round(total / rows.length);
+}
+
+function ownerIntelSortRows(rows = []) {
+  const order = { missing: 0, stale: 1, partial: 2, ready: 3 };
+  return [...rows].sort((left, right) => order[left.status] - order[right.status] || right.missing.length - left.missing.length);
+}
+
+function ownerIntelFilterRows(rows = []) {
+  const sorted = ownerIntelSortRows(rows);
+  if (ownerIntelFilter === "all") return sorted;
+  return sorted.filter((row) => row.status === ownerIntelFilter);
+}
+
+function renderOwnerIntelCoverageRows(rows = []) {
+  const filteredRows = ownerIntelFilterRows(rows);
+  ownerIntelControls.querySelectorAll("[data-owner-intel-filter]").forEach((button) => {
+    const active = button.getAttribute("data-owner-intel-filter") === ownerIntelFilter;
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+  ownerIntelCoverage.innerHTML = filteredRows.length
+    ? filteredRows.slice(0, 10).map(ownerIntelCoverageMarkup).join("")
+    : rows.length
+      ? `<p class="ownerIntelEmpty">No ${escapeHtml(ownerIntelFilter)} projects in the current owner coverage view.</p>`
+      : '<p class="ownerIntelEmpty">No projects loaded yet. Start by adding tracked projects in the Market console.</p>';
+}
+
 function ownerIntelCoverageMarkup(row) {
   const detail = [row.project.area, row.project.state, row.project.propertyType].filter(Boolean).join(" / ") || "No project detail";
   return `
@@ -2888,6 +2928,44 @@ function ownerIntelCoverageMarkup(row) {
   `;
 }
 
+function ownerIntelBriefText() {
+  const snapshot = ownerIntelSnapshot || {};
+  const rows = ownerIntelSortRows(snapshot.rows || []);
+  const score = snapshot.score || 0;
+  const lines = [
+    "APEX OWNER INTELLIGENCE BRIEF",
+    new Intl.DateTimeFormat("en-MY", { dateStyle: "medium", timeStyle: "short" }).format(new Date()),
+    "",
+    `Coverage score: ${score}%`,
+    `Projects: ${snapshot.projectCount || 0}`,
+    `Cases: ${snapshot.caseCount || 0}`,
+    `Observations: ${snapshot.observationCount || 0}`,
+    `Evidence documents: ${snapshot.documentCount || 0}`,
+    `Complete projects: ${snapshot.complete || 0}`,
+    "",
+    "Priority gaps:",
+    ...(rows.length ? rows.slice(0, 10).map((row) => {
+      const project = row.project?.name || "Unnamed project";
+      const detail = [row.project?.area, row.project?.state, row.project?.propertyType].filter(Boolean).join(" / ") || "No detail";
+      const missing = row.missing.length ? row.missing.join(", ") : "none";
+      return `- ${project} (${detail}) / ${row.status}: ${missing}; ${row.cases} case, ${row.observations} signal, ${row.evidence} proof, ${row.stale} stale.`;
+    }) : ["- No project coverage loaded yet."]),
+    "",
+    "Next operating rule: add founder case judgment, fresh dated market signal, and evidence proof for every tracked project before relying on project-aware reasoning."
+  ];
+  return brandVisibleText(lines.join("\n"));
+}
+
+async function copyOwnerIntelBrief() {
+  await writeClipboardText(ownerIntelBriefText());
+  const original = ownerIntelCopyBrief.textContent;
+  ownerIntelCopyBrief.textContent = "COPIED";
+  window.setTimeout(() => {
+    ownerIntelCopyBrief.textContent = original || "COPY BRIEF";
+  }, 1200);
+  setOwnerIntelMessage("Owner intelligence brief copied.");
+}
+
 function renderOwnerIntelligence({ projects = {}, observations = {}, cases = {}, evidence = {} } = {}) {
   const projectItems = Array.isArray(projects.projects) ? projects.projects : [];
   const observationItems = Array.isArray(observations.observations) ? observations.observations : [];
@@ -2902,7 +2980,18 @@ function renderOwnerIntelligence({ projects = {}, observations = {}, cases = {},
   const staleObservation = observationItems.filter((item) => item.freshness?.status === "stale").length;
   const noEvidence = rows.filter((row) => row.evidence === 0).length;
   const complete = rows.filter((row) => row.status === "ready").length;
+  const score = ownerIntelCoverageScore(rows);
+  ownerIntelSnapshot = {
+    rows,
+    score,
+    projectCount: projectItems.length,
+    caseCount: cases.summary?.total ?? caseItems.length,
+    observationCount: observations.summary?.matched ?? observationItems.length,
+    documentCount: evidence.summary?.documents ?? documents.length,
+    complete
+  };
   ownerIntelSummary.innerHTML = `
+    <span><b>${escapeHtml(score)}%</b> COVERAGE</span>
     <span><b>${escapeHtml(projectItems.length)}</b> PROJECTS</span>
     <span><b>${escapeHtml(cases.summary?.total ?? caseItems.length)}</b> CASES</span>
     <span><b>${escapeHtml(observations.summary?.matched ?? observationItems.length)}</b> OBSERVATIONS</span>
@@ -2915,13 +3004,7 @@ function renderOwnerIntelligence({ projects = {}, observations = {}, cases = {},
     ownerIntelLane("Market freshness", `${staleObservation} stale`, staleObservation ? "warning" : observationItems.length ? "ready" : "missing", staleObservation ? "Re-check old observations." : observationItems.length ? "Signals are current enough." : "Add dated ground signals."),
     ownerIntelLane("Evidence vault", `${noEvidence} unbacked`, noEvidence ? "warning" : documents.length ? "ready" : "missing", noEvidence ? "Attach proof to important projects." : documents.length ? "Evidence exists." : "Add source proof.")
   ].join("");
-  const rankedRows = rows.sort((left, right) => {
-    const order = { missing: 0, stale: 1, partial: 2, ready: 3 };
-    return order[left.status] - order[right.status] || right.missing.length - left.missing.length;
-  });
-  ownerIntelCoverage.innerHTML = rankedRows.length
-    ? rankedRows.slice(0, 10).map(ownerIntelCoverageMarkup).join("")
-    : '<p class="ownerIntelEmpty">No projects loaded yet. Start by adding tracked projects in the Market console.</p>';
+  renderOwnerIntelCoverageRows(rows);
 
   let next = { title: "Add project registry", detail: "Apex needs tracked projects before owner intelligence can become project-specific.", action: "market" };
   if (missingCase) next = { title: "Write missing case opinions", detail: `${missingCase} tracked project${missingCase === 1 ? "" : "s"} do not have founder case notes yet.`, action: "cases" };
@@ -5549,6 +5632,13 @@ ownerIntelClearToken.addEventListener("click", () => {
   renderOwnerIntelligence();
   setOwnerIntelMessage("Owner token cleared from this device.");
 });
+ownerIntelControls.addEventListener("click", (event) => {
+  const filter = event.target.closest("[data-owner-intel-filter]")?.getAttribute("data-owner-intel-filter");
+  if (!filter) return;
+  ownerIntelFilter = filter;
+  renderOwnerIntelCoverageRows(ownerIntelSnapshot?.rows || []);
+});
+ownerIntelCopyBrief.addEventListener("click", () => void copyOwnerIntelBrief());
 ownerIntelActions.addEventListener("click", (event) => {
   const action = event.target.closest("[data-owner-intel-action]")?.getAttribute("data-owner-intel-action");
   if (action === "refresh") void loadOwnerIntelligence();
