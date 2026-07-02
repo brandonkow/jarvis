@@ -318,7 +318,8 @@ test("frontend selectors and stylesheet structure stay valid", async () => {
   assert.match(styles, /\.contextCoach[\s\S]*?data-coach-prompt|\.contextCoach[\s\S]*?\.contextCoach button/, "The v5.2 next-move coach needs styled prompt buttons.");
   assert.doesNotMatch(styles, /\.contextReadiness|\.experienceLock/, "Dead context-readiness and experience-lock styles must stay removed.");
   assert.match(styles, /\.dealJourney[\s\S]*?\.dealJourneySteps[\s\S]*?grid-template-columns:\s*repeat\(4/, "The Deal Journey needs a compact desktop step strip.");
-  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.dealJourneySteps[\s\S]*?grid-template-columns:\s*repeat\(2/, "The Deal Journey must collapse cleanly on mobile.");
+  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.dealJourneySteps[\s\S]*?grid-template-columns:\s*repeat\(4/, "The Deal Journey must compact to one chip row on mobile.");
+  assert.match(styles, /\.interface[\s\S]*?var\(--conversation-clearance/, "The stage must reserve measured space for the fixed conversation stack.");
   assert.match(styles, /\.contextGrid\.contextCoreMode \.contextAdvanced[\s\S]*?display:\s*none;[\s\S]*?\.contextAssist/, "Expanded context cards must hide advanced fields behind a guided essentials layer.");
   assert.match(styles, /\.accountOpen \.dealJourney[\s\S]*?display:\s*none;/, "The Deal Journey must hide when workspace panels replace chat.");
   assert.match(styles, /\.trustOpen \.transcript[\s\S]*?display:\s*none;/, "The v6 trust boundary must replace chat content instead of opening a popup.");

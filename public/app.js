@@ -6060,4 +6060,23 @@ async function bootJarvis() {
   }
 }
 
+const conversationPanel = document.querySelector("#conversation");
+
+function updateConversationClearance() {
+  if (!conversationPanel) return;
+  const reserved = Math.min(
+    Math.round(window.innerHeight * 0.7),
+    conversationPanel.offsetHeight + 40
+  );
+  document.documentElement.style.setProperty("--conversation-clearance", `${reserved}px`);
+  const freeSpace = window.innerHeight - reserved - 64;
+  document.body.classList.toggle("stageCompact", freeSpace < 340);
+}
+
+if (conversationPanel && typeof ResizeObserver === "function") {
+  new ResizeObserver(updateConversationClearance).observe(conversationPanel);
+}
+window.addEventListener("resize", updateConversationClearance);
+updateConversationClearance();
+
 bootJarvis();

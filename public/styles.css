@@ -342,7 +342,11 @@ button {
   display: grid;
   min-height: 100vh;
   place-items: center;
-  padding: 72px 24px 92px;
+  padding: 72px 24px var(--conversation-clearance, 92px);
+}
+
+body.conversationActive .interface {
+  padding-bottom: 92px;
 }
 
 .assistantStage {
@@ -358,6 +362,19 @@ button {
 
 .conversationActive .identity {
   opacity: 0;
+}
+
+body.stageCompact:not(.conversationActive) .jarvisOrb {
+  width: min(52vw, 180px);
+}
+
+body.stageCompact:not(.conversationActive) .identity .kicker {
+  display: none;
+}
+
+body.stageCompact:not(.conversationActive) .identity #assistantPrompt {
+  margin-top: 4px;
+  font-size: 0.72rem;
 }
 
 .jarvisOrb {
@@ -7605,7 +7622,7 @@ button {
   }
 
   .interface {
-    padding: 64px 16px 132px;
+    padding: 64px 16px var(--conversation-clearance, 132px);
   }
 
   .corner {
@@ -7761,25 +7778,28 @@ button {
   }
 
   .dealJourneyHeader {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .dealJourneyHeader button {
-    justify-self: start;
-    min-height: 36px;
+    min-height: 34px;
     padding: 7px 12px;
   }
 
   .dealJourneySteps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .dealJourneySteps button {
-    min-height: 42px;
+    min-height: 34px;
+  }
+
+  .dealJourneySteps small {
+    display: none;
   }
 
   .dealJourney b {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
   }
 
   .dealJourney small {
