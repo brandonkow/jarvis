@@ -176,6 +176,7 @@ const ownerCaseSourceBasis = document.querySelector("#ownerCaseSourceBasis");
 const ownerCaseRefresh = document.querySelector("#ownerCaseRefresh");
 const ownerCaseFilter = document.querySelector("#ownerCaseFilter");
 const ownerCaseVerdictFilter = document.querySelector("#ownerCaseVerdictFilter");
+const ownerCaseCompletenessFilter = document.querySelector("#ownerCaseCompletenessFilter");
 const ownerCaseList = document.querySelector("#ownerCaseList");
 const ownerCaseMetrics = document.querySelector("#ownerCaseMetrics");
 const ownerCaseMessage = document.querySelector("#ownerCaseMessage");
@@ -279,6 +280,7 @@ let ownerIntelFilter = "all";
 let ownerIntelSnapshot = null;
 let ownerCaseItems = [];
 let ownerCaseEditingId = "";
+let ownerCaseLastPayload = {};
 let ownerEvidenceDocuments = [];
 let memorySettingsLoading = false;
 let pendingTrustAction = "";
@@ -3293,10 +3295,8 @@ function renderOwnerCaseProjectOptions(projects = ownerMarketProjects) {
     + projects.map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.name)}${project.area ? ` / ${escapeHtml(project.area)}` : ""}</option>`).join("");
 }
 
-function ownerCaseMarkup(item) {
-  const detail = [item.area, item.state, item.propertyType, item.priceSegment].filter(Boolean).join(" / ") || "No project detail";
-  const summary = item.ownerVerdict || item.strengths || item.weaknesses || "No founder verdict recorded.";
-  const gapCount = [
+function ownerCaseGapCount(item) {
+  return [
     item.managementView,
     item.residentProfile,
     item.supplyThreat,
@@ -3304,6 +3304,18 @@ function ownerCaseMarkup(item) {
     item.resaleOutlook,
     item.sourceBasis
   ].filter((value) => !String(value || "").trim()).length;
+}
+
+function ownerCaseFilteredItems() {
+  const completeness = ownerCaseCompletenessFilter.value;
+  if (!completeness) return ownerCaseItems;
+  return ownerCaseItems.filter((item) => completeness === "incomplete" ? ownerCaseGapCount(item) > 0 : ownerCaseGapCount(item) === 0);
+}
+
+function ownerCaseMarkup(item) {
+  const detail = [item.area, item.state, item.propertyType, item.priceSegment].filter(Boolean).join(" / ") || "No project detail";
+  const summary = item.ownerVerdict || item.strengths || item.weaknesses || "No founder verdict recorded.";
+  const gapCount = ownerCaseGapCount(item);
   return `
     <article class="ownerCaseItem ${escapeHtml(item.verdict || "watch")}" data-owner-case="${escapeHtml(item.id)}">
       <header>
@@ -3327,9 +3339,11 @@ function ownerCaseMarkup(item) {
 
 function renderOwnerCases(payload = {}) {
   const cases = Array.isArray(payload.cases) ? payload.cases : [];
+  ownerCaseLastPayload = payload;
   ownerCaseItems = cases;
   const summary = payload.summary || {};
   const coverage = summary.coverage || {};
+  const visibleCases = ownerCaseFilteredItems();
   ownerCaseSummary.innerHTML = `
     <span><b>${escapeHtml(summary.total ?? cases.length)}</b> CASES</span>
     <span><b>${escapeHtml(summary.shortlist || 0)}</b> SHORTLIST</span>
@@ -3338,9 +3352,9 @@ function renderOwnerCases(payload = {}) {
     <span><b>${escapeHtml(coverage.areas || 0)}</b> AREAS</span>
     <span><b>${escapeHtml(coverage.incomplete || 0)}</b> GAPS</span>
   `;
-  ownerCaseMetrics.textContent = `${summary.matched ?? cases.length} matched case note${(summary.matched ?? cases.length) === 1 ? "" : "s"}`;
-  ownerCaseList.innerHTML = cases.length
-    ? cases.map(ownerCaseMarkup).join("")
+  ownerCaseMetrics.textContent = `${visibleCases.length} shown / ${summary.matched ?? cases.length} matched`;
+  ownerCaseList.innerHTML = visibleCases.length
+    ? visibleCases.map(ownerCaseMarkup).join("")
     : '<p class="ownerCaseEmpty">No development cases match this filter yet. Add the first project opinion above.</p>';
 }
 
@@ -5854,6 +5868,7 @@ ownerCaseProject.addEventListener("change", () => {
 ownerCaseRefresh.addEventListener("click", () => void loadOwnerCases().catch((error) => setOwnerCaseMessage(error.message || "Development case library could not be loaded.", "danger")));
 ownerCaseFilter.addEventListener("input", () => void loadOwnerCases().catch(() => {}));
 ownerCaseVerdictFilter.addEventListener("change", () => void loadOwnerCases().catch((error) => setOwnerCaseMessage(error.message || "Development case library could not be loaded.", "danger")));
+ownerCaseCompletenessFilter.addEventListener("change", () => renderOwnerCases(ownerCaseLastPayload));
 ownerCaseList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-owner-case-action]");
   const action = button?.getAttribute("data-owner-case-action");
