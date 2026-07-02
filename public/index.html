@@ -297,6 +297,10 @@
             <button type="button" data-owner-intel-filter="ready">READY</button>
             <button id="ownerIntelCopyBrief" type="button">COPY BRIEF</button>
             <button id="ownerIntelExport" type="button">EXPORT BACKUP</button>
+            <button id="ownerIntelImport" type="button">RESTORE BACKUP</button>
+            <input id="ownerIntelImportFile" type="file" accept="application/json" hidden />
+            <input id="ownerIntelRestorePhrase" type="text" placeholder="Type RESTORE OWNER KNOWLEDGE" autocomplete="off" hidden />
+            <button id="ownerIntelRestoreConfirm" type="button" hidden>CONFIRM RESTORE</button>
           </div>
           <div id="ownerIntelLanes" class="ownerIntelLanes"></div>
           <div class="ownerIntelWorkspace">

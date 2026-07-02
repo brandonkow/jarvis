@@ -325,8 +325,54 @@ test("owner market observations add dated trends and freshness warnings to Apex 
   assert.equal(ownerExport.payload.counts.projects, 2);
   assert.equal(ownerExport.payload.counts.observations, 4);
   assert.equal(ownerExport.payload.counts.developmentCases, 1);
+  assert.equal(ownerExport.payload.integrity.algorithm, "sha256");
+  assert.match(ownerExport.payload.integrity.hash, /^[a-f0-9]{64}$/);
   assert.ok(Array.isArray(ownerExport.payload.knowledge.projects));
   assert.ok(Array.isArray(ownerExport.payload.knowledge.developmentCases));
+
+  const deniedRestore = await request(baseUrl, "/api/owner/restore", {
+    method: "POST",
+    body: { backup: ownerExport.payload, dryRun: true }
+  });
+  assert.equal(deniedRestore.response.status, 403);
+  const restorePreview = await request(baseUrl, "/api/owner/restore", {
+    method: "POST",
+    owner: true,
+    body: { backup: ownerExport.payload, dryRun: true }
+  });
+  assert.equal(restorePreview.response.status, 200);
+  assert.equal(restorePreview.payload.valid, true);
+  assert.equal(restorePreview.payload.dryRun, true);
+  assert.equal(restorePreview.payload.confirmationPhrase, "RESTORE OWNER KNOWLEDGE");
+  assert.equal(restorePreview.payload.incoming.projects, 2);
+  const blockedRestore = await request(baseUrl, "/api/owner/restore", {
+    method: "POST",
+    owner: true,
+    body: { backup: ownerExport.payload, dryRun: false }
+  });
+  assert.equal(blockedRestore.response.status, 409);
+  const tamperedBackup = {
+    ...ownerExport.payload,
+    knowledge: {
+      ...ownerExport.payload.knowledge,
+      projects: [...ownerExport.payload.knowledge.projects, { id: "tampered", name: "Tampered Project" }]
+    }
+  };
+  const tamperedRestore = await request(baseUrl, "/api/owner/restore", {
+    method: "POST",
+    owner: true,
+    body: { backup: tamperedBackup, dryRun: true }
+  });
+  assert.equal(tamperedRestore.response.status, 400);
+  assert.match(tamperedRestore.payload.errors.join(" "), /integrity check failed/i);
+  const restoredBackup = await request(baseUrl, "/api/owner/restore", {
+    method: "POST",
+    owner: true,
+    body: { backup: ownerExport.payload, dryRun: false, confirmRestore: "RESTORE OWNER KNOWLEDGE" }
+  });
+  assert.equal(restoredBackup.response.status, 200);
+  assert.equal(restoredBackup.payload.restored, true);
+  assert.equal(restoredBackup.payload.counts.projects, 2);
 
   const blockedDelete = await request(baseUrl, `/api/owner/market/projects/${projectId}`, { method: "DELETE", owner: true });
   assert.equal(blockedDelete.response.status, 409);

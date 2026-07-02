@@ -8951,7 +8951,7 @@ function ownerKnowledgeExport(db, { includeChunks = false } = {}) {
     chunks: knowledge.chunks.length,
     retrievalEvents: knowledge.retrievalEvents.length
   };
-  return {
+  const payload = {
     app: "apex-analytic",
     exportType: "owner-knowledge-backup",
     format: "apex-analytic-owner-export.v1",
@@ -8971,6 +8971,98 @@ function ownerKnowledgeExport(db, { includeChunks = false } = {}) {
       chunkCount: knowledge.chunks.length,
       ...(includeChunks ? { chunks: knowledge.chunks.map(({ embedding, ...chunk }) => chunk) } : {})
     }
+  };
+  payload.integrity = {
+    algorithm: "sha256",
+    hash: ownerKnowledgeIntegrityHash(payload),
+    covers: "owner backup excluding exportedAt and integrity"
+  };
+  return payload;
+}
+
+function ownerKnowledgeCounts(db) {
+  const knowledge = normalizeKnowledge(db.knowledge);
+  return {
+    properties: Array.isArray(db.properties) ? db.properties.length : 0,
+    comps: Array.isArray(db.comps) ? db.comps.length : 0,
+    beliefs: Array.isArray(db.brain?.beliefs) ? db.brain.beliefs.length : 0,
+    decisions: Array.isArray(db.brain?.decisions) ? db.brain.decisions.length : 0,
+    answers: Array.isArray(db.brain?.answers) ? db.brain.answers.length : 0,
+    projects: knowledge.projects.length,
+    observations: knowledge.observations.length,
+    developmentCases: knowledge.developmentCases.length,
+    documents: knowledge.documents.length,
+    chunks: knowledge.chunks.length,
+    retrievalEvents: knowledge.retrievalEvents.length
+  };
+}
+
+function ownerKnowledgeIntegrityHash(payload) {
+  const { exportedAt, integrity, ...hashable } = payload || {};
+  return createHash("sha256").update(JSON.stringify(hashable)).digest("hex");
+}
+
+function ownerKnowledgeRestorePreview(currentDb, rawBackup = {}) {
+  const backup = rawBackup?.backup && typeof rawBackup.backup === "object" ? rawBackup.backup : rawBackup;
+  const errors = [];
+  const warnings = [];
+  if (!backup || typeof backup !== "object" || Array.isArray(backup)) errors.push("Backup JSON must be an object.");
+  const format = String(backup?.format || "");
+  const exportType = String(backup?.exportType || "");
+  if (format !== "apex-analytic-owner-export.v1" && exportType !== "owner-knowledge-backup") {
+    errors.push("This file is not an Apex owner knowledge backup.");
+  }
+  const integrityHash = String(backup?.integrity?.hash || "");
+  const calculatedHash = ownerKnowledgeIntegrityHash(backup);
+  if (integrityHash && integrityHash !== calculatedHash) {
+    errors.push("Backup integrity check failed. Export the owner backup again before restoring.");
+  } else if (!integrityHash) {
+    warnings.push("This backup has no integrity hash. Apex can preview it, but newer backups are safer.");
+  }
+  if (!backup?.knowledge || typeof backup.knowledge !== "object") errors.push("Backup is missing the owner knowledge section.");
+  const restored = {
+    properties: Array.isArray(backup?.properties) ? backup.properties.slice(-1000) : [],
+    comps: Array.isArray(backup?.comps) ? backup.comps.slice(-5000) : [],
+    brain: normalizeBrain(backup?.brain),
+    knowledge: normalizeKnowledge(backup?.knowledge)
+  };
+  const incoming = ownerKnowledgeCounts(restored);
+  const current = ownerKnowledgeCounts(currentDb);
+  if (!incoming.projects && !incoming.observations && !incoming.developmentCases && !incoming.documents && !incoming.beliefs && !incoming.properties) {
+    errors.push("Backup does not contain restorable owner records.");
+  }
+  if (!Array.isArray(backup?.knowledge?.chunks) && incoming.documents) {
+    warnings.push("This backup has document metadata but no indexed chunks. Document search may need re-uploaded evidence files.");
+  }
+  if (incoming.documents && incoming.chunks) {
+    warnings.push("Document metadata and text chunks can be restored, but original uploaded files still depend on existing object storage.");
+  }
+  const replacing = Object.fromEntries(Object.keys(current).map((key) => [key, incoming[key] - current[key]]));
+  return {
+    valid: errors.length === 0,
+    dryRun: true,
+    action: "replace-owner-data",
+    confirmationPhrase: "RESTORE OWNER KNOWLEDGE",
+    current,
+    incoming,
+    delta: replacing,
+    warnings,
+    errors,
+    restored
+  };
+}
+
+function publicOwnerKnowledgeRestorePreview(plan) {
+  return {
+    valid: plan.valid,
+    dryRun: plan.dryRun,
+    action: plan.action,
+    confirmationPhrase: plan.confirmationPhrase,
+    current: plan.current,
+    incoming: plan.incoming,
+    delta: plan.delta,
+    warnings: plan.warnings,
+    errors: plan.errors
   };
 }
 
@@ -9655,6 +9747,32 @@ async function router(req, res) {
     return send(res, 200, ownerKnowledgeExport(db, { includeChunks }), {
       ...jsonHeaders,
       "Content-Disposition": "attachment; filename=\"apex-owner-export.json\""
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/owner/restore") {
+    const body = await readBody(req);
+    const plan = ownerKnowledgeRestorePreview(db, body);
+    const dryRun = body.dryRun !== false;
+    if (!plan.valid) return send(res, 400, publicOwnerKnowledgeRestorePreview(plan));
+    if (dryRun) return send(res, 200, publicOwnerKnowledgeRestorePreview(plan));
+    if (String(body.confirmRestore || "").trim() !== plan.confirmationPhrase) {
+      return send(res, 409, {
+        ...publicOwnerKnowledgeRestorePreview(plan),
+        error: `Type ${plan.confirmationPhrase} to replace owner knowledge from this backup.`
+      });
+    }
+    db.properties = plan.restored.properties;
+    db.comps = plan.restored.comps;
+    db.brain = plan.restored.brain;
+    db.knowledge = plan.restored.knowledge;
+    await writeDb(db);
+    const restored = ownerKnowledgeCounts(db);
+    return send(res, 200, {
+      restored: true,
+      restoredAt: new Date().toISOString(),
+      counts: restored,
+      warning: "Owner knowledge was replaced from a validated backup. Re-test evidence retrieval if original uploaded files were stored outside the JSON backup."
     });
   }
 

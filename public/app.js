@@ -115,6 +115,10 @@ const ownerIntelSummary = document.querySelector("#ownerIntelSummary");
 const ownerIntelControls = document.querySelector("#ownerIntelControls");
 const ownerIntelCopyBrief = document.querySelector("#ownerIntelCopyBrief");
 const ownerIntelExport = document.querySelector("#ownerIntelExport");
+const ownerIntelImport = document.querySelector("#ownerIntelImport");
+const ownerIntelImportFile = document.querySelector("#ownerIntelImportFile");
+const ownerIntelRestorePhrase = document.querySelector("#ownerIntelRestorePhrase");
+const ownerIntelRestoreConfirm = document.querySelector("#ownerIntelRestoreConfirm");
 const ownerIntelLanes = document.querySelector("#ownerIntelLanes");
 const ownerIntelCoverage = document.querySelector("#ownerIntelCoverage");
 const ownerIntelNextTitle = document.querySelector("#ownerIntelNextTitle");
@@ -277,6 +281,7 @@ let ownerMarketProjects = [];
 let ownerIntelProjects = [];
 let ownerIntelFilter = "all";
 let ownerIntelSnapshot = null;
+let ownerIntelPendingRestore = null;
 let ownerCaseItems = [];
 let ownerCaseEditingId = "";
 let ownerCaseLastPayload = {};
@@ -2993,12 +2998,82 @@ async function exportOwnerKnowledgeBackup() {
   ownerIntelExport.disabled = true;
   try {
     setOwnerIntelMessage("Preparing owner knowledge backup...");
-    const backup = await ownerIntelRequest("/api/owner/export");
+    const backup = await ownerIntelRequest("/api/owner/export?chunks=true");
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     downloadJsonFile(`apex-owner-knowledge-${stamp}.json`, backup);
-    setOwnerIntelMessage(`Owner backup downloaded: ${backup.counts?.projects || 0} projects, ${backup.counts?.observations || 0} observations, ${backup.counts?.developmentCases || 0} cases, ${backup.counts?.documents || 0} documents.`);
+    setOwnerIntelMessage(`Owner backup downloaded: ${backup.counts?.projects || 0} projects, ${backup.counts?.observations || 0} observations, ${backup.counts?.developmentCases || 0} cases, ${backup.counts?.documents || 0} documents, ${backup.counts?.chunks || 0} chunks.`);
   } finally {
     ownerIntelExport.disabled = false;
+  }
+}
+
+function ownerRestorePreviewMessage(plan = {}) {
+  const incoming = plan.incoming || {};
+  const warnings = Array.isArray(plan.warnings) && plan.warnings.length ? ` Warning: ${plan.warnings[0]}` : "";
+  return `Backup ready to restore: ${incoming.projects || 0} projects, ${incoming.observations || 0} observations, ${incoming.developmentCases || 0} cases, ${incoming.documents || 0} documents.${warnings}`;
+}
+
+async function previewOwnerKnowledgeRestore(file) {
+  if (!ownerIntelTokenValue()) return ownerIntelToken.focus();
+  if (!file) return;
+  ownerIntelImport.disabled = true;
+  ownerIntelRestorePhrase.hidden = true;
+  ownerIntelRestorePhrase.value = "";
+  ownerIntelRestoreConfirm.hidden = true;
+  ownerIntelPendingRestore = null;
+  try {
+    setOwnerIntelMessage("Validating owner backup...");
+    const text = await file.text();
+    const backup = JSON.parse(text);
+    const preview = await ownerIntelRequest("/api/owner/restore", {
+      method: "POST",
+      body: JSON.stringify({ backup, dryRun: true })
+    });
+    ownerIntelPendingRestore = backup;
+    ownerIntelRestorePhrase.hidden = false;
+    ownerIntelRestoreConfirm.hidden = false;
+    setOwnerIntelMessage(`${ownerRestorePreviewMessage(preview)} Type RESTORE OWNER KNOWLEDGE, then press CONFIRM RESTORE only if this backup should replace current owner knowledge.`, preview.warnings?.length ? "warning" : "");
+  } catch (error) {
+    ownerIntelPendingRestore = null;
+    ownerIntelRestorePhrase.hidden = true;
+    ownerIntelRestoreConfirm.hidden = true;
+    setOwnerIntelMessage(error.message || "Backup could not be validated.", "danger");
+  } finally {
+    ownerIntelImport.disabled = false;
+    ownerIntelImportFile.value = "";
+  }
+}
+
+async function confirmOwnerKnowledgeRestore() {
+  if (!ownerIntelPendingRestore) {
+    ownerIntelRestorePhrase.hidden = true;
+    ownerIntelRestoreConfirm.hidden = true;
+    return setOwnerIntelMessage("Choose and validate a backup first.", "warning");
+  }
+  const confirmRestore = ownerIntelRestorePhrase.value.trim();
+  if (confirmRestore !== "RESTORE OWNER KNOWLEDGE") {
+    ownerIntelRestorePhrase.focus();
+    return setOwnerIntelMessage("Type RESTORE OWNER KNOWLEDGE before restoring this backup.", "warning");
+  }
+  ownerIntelRestoreConfirm.disabled = true;
+  try {
+    setOwnerIntelMessage("Restoring owner knowledge backup...");
+    const result = await ownerIntelRequest("/api/owner/restore", {
+      method: "POST",
+      body: JSON.stringify({
+        backup: ownerIntelPendingRestore,
+        dryRun: false,
+        confirmRestore
+      })
+    });
+    ownerIntelPendingRestore = null;
+    ownerIntelRestorePhrase.value = "";
+    ownerIntelRestorePhrase.hidden = true;
+    ownerIntelRestoreConfirm.hidden = true;
+    await loadOwnerIntelligence();
+    setOwnerIntelMessage(`Owner knowledge restored: ${result.counts?.projects || 0} projects, ${result.counts?.observations || 0} observations, ${result.counts?.developmentCases || 0} cases, ${result.counts?.documents || 0} documents.`, "warning");
+  } finally {
+    ownerIntelRestoreConfirm.disabled = false;
   }
 }
 
@@ -5792,6 +5867,10 @@ ownerIntelAccess.addEventListener("submit", (event) => {
 });
 ownerIntelClearToken.addEventListener("click", () => {
   syncOwnerTokens("");
+  ownerIntelPendingRestore = null;
+  ownerIntelRestorePhrase.value = "";
+  ownerIntelRestorePhrase.hidden = true;
+  ownerIntelRestoreConfirm.hidden = true;
   renderOwnerIntelligence();
   renderOwnerAdminUsers([]);
   setOwnerIntelMessage("Owner token cleared from this device.");
@@ -5804,6 +5883,9 @@ ownerIntelControls.addEventListener("click", (event) => {
 });
 ownerIntelCopyBrief.addEventListener("click", () => void copyOwnerIntelBrief());
 ownerIntelExport.addEventListener("click", () => void exportOwnerKnowledgeBackup().catch((error) => setOwnerIntelMessage(error.message || "Owner backup could not be exported.", "danger")));
+ownerIntelImport.addEventListener("click", () => ownerIntelImportFile.click());
+ownerIntelImportFile.addEventListener("change", () => void previewOwnerKnowledgeRestore(ownerIntelImportFile.files?.[0]).catch((error) => setOwnerIntelMessage(error.message || "Owner backup could not be validated.", "danger")));
+ownerIntelRestoreConfirm.addEventListener("click", () => void confirmOwnerKnowledgeRestore().catch((error) => setOwnerIntelMessage(error.message || "Owner backup could not be restored.", "danger")));
 ownerAdminLoad.addEventListener("click", () => void loadOwnerAdminUsers().catch((error) => setOwnerIntelMessage(error.message || "User control could not be loaded.", "danger")));
 ownerAdminList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-owner-admin-action='save']");
