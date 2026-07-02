@@ -2276,6 +2276,51 @@ function estimateMalaysianDealCosts({ price, loanMarginPercent = 90, holdingYear
   };
 }
 
+function loanFromInstallment(installment, annualRate, years) {
+  const payment = Math.max(0, Number(installment) || 0);
+  if (!payment) return 0;
+  const months = Math.max(1, (Number(years) || 30) * 12);
+  const rate = (Number(annualRate) || 0) / 100 / 12;
+  if (!rate) return payment * months;
+  return payment * ((1 + rate) ** months - 1) / (rate * (1 + rate) ** months);
+}
+
+function estimateAffordability({ monthlyIncome, monthlyCommitments = 0, interestRate = 4.3, tenureYears = 30, dsrLimit = 70 } = {}) {
+  const income = Math.max(0, Number(monthlyIncome) || 0);
+  if (!income) return null;
+  const commitments = Math.max(0, Number(monthlyCommitments) || 0);
+  const rate = Math.max(0.1, Math.min(15, Number(interestRate) || 4.3));
+  const tenure = Math.max(5, Math.min(35, Number(tenureYears) || 30));
+  const dsr = Math.max(10, Math.min(90, Number(dsrLimit) || 70));
+  const currentDsr = money((commitments / income) * 100);
+  const maxTotalDebtService = income * (dsr / 100);
+  const maxNewInstallment = money(Math.max(0, maxTotalDebtService - commitments));
+  const maxLoan = money(loanFromInstallment(maxNewInstallment, rate, tenure));
+  const stressedRate = money(rate + 1.25);
+  const stressedMaxLoan = money(loanFromInstallment(maxNewInstallment, stressedRate, tenure));
+  const impliedPriceAt90 = money(maxLoan / 0.9);
+  const notes = [];
+  if (currentDsr >= 60) notes.push("Existing commitments already use most of the debt-service capacity; treat any new loan as high risk.");
+  if (dsr >= 80) notes.push("An 80%+ DSR assumption is the framework danger zone for normal retail investors; banks may approve it, but holding power will be thin.");
+  notes.push("Bank DSR treatment of variable income, rental income recognition, and existing commitments differs by bank; confirm with a banker before shortlisting.");
+  return {
+    currency: "RM",
+    monthlyIncome: income,
+    monthlyCommitments: commitments,
+    currentDsr,
+    assumptions: { interestRate: rate, tenureYears: tenure, dsrLimit: dsr },
+    maxNewInstallment,
+    maxLoan,
+    impliedPriceAt90PercentMargin: impliedPriceAt90,
+    stressTest: {
+      interestRate: stressedRate,
+      maxLoan: stressedMaxLoan,
+      note: `At ${stressedRate}% the same instalment supports about ${money(maxLoan ? ((maxLoan - stressedMaxLoan) / maxLoan) * 100 : 0)}% less loan; keep buffer for rate rises.`
+    },
+    notes
+  };
+}
+
 function monthlyMortgage(principal, annualRate, years) {
   if (!principal || principal <= 0) return 0;
   const months = Math.max(1, years * 12);
@@ -8908,6 +8953,8 @@ function isPublicApiRoute(method, pathname) {
     || (method === "PATCH" && pathname === "/api/memory/settings")
     || (["PATCH", "DELETE"].includes(method) && pathname.startsWith("/api/memory/"))
     || (method === "POST" && pathname === "/api/tools/deal-costs")
+    || (method === "POST" && pathname === "/api/tools/affordability")
+    || (method === "GET" && pathname === "/api/me/export")
     || (method === "GET" && pathname === "/api/jarvis/status")
     || (method === "GET" && pathname === "/api/jarvis/sessions")
     || (method === "POST" && pathname === "/api/jarvis/sessions")
@@ -8996,6 +9043,22 @@ async function router(req, res) {
       loanMarginPercent: Number(body.loanMarginPercent || 90),
       holdingYears: body.holdingYears === undefined || body.holdingYears === null || body.holdingYears === "" ? null : Number(body.holdingYears)
     });
+    return send(res, 200, { estimate });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tools/affordability") {
+    if (!allowRequest(req, "tools", 60, 10 * 60 * 1000)) {
+      return send(res, 429, { error: "Too many calculator requests. Pause briefly and try again." }, { ...jsonHeaders, "Retry-After": "600" });
+    }
+    const body = await readBody(req);
+    const estimate = estimateAffordability({
+      monthlyIncome: Number(body.monthlyIncome || 0),
+      monthlyCommitments: Number(body.monthlyCommitments || 0),
+      interestRate: Number(body.interestRate || 4.3),
+      tenureYears: Number(body.tenureYears || 30),
+      dsrLimit: Number(body.dsrLimit || 70)
+    });
+    if (!estimate) return send(res, 400, { error: "Provide a monthly income above zero to estimate affordability." });
     return send(res, 200, { estimate });
   }
 
@@ -9512,6 +9575,55 @@ async function router(req, res) {
     actor.user.memory.items = nextItems;
     await writeDb(db);
     return send(res, 204, "");
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/me/export") {
+    if (!actor.user) return send(res, 401, { error: "Sign in to export your account data." });
+    const user = actor.user;
+    user.memory = normalizeUserMemory(user.memory);
+    user.reports = normalizeUserReports(user.reports);
+    user.journal = normalizeUserJournal(user.journal);
+    const ownedSessions = db.jarvis.sessions
+      .filter((session) => session.userId === user.id)
+      .map(publicJarvisSession);
+    return send(res, 200, {
+      exportedAt: new Date().toISOString(),
+      format: "apex-analytic-account-export.v1",
+      profile: publicUser(user),
+      billing: publicBillingStatus(user),
+      memory: {
+        settings: publicMemorySettings(user.memory),
+        items: user.memory.items.map(publicMemoryItem)
+      },
+      reports: user.reports.items,
+      journal: user.journal.items,
+      conversations: ownedSessions
+    }, {
+      ...jsonHeaders,
+      "Content-Disposition": "attachment; filename=\"apex-account-export.json\""
+    });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/owner/export") {
+    const includeChunks = String(url.searchParams.get("chunks") || "").toLowerCase() === "true";
+    return send(res, 200, {
+      exportedAt: new Date().toISOString(),
+      format: "apex-analytic-owner-export.v1",
+      brain: db.brain,
+      properties: db.properties,
+      comps: db.comps,
+      knowledge: {
+        documents: db.knowledge.documents,
+        projects: db.knowledge.projects,
+        observations: db.knowledge.observations,
+        developmentCases: db.knowledge.developmentCases,
+        chunkCount: db.knowledge.chunks.length,
+        ...(includeChunks ? { chunks: db.knowledge.chunks.map(({ embedding, ...chunk }) => chunk) } : {})
+      }
+    }, {
+      ...jsonHeaders,
+      "Content-Disposition": "attachment; filename=\"apex-owner-export.json\""
+    });
   }
 
   if (req.method === "GET" && url.pathname === "/api/jarvis/status") {

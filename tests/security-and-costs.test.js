@@ -171,6 +171,57 @@ test("security hardening and Malaysian deal-cost engine", async (t) => {
     assert.ok(floodSessions.length <= 20, "per-owner session cap should hold");
   });
 
+  await t.test("affordability calculator applies DSR and stress bands", async () => {
+    const { response, payload } = await post(baseUrl, "/api/tools/affordability", {
+      monthlyIncome: 10000,
+      monthlyCommitments: 2000,
+      interestRate: 4.3,
+      tenureYears: 30,
+      dsrLimit: 70
+    });
+    assert.equal(response.status, 200);
+    const estimate = payload.estimate;
+    assert.equal(estimate.currentDsr, 20);
+    assert.equal(estimate.maxNewInstallment, 5000);
+    assert.ok(estimate.maxLoan > 900000, `maxLoan ${estimate.maxLoan} should exceed RM900k`);
+    assert.ok(estimate.stressTest.maxLoan < estimate.maxLoan, "stressed loan must be lower");
+    const invalid = await post(baseUrl, "/api/tools/affordability", { monthlyIncome: 0 });
+    assert.equal(invalid.response.status, 400);
+  });
+
+  await t.test("account export requires sign-in and returns private data", async () => {
+    const anonymous = await fetch(`${baseUrl}/api/me/export`);
+    assert.equal(anonymous.status, 401);
+    const register = await fetch(`${baseUrl}/api/auth/register`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "export@example.com", displayName: "Export Tester", password: "long-password-123" })
+    });
+    assert.equal(register.status, 201);
+    const cookie = (register.headers.get("set-cookie") || "").split(";")[0];
+    const exportResponse = await fetch(`${baseUrl}/api/me/export`, { headers: { cookie } });
+    assert.equal(exportResponse.status, 200);
+    const exported = await exportResponse.json();
+    assert.equal(exported.format, "apex-analytic-account-export.v1");
+    assert.equal(exported.profile.email, "export@example.com");
+    assert.ok(Array.isArray(exported.reports));
+    assert.ok(Array.isArray(exported.journal));
+  });
+
+  await t.test("owner export returns the knowledge base backup", async () => {
+    const forbidden = await fetch(`${baseUrl}/api/owner/export`);
+    assert.equal(forbidden.status, 403);
+    const response = await fetch(`${baseUrl}/api/owner/export`, {
+      headers: { "x-estatelab-owner-token": OWNER_TOKEN }
+    });
+    assert.equal(response.status, 200);
+    const exported = await response.json();
+    assert.equal(exported.format, "apex-analytic-owner-export.v1");
+    assert.ok(Array.isArray(exported.brain.beliefs) && exported.brain.beliefs.length > 0);
+    assert.ok(Array.isArray(exported.knowledge.projects));
+    assert.equal(exported.knowledge.chunks, undefined, "chunks stay out unless requested");
+  });
+
   await t.test("property creation ignores client-supplied ids", async () => {
     const { response, payload } = await post(baseUrl, "/api/properties", {
       id: "attacker-chosen-id",

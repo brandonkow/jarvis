@@ -16,6 +16,8 @@ The public user experience is intentionally simple: users interact with one Apex
 - Public request limits for chat, voice, and account endpoints.
 - Seven-stage Deal Analysis using the Deal Card and Financial Profile, with hard-stop precedence, four decision dimensions, evidence grading, downside scenarios, and a counter-thesis.
 - Malaysian deal-cost engine: tiered MOT stamp duty, loan stamp duty, SPA and loan legal fees, disbursement allowance, RPGT exit bands, and an estimated-cash-to-start check inside every Deal Report, plus a public `/api/tools/deal-costs` calculator.
+- DSR affordability calculator (`POST /api/tools/affordability`) with framework-aligned danger-zone notes and a +1.25% interest stress test.
+- Data portability: signed-in members can export their reports, journal, memory, and conversations (`GET /api/me/export`); the owner can back up the whole knowledge base (`GET /api/owner/export`).
 - Hardened HTTP surface: strict Content-Security-Policy on the app shell, `nosniff`/`frame-ancestors`/referrer security headers on every response, HSTS behind HTTPS, timing-safe owner and webhook token comparison, and path-traversal-safe static serving.
 - Fair multi-user chat retention: conversation sessions are capped per account or guest client instead of one global list, so one visitor can no longer push out another member's history.
 - Printable Apex Deal Reports plus a private browser shortlist for comparing up to four analysed properties.
@@ -158,6 +160,8 @@ Public:
 - `POST /api/jarvis/transcribe`
 - `POST /api/jarvis/speech`
 - `POST /api/tools/deal-costs`
+- `POST /api/tools/affordability`
+- `GET /api/me/export` (signed-in account)
 
 Owner-only:
 
@@ -168,6 +172,7 @@ Owner-only:
 - Evidence document and retrieval-monitoring APIs
 - Market project, observation, freshness, trend, and batch-import APIs
 - User administration APIs
+- Owner knowledge-base export (`GET /api/owner/export`, add `?chunks=true` to include indexed text)
 
 Owner-only calls require:
 
