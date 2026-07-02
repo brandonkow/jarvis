@@ -122,6 +122,9 @@ const ownerIntelNextTitle = document.querySelector("#ownerIntelNextTitle");
 const ownerIntelNextDetail = document.querySelector("#ownerIntelNextDetail");
 const ownerIntelActions = document.querySelector("#ownerIntelActions");
 const ownerIntelMessage = document.querySelector("#ownerIntelMessage");
+const ownerAdminLoad = document.querySelector("#ownerAdminLoad");
+const ownerAdminSummary = document.querySelector("#ownerAdminSummary");
+const ownerAdminList = document.querySelector("#ownerAdminList");
 const ownerMarketToggle = document.querySelector("#ownerMarketToggle");
 const ownerMarketPanel = document.querySelector("#ownerMarketPanel");
 const ownerMarketClose = document.querySelector("#ownerMarketClose");
@@ -2968,6 +2971,101 @@ async function copyOwnerIntelBrief() {
   setOwnerIntelMessage("Owner intelligence brief copied.");
 }
 
+function ownerAdminPlanOptions(selected) {
+  const fallback = [
+    { id: "free", name: "Free" },
+    { id: "pro", name: "Pro" },
+    { id: "advisor", name: "Advisor" }
+  ];
+  const plans = billingPlans.length ? billingPlans : fallback;
+  return plans.map((plan) => `<option value="${escapeHtml(plan.id)}"${plan.id === selected ? " selected" : ""}>${escapeHtml(plan.name || plan.id)}</option>`).join("");
+}
+
+function ownerAdminUserMarkup(user) {
+  return `
+    <article class="ownerAdminUser ${user.disabled ? "disabled" : ""}" data-owner-admin-user="${escapeHtml(user.id)}">
+      <header>
+        <span><small>${escapeHtml(user.role || "member")} / ${escapeHtml(user.plan || "free")}</small><b>${escapeHtml(user.displayName || user.email)}</b><em>${escapeHtml(user.email)}</em></span>
+        <strong>${escapeHtml(user.disabled ? "DISABLED" : user.emailVerified ? "VERIFIED" : "UNVERIFIED")}</strong>
+      </header>
+      <div class="ownerAdminGrid">
+        <label>Role
+          <select data-owner-admin-field="role">
+            <option value="member"${user.role !== "admin" ? " selected" : ""}>Member</option>
+            <option value="admin"${user.role === "admin" ? " selected" : ""}>Admin</option>
+          </select>
+        </label>
+        <label>Plan
+          <select data-owner-admin-field="plan">${ownerAdminPlanOptions(user.plan || "free")}</select>
+        </label>
+        <label>Status
+          <select data-owner-admin-field="planStatus">
+            ${["active", "trialing", "past_due", "canceled"].map((status) => `<option value="${status}"${status === user.planStatus ? " selected" : ""}>${status}</option>`).join("")}
+          </select>
+        </label>
+        <label>Verified
+          <select data-owner-admin-field="emailVerified">
+            <option value="true"${user.emailVerified ? " selected" : ""}>Yes</option>
+            <option value="false"${!user.emailVerified ? " selected" : ""}>No</option>
+          </select>
+        </label>
+        <label>Disabled
+          <select data-owner-admin-field="disabled">
+            <option value="false"${!user.disabled ? " selected" : ""}>No</option>
+            <option value="true"${user.disabled ? " selected" : ""}>Yes</option>
+          </select>
+        </label>
+      </div>
+      <button type="button" data-owner-admin-action="save">SAVE USER</button>
+    </article>
+  `;
+}
+
+function renderOwnerAdminUsers(users = []) {
+  ownerAdminSummary.textContent = users.length ? `${users.length} user${users.length === 1 ? "" : "s"} loaded` : "No users found";
+  ownerAdminList.innerHTML = users.length
+    ? users.map(ownerAdminUserMarkup).join("")
+    : '<p class="ownerIntelEmpty">No account users loaded yet.</p>';
+}
+
+async function loadOwnerAdminUsers() {
+  if (!ownerIntelTokenValue()) {
+    ownerAdminSummary.textContent = "Owner token required";
+    ownerAdminList.innerHTML = '<p class="ownerIntelEmpty">Paste the owner token above before loading users.</p>';
+    return null;
+  }
+  setOwnerIntelMessage("Loading user control...");
+  const result = await ownerIntelRequest("/api/admin/users");
+  renderOwnerAdminUsers(result.users || []);
+  setOwnerIntelMessage("User control loaded.");
+  return result;
+}
+
+async function saveOwnerAdminUser(button) {
+  const item = button.closest("[data-owner-admin-user]");
+  const userId = item?.getAttribute("data-owner-admin-user");
+  if (!userId) return;
+  const fieldValue = (field) => item.querySelector(`[data-owner-admin-field="${field}"]`)?.value || "";
+  const payload = {
+    role: fieldValue("role"),
+    plan: fieldValue("plan"),
+    planStatus: fieldValue("planStatus"),
+    emailVerified: fieldValue("emailVerified") === "true",
+    disabled: fieldValue("disabled") === "true"
+  };
+  button.disabled = true;
+  try {
+    await ownerIntelRequest(`/api/admin/users/${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    });
+    await loadOwnerAdminUsers();
+    setOwnerIntelMessage("User updated.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function renderOwnerIntelligence({ projects = {}, observations = {}, cases = {}, evidence = {} } = {}) {
   const projectItems = Array.isArray(projects.projects) ? projects.projects : [];
   const observationItems = Array.isArray(observations.observations) ? observations.observations : [];
@@ -5656,6 +5754,7 @@ ownerIntelAccess.addEventListener("submit", (event) => {
 ownerIntelClearToken.addEventListener("click", () => {
   syncOwnerTokens("");
   renderOwnerIntelligence();
+  renderOwnerAdminUsers([]);
   setOwnerIntelMessage("Owner token cleared from this device.");
 });
 ownerIntelControls.addEventListener("click", (event) => {
@@ -5665,6 +5764,11 @@ ownerIntelControls.addEventListener("click", (event) => {
   renderOwnerIntelCoverageRows(ownerIntelSnapshot?.rows || []);
 });
 ownerIntelCopyBrief.addEventListener("click", () => void copyOwnerIntelBrief());
+ownerAdminLoad.addEventListener("click", () => void loadOwnerAdminUsers().catch((error) => setOwnerIntelMessage(error.message || "User control could not be loaded.", "danger")));
+ownerAdminList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-owner-admin-action='save']");
+  if (button) void saveOwnerAdminUser(button).catch((error) => setOwnerIntelMessage(error.message || "User could not be updated.", "danger"));
+});
 ownerIntelActions.addEventListener("click", (event) => {
   const action = event.target.closest("[data-owner-intel-action]")?.getAttribute("data-owner-intel-action");
   if (action === "refresh") void loadOwnerIntelligence();
